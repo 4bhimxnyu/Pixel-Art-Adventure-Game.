@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0a0507;
+  --color-charcoal: #1a0f12;
+  --color-crimson: #8f1a24;
+  --color-red: #b3252f;
+  --color-burgundy: #7c141f;
+  --color-gold: #d9b45b;
+  --color-brightgold: #f2dfa6;
+  --color-offwhite: #f7e6c8;
+  --color-success: #7ddca4;
+  --font-pixel: "Press Start 2P", monospace;
+}
+
+html, body, #root { height: 100%; margin: 0; background: #0a0507; }
+body {
+  font-family: "Press Start 2P", monospace;
+  color: #f7e6c8;
+  -webkit-font-smoothing: none;
+  image-rendering: pixelated;
+  overflow: hidden;
+  user-select: none;
+}
+canvas { image-rendering: pixelated; display: block; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #1a0f12; }
+::-webkit-scrollbar-thumb { background: #7c141f; border: 1px solid #d9b45b; }
+
+.pixel-border {
+  border: 3px solid #d9b45b;
+  box-shadow: 0 0 0 3px #0a0507, 0 0 24px rgba(217,180,91,0.25);
+}
+.panel {
+  background: linear-gradient(180deg, rgba(26,15,18,0.97), rgba(10,5,7,0.98));
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
