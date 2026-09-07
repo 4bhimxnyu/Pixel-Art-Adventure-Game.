@@ -32,7 +32,7 @@ npm run build      # typecheck + production build
 | Framework | React 19 + Vite 7, routed with TanStack Router |
 | Game engine | Phaser 3 — one scene, `WorldScene` |
 | State | Zustand, single store `src/store/useGameStore.ts` |
-| UI | React overlays over the Phaser canvas; Tailwind v4; `'Press Start 2P'` |
+| UI | React overlays over the Phaser canvas; Tailwind v4; Cinzel + Inter |
 | Art | 100% procedural pixel art generated at runtime. No image files. |
 | Audio | 100% procedural WebAudio synthesis. No audio files. |
 | Persistence | LocalStorage, key `palakshi_save_v1` |
@@ -109,6 +109,42 @@ src/
 public/audio/        optional user-supplied music (empty by default)
 ```
 
+## Interface
+
+The **world** is pixel art. The **interface** is not: it's a designed layer over
+the canvas — Cinzel for headings, Inter for body copy, translucent panels with
+real depth, gradient HP bars, and soft light. Design tokens and the shared
+`.surface` / `.btn` primitives live at the top of `src/styles.css`; the pixel
+font is kept only where it reads as deliberate.
+
+Only the Phaser canvas is `image-rendering: pixelated`. If you add UI, use the
+existing primitives rather than hard 2px borders.
+
+## Playability
+
+The game is completable end to end; this was verified by scripted playthroughs
+that walk the real maps and press the real keys, not by firing events. Things
+that make it survivable:
+
+- **Healing.** Sleeping in your bed at home, the village monk, and the temple
+  incense each restore the whole party. Every boss victory heals you, and the
+  village merchant hands over a real kit of potions.
+- **Losing is not the end.** A defeat patches you up where you stand and lets
+  you try again, instead of dumping you to the title screen.
+- **The Sacred Lantern blesses you.** Restoring it permanently raises Palakshi
+  and Mimo's stats. That power spike is what makes Arshiya's 420 HP a fight
+  rather than a war of attrition, and it lands right before the finale.
+- **Interactables are solid.** Anything you can use — braziers, the scroll, the
+  lantern, Mimo's ball — blocks movement so you walk up and face it. A walkable
+  interactable is a trap: you step onto the tile and `E` targets past it. All
+  three Sacred Flames were unusable for exactly this reason.
+
+> Deliberate deviation from the spec: it says Arshiya is "tuned so a solo
+> fighter loses". In practice that produced a finale that dragged past twenty
+> turns and could strand a playthrough with no way forward. She is now tuned so
+> that soloing with no healing narrowly fails, while rotating Palakshi and Mimo
+> — or simply using potions — wins. Swapping is rewarded rather than mandatory.
+
 ## Working on it
 
 **Story branching** hangs off one place. `advanceDialogue` emits `dialogue:end` on
@@ -139,5 +175,6 @@ carry it, both scoped to this fight only:
   It is the only reason Mimo can stand in front of Arshiya at all.
 
 She attacks whoever is in front of her; a benched fighter is out of reach and
-recovers 10% of their max HP per turn. Verified in play: never swapping loses with
-her still above 60% HP; rotating wins.
+recovers 10% of their max HP per turn. Measured in play at ~55 damage per landed
+hit against her: the fight runs 8-14 turns, and attacking with no heals at all
+falls just short at roughly a quarter of her HP remaining.

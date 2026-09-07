@@ -159,8 +159,8 @@ export const QUEST_MAIN: Quest = {
     { id: "wake",      label: "Get out of bed" },
     { id: "mom",       label: "Talk to Mum downstairs" },
     { id: "abhi",      label: "Find Abhimanyu in Sparkle Town" },
-    { id: "clue_toy",  label: "Search Route 1 for Mimo's toy" },
     { id: "clue_npc",  label: "Ask the witness in town" },
+    { id: "clue_toy",  label: "Search Route 1 for Mimo's toy" },
     { id: "clue_paws", label: "Follow the paw prints" },
     { id: "mimo",      label: "Bring Mimo home" },
     { id: "village",   label: "Help Lantern Village" },
@@ -289,7 +289,7 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
   villager: [{ who: "Villager", portrait: "townie", text: "The great lantern went cold three nights ago. The festival with it.", onEnd: "village_talk" }],
   merchant: [
     { who: "Merchant", portrait: "townie", text: "Supplies, no charge. Today of all days." },
-    { who: "Merchant", portrait: "townie", text: "Just bring the light back.", onEnd: "give_supplies" },
+    { who: "Merchant", portrait: "townie", text: "Take the whole crate. Just bring the light back.", onEnd: "give_supplies" },
   ],
   musician: [
     { who: "Travelling Musician", portrait: "townie", text: "That's a fine white guitar. Do you know what sound can break?" },
@@ -367,6 +367,10 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
     { who: "Prakriti", portrait: "prakriti", text: "It's a passable song." },
     { who: "Mimo", portrait: "mimo", text: "!!!" },
     { who: "Palakshi", portrait: "palakshi", text: "Best birthday I've had.", onEnd: "credits" },
+  ],
+  monk_heal: [
+    { who: "Village Monk", portrait: "monk", text: "Sit. Breathe." },
+    { who: "Village Monk", portrait: "monk", text: "There. Come back whenever the road is unkind — I am always here." },
   ],
   monk: [{ who: "Temple Monk", portrait: "elder", text: "Stand on the plates in the order the statues face. The temple is patient. I am not." }],
   inscription: [{ who: "Inscription", text: "…and the light was carried in three parts, so that no one thief could take it whole." }],

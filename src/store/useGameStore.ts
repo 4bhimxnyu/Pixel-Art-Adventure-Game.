@@ -125,6 +125,7 @@ export type GameState = {
   advanceQuest: (id: Quest["id"], toStepId?: string) => void;
   addQuest: (q: Quest) => void;
   addFighter: (f: Fighter) => void;
+  buffFighter: (id: string, patch: Partial<Pick<Fighter, "atk" | "def" | "spd" | "maxHp">>) => void;
   removeFighter: (id: string) => void;
   damage: (idx: number, amount: number) => number;
   heal: (idx: number, amount: number) => void;
@@ -268,6 +269,23 @@ export const useGameStore = create<GameState>((set, get) => ({
     set((s) => (s.party.some((p) => p.id === f.id) ? s : { party: [...s.party, clone(f)] })),
 
   removeFighter: (id) => set((s) => ({ party: s.party.filter((p) => p.id !== id) })),
+
+  /** Permanent stat gain (the Sacred Lantern's blessing before the finale). */
+  buffFighter: (id, patch) =>
+    set((s) => ({
+      party: s.party.map((p) => {
+        if (p.id !== id) return p;
+        const maxHp = patch.maxHp ? p.maxHp + patch.maxHp : p.maxHp;
+        return {
+          ...p,
+          atk: p.atk + (patch.atk ?? 0),
+          def: p.def + (patch.def ?? 0),
+          spd: p.spd + (patch.spd ?? 0),
+          maxHp,
+          hp: maxHp,
+        };
+      }),
+    })),
 
   /** Palakshi takes 40% reduced damage — resilient, not invincible. */
   damage: (idx, amount) => {

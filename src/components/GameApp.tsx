@@ -137,8 +137,15 @@ export default function GameApp() {
   }
 
   return (
-    <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#0a0507]">
+    <div className="vignette relative flex h-full w-full items-center justify-center overflow-hidden bg-[#0a0507]">
       <ThemeKeyframes />
+
+      {/* The canvas letterboxes on wide screens; this makes the surround feel
+          deliberate rather than like empty black bars. */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(ellipse at 50% 40%, #1a0f14 0%, #0a0507 70%)" }}
+      />
 
       {/* Phaser canvas */}
       <div ref={mountRef} className="absolute inset-0" />

@@ -21,10 +21,7 @@ export default function MissionCinematic() {
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
-    const clear = () => {
-      timers.current.forEach((t) => window.clearTimeout(t));
-      timers.current = [];
-    };
+    const clear = () => { timers.current.forEach((t) => window.clearTimeout(t)); timers.current = []; };
 
     const off = bus.on("cinematic", (p: Payload & { kind: string }) => {
       if (p.kind === "location") return;
@@ -35,14 +32,11 @@ export default function MissionCinematic() {
       else if (p.kind === "mission-start") questSfx.missionStart();
       else questSfx.objective();
 
-      timers.current.push(window.setTimeout(() => setVisible(false), 2200));
-      timers.current.push(window.setTimeout(() => setCard(null), 2800));
+      timers.current.push(window.setTimeout(() => setVisible(false), 2400));
+      timers.current.push(window.setTimeout(() => setCard(null), 3100));
     });
 
-    return () => {
-      off();
-      clear();
-    };
+    return () => { off(); clear(); };
   }, []);
 
   if (!card) return null;
@@ -52,35 +46,35 @@ export default function MissionCinematic() {
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center transition-opacity duration-500"
+      className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center transition-opacity duration-600"
       style={{ opacity: visible ? 1 : 0 }}
     >
-      <div className="absolute inset-0 bg-[#0a0507]/62" />
-      <PetalRain count={16} opacity={0.5} />
+      <div className="absolute inset-0 backdrop-blur-[2px]" style={{ background: "rgba(6,3,5,.66)" }} />
+      <PetalRain count={14} opacity={0.45} />
 
-      <div
-        className="sb-pop relative flex min-w-[340px] flex-col items-center border-y-2 bg-[#0a0507]/92 px-10 py-7"
-        style={{ borderColor: accent, boxShadow: `0 0 46px ${accent}33` }}
-      >
-        <div
-          className="pointer-events-none absolute inset-0 overflow-hidden"
-          aria-hidden
-        >
+      <div className="sb-pop relative flex min-w-[420px] flex-col items-center px-14 py-10">
+        {/* framing rules rather than a heavy box */}
+        <div className="absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg,transparent,${accent},transparent)` }} />
+        <div className="absolute inset-x-0 bottom-0 h-px" style={{ background: `linear-gradient(90deg,transparent,${accent},transparent)` }} />
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div
-            className="h-full w-14 opacity-25"
-            style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, animation: "sb-sweep 1.6s ease-in-out" }}
+            className="h-full w-24 opacity-[.14]"
+            style={{ background: `linear-gradient(90deg,transparent,${accent},transparent)`, animation: "sb-sweep 1.9s ease-in-out" }}
           />
         </div>
 
-        <div className="mb-2">
-          <PixelIcon name={complete ? "seal" : card.kind === "region" ? "region" : "flame"} size={22} />
+        <div className="mb-3 opacity-90">
+          <PixelIcon name={complete ? "seal" : card.kind === "region" ? "region" : "flame"} size={26} />
         </div>
-        <div className="text-[13px] tracking-[0.28em]" style={{ color: accent, textShadow: `0 0 16px ${accent}66` }}>
-          {complete ? "✓ " : ""}
-          {card.title}
+
+        <div
+          className="title-lg text-[22px] tracking-[.2em]"
+          style={{ color: accent, textShadow: `0 0 30px ${accent}55, 0 2px 12px rgba(0,0,0,.8)` }}
+        >
+          {complete ? "✦ " : ""}{card.title}
         </div>
-        <div className="mt-2 h-px w-40" style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
-        <div className="mt-3 text-[8px] tracking-[0.2em] text-[#f7e6c8]">{card.subtitle}</div>
+
+        <div className="mt-3 text-[14px] text-[var(--ink-2)]">{card.subtitle}</div>
       </div>
     </div>
   );

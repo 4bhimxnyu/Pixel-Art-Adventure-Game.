@@ -9,7 +9,7 @@ import { useGameStore } from "../store/useGameStore";
 import { ENEMIES, MOVES, ITEMS, type MoveId, type ItemId } from "../data/content";
 import { bus } from "../game/bus";
 import { playBgm, sfx, setIntensity, gong } from "../game/sound";
-import { CharacterPortrait, FramedPortrait } from "./pixel/Portrait";
+import { CharacterPortrait } from "./pixel/Portrait";
 import { HpBar } from "./pixel/decor";
 
 type Menu = "root" | "fight" | "item" | "swap";
@@ -84,12 +84,12 @@ export default function BattleUI() {
   }, []);
 
   /**
-   * power * atk / def, scaled so a boss fight lasts ~10-14 turns rather than 4.
-   * The 2.6 factor is what keeps the long fights long; changing it re-tunes
-   * every encounter in the game at once.
+   * power * atk / def. The 2.0 factor sets the pace of EVERY fight in the game
+   * at once: bosses land around 6-10 attacking turns, wild encounters are over
+   * in one or two. It was 2.6, which dragged the finale past twenty turns.
    */
   const roll = (power: number, atk: number, def: number) => {
-    const base = (power * atk) / Math.max(10, def * 2.6);
+    const base = (power * atk) / Math.max(10, def * 2.0);
     const variance = 0.85 + Math.random() * 0.3;
     const crit = Math.random() < 0.11;
     return { dmg: Math.max(1, Math.round(base * variance * (crit ? 1.6 : 1))), crit };
@@ -129,7 +129,7 @@ export default function BattleUI() {
     // in. If your partner is down, staying in is forced, so cap it — losing a
     // partner should make the fight hard, not unwinnable with no way out.
     const canSwap = s.party.some((p, i) => i !== target.i && p.hp > 0);
-    const readMult = reads ? Math.min(canSwap ? 5 : 2, 1 + 0.5 * tgtRead) : 1;
+    const readMult = reads ? Math.min(canSwap ? 2.5 : 1.6, 1 + 0.3 * tgtRead) : 1;
     const atk = enemy.atk * (1 + 0.3 * enrage) * readMult;
     const hit = roll(mv.power, atk, target.p.def);
     const crit = hit.crit;
@@ -139,7 +139,7 @@ export default function BattleUI() {
     addFloat(`-${dealt}`, "player", crit);
     setShake("player");
     sfx("hit");
-    pushLog(`${enemy.name} used ${mv.name}${crit ? " — critical!" : ""}.`);
+    pushLog(`${enemy.name} used ${mv.name}${crit ? " — a critical hit!" : "."}`);
     if (reads) {
       setCover((c) => Math.max(0, c - 1));
       const deepened = Math.min(8, (readStacks[target.i] ?? 0) + 1);
@@ -216,7 +216,7 @@ export default function BattleUI() {
         addFloat(`-${dmg}`, "enemy", crit);
         setShake("enemy");
         sfx("hit");
-        pushLog(`${me.name} used ${mv.name}${crit ? " — critical!" : ""}.`);
+        pushLog(`${me.name} used ${mv.name}${crit ? " — a critical hit!" : "."}`);
         window.setTimeout(() => setShake(null), 260);
         if (next <= 0) {
           window.setTimeout(() => finish(true), 700);
@@ -348,135 +348,110 @@ export default function BattleUI() {
 
   // ------------------------------------------------------------------ view
 
-  const enemyPct = enemyHp / enemy.hp;
-
   return (
-    <div className="absolute inset-0 z-50 flex flex-col bg-[#0a0507]">
+    <div className="vignette absolute inset-0 z-50 flex flex-col overflow-hidden bg-[#0a0507]">
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: isBoss
-            ? "radial-gradient(ellipse at 50% 30%, #3d0f18 0%, #0a0507 70%)"
-            : "radial-gradient(ellipse at 50% 35%, #1f2a20 0%, #0a0507 72%)",
+            ? "radial-gradient(ellipse at 50% 28%, #4a121d 0%, #1a0810 45%, #0a0507 78%)"
+            : "radial-gradient(ellipse at 50% 32%, #16281c 0%, #0d1410 48%, #0a0507 80%)",
         }}
       />
 
       {/* --- field ------------------------------------------------------- */}
-      <div className="relative flex flex-1 items-center justify-between px-6 py-6 sm:px-16">
-        {/* enemy */}
-        <div className={`relative ml-auto flex flex-col items-center gap-2 ${shake === "enemy" ? "sb-shake" : ""}`}>
-          <div className="w-[210px] border-2 border-[#7c141f] bg-[#0a0507]/85 px-3 py-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[8px] tracking-[0.16em] text-[#f7e6c8]">{enemy.name.toUpperCase()}</span>
-              <span className="flex items-center gap-1">
-                {reads && activeRead >= 2 && (
-                  <span className="border border-[#d9b45b] px-1 text-[6px] text-[#d9b45b] sb-blink">
-                    READ x{activeRead}
-                  </span>
-                )}
-                {enrage > 0 && (
-                  <span className="border border-[#b3252f] px-1 text-[6px] text-[#b3252f] sb-blink">
-                    ENRAGED{enrage > 1 ? ` ${enrage + 1}` : ""}
-                  </span>
-                )}
-              </span>
-            </div>
-            <div className="mt-1.5">
-              <HpBar hp={enemyHp} max={enemy.hp} width={186} showText={isBoss} />
-            </div>
-          </div>
-          <div
-            className="border-4 bg-[#0a0507] p-1"
-            style={{
-              borderColor: enrage > 0 ? "#b3252f" : "#d9b45b",
-              boxShadow: `0 0 30px ${enrage > 0 ? "#b3252f55" : "#d9b45b33"}`,
-              filter: enemyPct <= 0 ? "grayscale(1) brightness(.5)" : undefined,
-            }}
-          >
-            {/* Bosses always use their real character bust. */}
-            <CharacterPortrait id={enemy.portrait} size={112} />
-          </div>
-          {floats
-            .filter((f) => f.side === "enemy")
-            .map((f) => (
-              <FloatNum key={f.id} text={f.text} crit={f.crit} />
-            ))}
-        </div>
+      <div className="relative flex flex-1 items-center justify-center gap-16 px-8 py-6">
+        <Combatant
+          side="player"
+          name={activeFighter?.name ?? ""}
+          portrait={activeFighter?.portrait ?? "palakshi"}
+          hp={activeFighter?.hp ?? 0}
+          maxHp={activeFighter?.maxHp ?? 1}
+          shaking={shake === "player"}
+          floats={floats.filter((f) => f.side === "player")}
+          badge={reads && cover > 0 ? { text: `COVER ${cover}`, color: "#7ddca4" } : null}
+          accent="#d9b45b"
+        />
 
-        {/* party */}
-        <div className={`relative order-first flex flex-col items-center gap-2 ${shake === "player" ? "sb-shake" : ""}`}>
-          <div
-            className="border-4 border-[#d9b45b] bg-[#0a0507] p-1"
-            style={{ boxShadow: "0 0 30px rgba(217,180,91,.25)", filter: activeFighter?.hp <= 0 ? "grayscale(1)" : undefined }}
-          >
-            <CharacterPortrait id={activeFighter?.portrait ?? "palakshi"} size={112} />
-          </div>
-          <div className="w-[210px] border-2 border-[#d9b45b] bg-[#0a0507]/85 px-3 py-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[8px] tracking-[0.16em] text-[#f7e6c8]">
-                {(activeFighter?.name ?? "").toUpperCase()}
-              </span>
-              {reads && cover > 0 && (
-                <span className="border border-[#7ddca4] px-1 text-[6px] text-[#7ddca4]">COVER {cover}</span>
-              )}
-            </div>
-            <div className="mt-1.5">
-              <HpBar hp={activeFighter?.hp ?? 0} max={activeFighter?.maxHp ?? 1} width={186} />
-            </div>
-          </div>
-          {floats
-            .filter((f) => f.side === "player")
-            .map((f) => (
-              <FloatNum key={f.id} text={f.text} crit={f.crit} />
-            ))}
-        </div>
+        <Combatant
+          side="enemy"
+          name={enemy.name}
+          portrait={enemy.portrait}
+          hp={enemyHp}
+          maxHp={enemy.hp}
+          showNumbers={isBoss}
+          shaking={shake === "enemy"}
+          floats={floats.filter((f) => f.side === "enemy")}
+          badge={
+            enrage > 0
+              ? { text: enrage > 1 ? `ENRAGED ${enrage + 1}` : "ENRAGED", color: "#e0616b" }
+              : reads && activeRead >= 2
+              ? { text: `READ x${activeRead}`, color: "#d9b45b" }
+              : null
+          }
+          accent={enrage > 0 ? "#e0616b" : "#8a8698"}
+          defeated={enemyHp <= 0}
+        />
       </div>
 
       {/* --- bench ------------------------------------------------------- */}
       {party.length > 1 && (
-        <div className="relative flex justify-center gap-3 pb-2">
+        <div className="relative flex justify-center gap-3 pb-3">
           {party.map((p, i) => (
             <button
               key={p.id}
               onClick={() => phase === "player" && swapTo(i)}
-              className="flex items-center gap-2 border-2 px-2 py-1"
+              className={`surface-raised flex items-center gap-2.5 px-3 py-2 transition-all ${
+                i === active ? "" : "opacity-60 hover:opacity-90"
+              }`}
               style={{
-                borderColor: i === active ? "#d9b45b" : "#3a2229",
-                opacity: p.hp > 0 ? 1 : 0.4,
-                background: "#0a0507cc",
+                borderColor: i === active ? "rgba(217,180,91,.65)" : "rgba(217,180,91,.15)",
+                filter: p.hp > 0 ? undefined : "grayscale(1)",
               }}
             >
-              <FramedPortrait id={p.portrait} size={24} tone={i === active ? "gold" : "crimson"} />
-              <span className="text-[7px] text-[#f7e6c8]">
-                {p.name} {p.hp}/{p.maxHp}
-              </span>
+              <div className="overflow-hidden rounded-md" style={{ border: "1px solid rgba(217,180,91,.3)" }}>
+                <CharacterPortrait id={p.portrait} size={24} />
+              </div>
+              <div className="text-left">
+                <div className="text-[11px] font-semibold text-[var(--ink-1)]">{p.name}</div>
+                <div className="text-[10px] text-[var(--ink-3)]">
+                  {p.hp}/{p.maxHp}
+                </div>
+              </div>
             </button>
           ))}
         </div>
       )}
 
       {/* --- command bar ------------------------------------------------- */}
-      <div className="relative grid grid-cols-1 gap-2 border-t-2 border-[#7c141f] bg-[#0a0507]/95 p-3 sm:grid-cols-[1fr_320px]">
-        <div className="min-h-[74px] border-2 border-[#3a2229] bg-[#120a0d] px-3 py-2">
+      <div className="relative grid grid-cols-1 gap-3 border-t border-[rgba(217,180,91,.18)] bg-black/50 p-4 backdrop-blur-md sm:grid-cols-[1fr_380px]">
+        <div className="surface-raised min-h-[92px] px-4 py-3">
           {log.map((l, i) => (
-            <div key={i} className="text-[8px] leading-[2] text-[#f7e6c8]" style={{ opacity: i === log.length - 1 ? 1 : 0.45 }}>
+            <div
+              key={i}
+              className="text-[13px] leading-relaxed"
+              style={{
+                opacity: i === log.length - 1 ? 1 : 0.4,
+                color: i === log.length - 1 ? "var(--ink-1)" : "var(--ink-3)",
+              }}
+            >
               {l}
             </div>
           ))}
-          {outcome === "win" && <div className="mt-1 text-[9px] tracking-[0.2em] text-[#7ddca4]">VICTORY!</div>}
-          {outcome === "lose" && <div className="mt-1 text-[9px] tracking-[0.2em] text-[#b3252f]">DEFEATED…</div>}
+          {outcome === "win" && <div className="title-lg mt-1 text-[15px] text-[#7ddca4]">Victory</div>}
+          {outcome === "lose" && <div className="title-lg mt-1 text-[15px] text-[#e0616b]">Defeated…</div>}
         </div>
 
-        <div className="border-2 border-[#d9b45b] bg-[#120a0d] p-2">
+        <div className="surface-raised p-3">
           {phase === "player" ? (
             <>
               {menu !== "root" && (
-                <div className="mb-1 flex items-center justify-between text-[6px] tracking-[0.2em] text-[#8a7a6a]">
-                  <span>{menu.toUpperCase()}</span>
-                  <span>[X] BACK</span>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="eyebrow">{menu}</span>
+                  <span className="text-[10px] text-[var(--ink-4)]">X · back</span>
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-1">
+              <div className="grid grid-cols-2 gap-2">
                 {options.map((o, i) => (
                   <button
                     key={o.label + i}
@@ -494,27 +469,23 @@ export default function BattleUI() {
                       else if (menu === "item") { if (healers[i]) useItemAt(healers[i].id); }
                       else swapTo(i);
                     }}
-                    className="border px-2 py-1.5 text-left text-[7px] tracking-wider"
-                    style={{
-                      borderColor: i === cursor ? "#d9b45b" : "#2a1a20",
-                      background: i === cursor ? "#7c141f" : "transparent",
-                      color: o.disabled ? "#5a4a4a" : i === cursor ? "#f2dfa6" : "#f7e6c8",
-                    }}
+                    disabled={o.disabled}
+                    style={{ fontFamily: "var(--font-body)", letterSpacing: "0.02em" }}
+                    className={`btn px-3 py-2.5 text-[12px] font-semibold ${i === cursor && !o.disabled ? "btn-selected" : ""}`}
                   >
-                    {i === cursor ? "▶ " : "  "}
                     {o.label}
                   </button>
                 ))}
               </div>
               {menu === "fight" && (
-                <div className="mt-1.5 border-t border-[#3a2229] pt-1.5 text-[6px] leading-[1.8] text-[#8a7a6a]">
+                <p className="mt-2.5 border-t border-[rgba(217,180,91,.14)] pt-2.5 text-[11px] leading-relaxed text-[var(--ink-3)]">
                   {MOVES[activeFighter.moves[cursor]]?.desc}
-                </div>
+                </p>
               )}
             </>
           ) : (
-            <div className="flex h-full items-center justify-center text-[8px] tracking-[0.2em] text-[#8a7a6a]">
-              {phase === "intro" ? "…" : phase === "enemy" ? "ENEMY TURN" : ""}
+            <div className="flex h-full min-h-[76px] items-center justify-center text-[12px] tracking-[.2em] text-[var(--ink-3)]">
+              {phase === "intro" ? "…" : phase === "enemy" ? `${enemy.name} is moving…` : ""}
             </div>
           )}
         </div>
@@ -523,19 +494,73 @@ export default function BattleUI() {
   );
 }
 
+function Combatant({
+  name, portrait, hp, maxHp, shaking, floats, badge, accent, showNumbers = true, defeated,
+}: {
+  side?: "player" | "enemy";
+  name: string;
+  portrait: string;
+  hp: number;
+  maxHp: number;
+  shaking: boolean;
+  floats: Float[];
+  badge: { text: string; color: string } | null;
+  accent: string;
+  showNumbers?: boolean;
+  defeated?: boolean;
+}) {
+  return (
+    <div className={`relative flex flex-col items-center gap-3 ${shaking ? "sb-shake" : ""}`}>
+      <div className="surface w-[250px] px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="title-lg truncate text-[14px] text-[var(--ink-1)]">{name}</span>
+          {badge && (
+            <span
+              className="sb-blink shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider"
+              style={{ color: badge.color, border: `1px solid ${badge.color}66` }}
+            >
+              {badge.text}
+            </span>
+          )}
+        </div>
+        <div className="mt-2">
+          <HpBar hp={hp} max={maxHp} width={218} showText={showNumbers} />
+        </div>
+      </div>
+
+      <div
+        className="sb-float relative overflow-hidden rounded-2xl p-1"
+        style={{
+          background: `linear-gradient(160deg, ${accent}66, rgba(10,5,7,.6))`,
+          boxShadow: `0 22px 50px -18px rgba(0,0,0,.95), 0 0 44px -10px ${accent}55`,
+          filter: defeated ? "grayscale(1) brightness(.45)" : undefined,
+        }}
+      >
+        <div className="overflow-hidden rounded-xl bg-[#0a0507]">
+          <CharacterPortrait id={portrait} size={128} />
+        </div>
+      </div>
+
+      {floats.map((f) => (
+        <FloatNum key={f.id} text={f.text} crit={f.crit} />
+      ))}
+    </div>
+  );
+}
+
 function FloatNum({ text, crit }: { text: string; crit: boolean }) {
   const heal = text.startsWith("+");
   return (
     <div
-      className="pointer-events-none absolute left-1/2 top-6 -translate-x-1/2 text-[13px]"
+      className="title-lg pointer-events-none absolute left-1/2 top-10 -translate-x-1/2 text-[26px]"
       style={{
-        color: heal ? "#7ddca4" : crit ? "#f2dfa6" : "#b3252f",
-        textShadow: "2px 2px 0 #0a0507",
+        color: heal ? "#7ddca4" : crit ? "#f2dfa6" : "#e0616b",
+        textShadow: "0 3px 12px rgba(0,0,0,.95)",
         animation: "sb-rise .9s ease-out forwards",
       }}
     >
       {text}
-      {crit && <span className="ml-1 text-[7px]">CRIT</span>}
+      {crit && <span className="ml-1.5 align-super text-[11px] tracking-wider">CRIT</span>}
     </div>
   );
 }

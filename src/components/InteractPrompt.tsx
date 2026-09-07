@@ -10,12 +10,15 @@ export default function InteractPrompt() {
   if (!label) return null;
 
   return (
-    <div className="pointer-events-none absolute bottom-16 left-1/2 z-30 -translate-x-1/2 sb-pop">
-      <div className="flex items-center gap-2 border-2 border-[#d9b45b] bg-[#0a0507]/92 px-3 py-1.5 shadow-[0_0_18px_rgba(217,180,91,.28)]">
-        <kbd className="border border-[#d9b45b] bg-[#7c141f] px-1.5 py-0.5 text-[7px] text-[#f2dfa6]">E</kbd>
-        <span className="text-[7px] tracking-[0.14em] text-[#f7e6c8]">{label}</span>
-        <span className="text-[6px] text-[#5f5249]">/</span>
-        <kbd className="border border-[#3a2229] px-1 py-0.5 text-[6px] text-[#8a7a6a]">A</kbd>
+    <div className="pointer-events-none absolute bottom-20 left-1/2 z-30 -translate-x-1/2 sb-pop">
+      <div className="surface flex items-center gap-2.5 px-4 py-2.5">
+        <kbd
+          className="rounded-md px-2 py-1 text-[11px] font-bold text-[#fdf6e6]"
+          style={{ background: "linear-gradient(180deg,#a3202c,#7c141f)", border: "1px solid rgba(242,223,166,.5)" }}
+        >
+          E
+        </kbd>
+        <span className="text-[13px] font-medium text-[var(--ink-1)]">{label}</span>
       </div>
     </div>
   );

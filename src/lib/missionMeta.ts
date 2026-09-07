@@ -42,7 +42,7 @@ export const MAIN_MISSIONS: MissionDef[] = [
   {
     id: "m_mimo", title: "Find Mimo", region: "home", icon: "paw",
     blurb: "Mimo slipped the gate before sunrise. Follow her trail across town, the road and the woods — and bring her home.",
-    steps: ["wake", "mom", "abhi", "clue_toy", "clue_npc", "clue_paws", "mimo"],
+    steps: ["wake", "mom", "abhi", "clue_npc", "clue_toy", "clue_paws", "mimo"],
     cast: ["palakshi", "bidisha", "abhimanyu", "mimo"],
     rewards: [
       { kind: "ability", label: "Mimo joins your party" },

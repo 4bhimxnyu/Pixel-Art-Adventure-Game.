@@ -27,7 +27,7 @@ export default function DialogueBox() {
         last = now;
         i++;
         setShown(line.text.slice(0, i));
-        if (i % 3 === 0 && line.text[i - 1] !== " ") sfx("step");
+        if (i % 4 === 0 && line.text[i - 1] !== " ") sfx("step");
       }
       if (i < line.text.length) raf.current = requestAnimationFrame(tick);
       else setDone(true);
@@ -61,39 +61,57 @@ export default function DialogueBox() {
   const last = overlay.idx === overlay.lines.length - 1;
 
   return (
-    <div
-      className="absolute inset-x-0 bottom-0 z-50 flex justify-center p-3"
-      onClick={() => {
-        if (!done) {
-          setShown(line.text);
-          setDone(true);
-        } else {
-          sfx("confirm");
-          advance();
-        }
-      }}
-    >
-      <div className="sb-rise relative w-full max-w-[720px] border-[3px] border-[#d9b45b] bg-[#0a0507]/96 shadow-[0_0_0_3px_#0a0507,0_0_30px_rgba(179,37,47,.35)]">
-        {/* speaker plate */}
-        <div className="absolute -top-4 left-5 border-2 border-[#d9b45b] bg-[#7c141f] px-3 py-1">
-          <span className="text-[8px] tracking-[0.2em] text-[#f2dfa6]">{line.who.toUpperCase()}</span>
-        </div>
+    <div className="absolute inset-x-0 bottom-0 z-50 flex justify-center p-5">
+      {/* light pools under the box so it sits in the scene instead of on it */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-52"
+        style={{ background: "linear-gradient(to top, rgba(5,2,4,.92), transparent)" }}
+      />
 
-        <div className="flex items-start gap-4 px-5 pb-5 pt-6">
+      <div
+        className="surface sb-rise relative w-full max-w-[860px] cursor-pointer"
+        onClick={() => {
+          if (!done) {
+            setShown(line.text);
+            setDone(true);
+          } else {
+            sfx("confirm");
+            advance();
+          }
+        }}
+      >
+        <div className="flex items-start gap-5 p-6">
           {line.portrait && (
-            <div className="shrink-0 border-2 border-[#7c141f] bg-[#0a0507]">
-              <CharacterPortrait id={line.portrait} size={64} />
+            <div className="shrink-0">
+              <div
+                className="overflow-hidden rounded-xl"
+                style={{
+                  border: "1px solid rgba(217,180,91,.45)",
+                  boxShadow: "0 12px 30px -10px rgba(0,0,0,.9), 0 0 26px -6px rgba(179,37,47,.45)",
+                }}
+              >
+                <CharacterPortrait id={line.portrait} size={84} />
+              </div>
             </div>
           )}
-          <p className="min-h-[52px] flex-1 text-[9px] leading-[2.1] tracking-wide text-[#f7e6c8]">
-            {shown}
-            {!done && <span className="sb-blink text-[#d9b45b]">▌</span>}
-          </p>
+
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex items-baseline gap-3">
+              <span className="title-lg text-[16px] text-[#f2dfa6] glow-gold">{line.who}</span>
+              <span className="h-px flex-1 bg-gradient-to-r from-[rgba(217,180,91,.45)] to-transparent" />
+            </div>
+
+            <p className="min-h-[62px] text-[15px] leading-[1.75] text-[var(--ink-1)]">
+              {shown}
+              {!done && <span className="sb-blink ml-0.5 text-[#d9b45b]">▍</span>}
+            </p>
+          </div>
         </div>
 
         {done && (
-          <div className="absolute bottom-2 right-4 text-[7px] tracking-[0.2em] text-[#d9b45b] sb-blink">
-            {last ? "▼ CLOSE" : "▼ NEXT"}
+          <div className="absolute bottom-3 right-5 flex items-center gap-2 text-[11px] text-[var(--ink-3)]">
+            <span>{last ? "Close" : "Continue"}</span>
+            <span className="sb-blink text-[#d9b45b]">▼</span>
           </div>
         )}
       </div>

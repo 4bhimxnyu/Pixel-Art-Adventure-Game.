@@ -53,7 +53,10 @@ export type MapDef = {
   cinematic?: Cinematic;
 };
 
-export const SOLID = new Set(["#","t","K","c","j","H","L","m","%","^","u","q","=","$","&","*","B","b","s","D","T","w","o","_"]);
+// Anything the player INTERACTS with must be solid, so they walk up to it and
+// face it. A walkable interactable is a trap: you step onto the tile, "E" then
+// targets whatever is past it, and the object becomes impossible to use.
+export const SOLID = new Set(["#","t","K","c","j","H","L","m","%","^","u","q","=","$","&","*","B","b","s","D","T","w","o","_","!","y"]);
 /** Tiles you can stand on but that trigger something under-foot. */
 export const WALKABLE_SPECIAL = new Set(["z", "p", "~", "h", "y", "+", "I", "i", "!"]);
 

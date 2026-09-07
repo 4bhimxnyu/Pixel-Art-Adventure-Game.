@@ -389,7 +389,7 @@ export class WorldScene extends Phaser.Scene {
     }
     if (SOLID.has(ch)) {
       // collected pickups / spent props stop blocking
-      if ("$&*".includes(ch) && this.isHidden(def, ch, x, y, useGameStore.getState().flags)) return false;
+      if ("$&*!y".includes(ch) && this.isHidden(def, ch, x, y, useGameStore.getState().flags)) return false;
       return true;
     }
     return this.entities.some((e) => e.x === x && e.y === y);
@@ -601,7 +601,12 @@ export class WorldScene extends Phaser.Scene {
     switch (kind) {
       // ---------------------------------------------------------- scenery
       case "sign": return D(def.id === "bedroom" ? "sign_bedroom" : "townie1");
-      case "bed": return D("bed");
+      case "bed": {
+        store.healParty();
+        store.save();
+        bus.emit("toast", { text: "Rested. Everyone back to full health.", tone: "good" });
+        return D("bed");
+      }
       case "desk": return D("desk");
       case "bookshelf": return D("bookshelf");
       case "tv": return D("tv");
@@ -615,7 +620,10 @@ export class WorldScene extends Phaser.Scene {
       }
       case "incense": {
         gong();
-        return this.say("You offer incense. The smoke goes straight up — the temple is listening.");
+        store.healParty();
+        store.save();
+        bus.emit("toast", { text: "The incense restores the whole party.", tone: "good" });
+        return this.say("You offer incense. The smoke goes straight up, and the ache goes out of your arms.");
       }
 
       // ---------------------------------------------------------- pickups
@@ -747,8 +755,16 @@ export class WorldScene extends Phaser.Scene {
         return D("prakriti_wait");
       }
       case "npc_prakriti_duel": return D("prakriti_duel");
+      case "npc_villager5": {
+        // The village monk is the standing heal-up point for the whole back half.
+        store.markRecord("npcSpoken", `${def.id}_${kind}`);
+        store.healParty();
+        store.save();
+        bus.emit("toast", { text: "The monk tends your wounds. Party restored.", tone: "good" });
+        return D("monk_heal");
+      }
       case "npc_villager1": case "npc_villager2": case "npc_villager3":
-      case "npc_villager4": case "npc_villager5": {
+      case "npc_villager4": {
         store.markRecord("npcSpoken", `${def.id}_${kind}`);
         return D("villager");
       }
@@ -861,7 +877,13 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     if (!r.won) {
-      store.setScreen("title");
+      // Losing shouldn't end the adventure. You're patched up where you stand and
+      // can try again — the story boss you lost to is still waiting.
+      store.healParty();
+      store.save();
+      playBgm(this.mapDef.bgm, 1.0);
+      bus.emit("toast", { text: "You were carried back and patched up. Try again.", tone: "warn" });
+      this.refresh();
       return;
     }
     playBgm(this.mapDef.bgm, 1.0);
@@ -904,19 +926,19 @@ export class WorldScene extends Phaser.Scene {
         store.setFlag("abhimanyuJoined", true);
         store.addFighter(ABHIMANYU);
         bus.emit("toast", { text: "Abhimanyu joined you.", tone: "good" });
-        adv("clue_toy");
-        this.refresh();
-        break;
-
-      case "clue_toy_found":
-        store.setFlag("clueToyFound", true);
         adv("clue_npc");
         this.refresh();
         break;
 
       case "clue_witness":
         store.setFlag("clueWitnessHeard", true);
+        adv("clue_toy");
+        break;
+
+      case "clue_toy_found":
+        store.setFlag("clueToyFound", true);
         adv("clue_paws");
+        this.refresh();
         break;
 
       case "clue_paws_found":
@@ -964,8 +986,10 @@ export class WorldScene extends Phaser.Scene {
       case "give_supplies":
         store.setFlag("villageSupplies", true);
         store.addItem("village_supplies");
-        store.addItem("potion", 2);
-        bus.emit("toast", { text: "Received Village Supplies and 2 Potions.", tone: "good" });
+        store.addItem("potion", 4);
+        store.addItem("super_potion", 2);
+        store.healParty();
+        bus.emit("toast", { text: "Received supplies: 4 Potions and 2 Super Potions.", tone: "good" });
         break;
 
       case "guitar_learned":
@@ -1006,6 +1030,7 @@ export class WorldScene extends Phaser.Scene {
 
       case "start_miniboss1": this.startBattle("boss_sentinel", true); break;
       case "miniboss1_end":
+        store.healParty();
         store.setFlag("miniboss1Done", true);
         store.setFlag("trialDone", true);
         store.addItem("trial_talisman");
@@ -1016,6 +1041,7 @@ export class WorldScene extends Phaser.Scene {
 
       case "start_prakriti": this.startBattle("prakriti_boss", true); break;
       case "prakriti_done":
+        store.healParty();
         store.setFlag("prakritiDone", true);
         store.addItem("fashion_pass");
         bus.emit("toast", { text: "Received the Fashion Pass.", tone: "good" });
@@ -1026,6 +1052,7 @@ export class WorldScene extends Phaser.Scene {
 
       case "start_miniboss2": this.startBattle("boss_warden", true); break;
       case "miniboss2_end":
+        store.healParty();
         store.setFlag("miniboss2Done", true);
         bus.emit("toast", { text: "The Mountain Shrine is open.", tone: "good" });
         this.refresh();
@@ -1033,6 +1060,7 @@ export class WorldScene extends Phaser.Scene {
 
       case "start_guardian": this.startBattle("boss_guardian", true); break;
       case "guardian_end":
+        store.healParty();
         store.setFlag("guardianDone", true);
         store.setFlag("templeOpened", true);
         store.addItem("lore_book");
@@ -1046,6 +1074,12 @@ export class WorldScene extends Phaser.Scene {
 
       case "lantern_restored":
         store.setFlag("lanternRestored", true);
+        // The restored light stays with them — this is the power spike that
+        // makes Arshiya's 420 HP a fight rather than a war of attrition.
+        store.buffFighter("palakshi", { atk: 14, def: 4, maxHp: 22 });
+        store.buffFighter("mimo", { atk: 8, def: 5, maxHp: 16 });
+        store.addItem("super_potion", 2);
+        bus.emit("toast", { text: "The Sacred Lantern's light stays with you. Palakshi and Mimo grow stronger.", tone: "good" });
         gong();
         this.cameras.main.flash(600, 242, 223, 166);
         bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "Restore the Sacred Lantern" });

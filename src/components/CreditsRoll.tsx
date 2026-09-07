@@ -33,10 +33,10 @@ export default function CreditsRoll() {
   }, []);
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#0a0507]">
+    <div className="vignette relative h-full w-full overflow-hidden bg-[#0a0507]">
       <div
         className="pointer-events-none absolute inset-0"
-        style={{ background: "radial-gradient(ellipse at 50% 60%, #2a0f16 0%, #0a0507 70%)" }}
+        style={{ background: "radial-gradient(ellipse at 50% 55%, #34131c 0%, #14090d 45%, #0a0507 78%)" }}
       />
       <PetalRain count={26} opacity={0.55} />
 
@@ -50,10 +50,10 @@ export default function CreditsRoll() {
             {CREDITS.map((block, i) => (
               <div key={i}>
                 {block.head && (
-                  <div className="mb-3 text-[11px] tracking-[0.3em] text-[#d9b45b]">{block.head}</div>
+                  <div className="title-lg mb-3 text-[20px] tracking-[0.16em] text-[#f2dfa6] glow-gold">{block.head}</div>
                 )}
                 {block.lines.map((l, j) => (
-                  <div key={j} className="text-[8px] leading-[2.4] tracking-wider text-[#f7e6c8]">
+                  <div key={j} className="text-[14px] leading-[2] text-[var(--ink-2)]">
                     {l}
                   </div>
                 ))}
@@ -62,26 +62,26 @@ export default function CreditsRoll() {
           </div>
           <button
             onClick={() => setShowEnd(true)}
-            className="absolute bottom-4 right-5 text-[6px] tracking-[0.25em] text-[#5f5249] hover:text-[#d9b45b]"
+            className="absolute bottom-5 right-6 text-[11px] text-[var(--ink-4)] transition-colors hover:text-[#d9b45b]"
           >
-            PRESS ENTER TO SKIP
+            Press Enter to skip
           </button>
         </>
       ) : (
         <div className="sb-pop relative flex h-full flex-col items-center justify-center px-6 text-center">
-          <div className="mb-6 flex items-end gap-5">
+          <div className="mb-8 flex items-end gap-6">
             <Lantern size={30} />
-            <div className="border-4 border-[#d9b45b] bg-[#0a0507] p-1 shadow-[0_0_44px_rgba(217,180,91,.3)]">
+            <div className="overflow-hidden rounded-2xl bg-[#0a0507] p-1" style={{ border: "1px solid rgba(217,180,91,.5)", boxShadow: "0 22px 60px -16px rgba(0,0,0,.95), 0 0 50px -10px rgba(179,37,47,.5)" }}>
               <CharacterPortrait id="palakshi" size={96} />
             </div>
-            <div className="border-4 border-[#d9b45b] bg-[#0a0507] p-1">
+            <div className="overflow-hidden rounded-xl bg-[#0a0507] p-1" style={{ border: "1px solid rgba(217,180,91,.4)" }}>
               <CharacterPortrait id="mimo" size={72} />
             </div>
             <Lantern size={30} delay={0.6} />
           </div>
 
           <h1
-            className="text-[18px] leading-[1.8] tracking-[0.12em] text-[#d9b45b] sm:text-[24px]"
+            className="title-lg text-[34px] leading-[1.5] text-[#f2dfa6] glow-gold sm:text-[44px]"
             style={{ textShadow: "0 0 22px rgba(179,37,47,.7), 3px 3px 0 #7c141f" }}
           >
             HAPPY BIRTHDAY,
@@ -95,18 +95,18 @@ export default function CreditsRoll() {
                 questSfx.confirm();
                 newGame();
               }}
-              className="min-w-[190px] border-2 border-[#d9b45b] bg-[#7c141f] px-6 py-3 text-[9px] tracking-[0.25em] text-[#f2dfa6]"
+              className="btn btn-primary min-w-[210px] px-7 py-3.5 text-[15px]"
             >
-              PLAY AGAIN
+              Play again
             </button>
             <button
               onClick={() => {
                 questSfx.panelClose();
                 setScreen("title");
               }}
-              className="min-w-[190px] border-2 border-[#3a2229] bg-[#1a0f12] px-6 py-3 text-[9px] tracking-[0.25em] text-[#f7e6c8]"
+              className="btn min-w-[210px] px-7 py-3.5 text-[15px]"
             >
-              MAIN MENU
+              Main menu
             </button>
           </div>
         </div>

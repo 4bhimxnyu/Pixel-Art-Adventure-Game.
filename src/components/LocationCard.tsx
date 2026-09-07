@@ -18,10 +18,7 @@ export default function LocationCard() {
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
-    const clear = () => {
-      timers.current.forEach((t) => window.clearTimeout(t));
-      timers.current = [];
-    };
+    const clear = () => { timers.current.forEach((t) => window.clearTimeout(t)); timers.current = []; };
 
     const off = bus.on("cinematic", (p: { kind: string; mapId?: MapId }) => {
       if (p.kind !== "location" || !p.mapId) return;
@@ -37,37 +34,32 @@ export default function LocationCard() {
       });
       setVisible(true);
       timers.current.push(window.setTimeout(() => setVisible(false), 3600));
-      timers.current.push(window.setTimeout(() => setCard(null), 4200));
+      timers.current.push(window.setTimeout(() => setCard(null), 4300));
     });
 
-    return () => {
-      off();
-      clear();
-    };
+    return () => { off(); clear(); };
   }, []);
 
   if (!card) return null;
 
   return (
     <div
-      className="pointer-events-none absolute left-1/2 top-14 z-30 w-[330px] -translate-x-1/2 transition-opacity duration-500"
-      style={{ opacity: visible ? 1 : 0 }}
+      className="pointer-events-none absolute left-1/2 top-16 z-30 w-[380px] -translate-x-1/2 transition-all duration-700"
+      style={{ opacity: visible ? 1 : 0, transform: `translateX(-50%) translateY(${visible ? 0 : -10}px)` }}
     >
-      <div className="sb-pop border-2 border-[#d9b45b] bg-[#0a0507]/94 px-4 py-3 shadow-[0_0_28px_rgba(217,180,91,.22)]">
-        <div className="flex items-center gap-2">
-          <PixelIcon name={card.icon} size={16} />
-          <span className="text-[11px] tracking-[0.18em] text-[#d9b45b]">{card.place.toUpperCase()}</span>
+      <div className="surface sb-pop px-5 py-4">
+        <div className="flex items-center gap-3">
+          <PixelIcon name={card.icon} size={18} />
+          <span className="title-lg text-[17px] text-[#f2dfa6] glow-gold">{card.place}</span>
         </div>
-        <div className="my-2 h-px w-full bg-gradient-to-r from-[#d9b45b] via-[#7c141f] to-transparent" />
+        <div className="rule my-3" />
         {card.objective && (
-          <div className="flex gap-1.5 text-[8px] leading-[1.8] text-[#f7e6c8]">
-            <span className="text-[#d9b45b]">→</span>
+          <div className="flex gap-2 text-[13px] leading-snug text-[var(--ink-1)]">
+            <span className="text-[#d9b45b]">◆</span>
             <span>{card.objective}</span>
           </div>
         )}
-        {card.hint && (
-          <div className="mt-1.5 text-[7px] leading-[1.9] text-[#8a7a6a]">{card.hint}</div>
-        )}
+        {card.hint && <p className="mt-2 text-[11px] leading-relaxed text-[var(--ink-3)]">{card.hint}</p>}
       </div>
     </div>
   );

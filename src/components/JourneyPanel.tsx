@@ -10,15 +10,15 @@ import { buildMissions, REGIONS, regionById, type Mission, type MissionCategory 
 import { MAP_REGION } from "../lib/guidance";
 import { questSfx } from "../lib/questSfx";
 import { sfx } from "../game/sound";
-import { ScrollPanel, GoldRule } from "./pixel/decor";
+import { ScrollPanel } from "./pixel/decor";
 import { PixelIcon, REWARD_ICON, type IconName } from "./pixel/MissionIcons";
-import { FramedPortrait } from "./pixel/Portrait";
+import { CharacterPortrait } from "./pixel/Portrait";
 
 const TABS: { id: MissionCategory | "history"; label: string }[] = [
-  { id: "main", label: "MAIN STORY" },
-  { id: "side", label: "SIDE" },
-  { id: "discovered", label: "DISCOVERED" },
-  { id: "history", label: "HISTORY" },
+  { id: "main", label: "Main story" },
+  { id: "side", label: "Side" },
+  { id: "discovered", label: "Discovered" },
+  { id: "history", label: "History" },
 ];
 
 export default function JourneyPanel() {
@@ -54,96 +54,91 @@ export default function JourneyPanel() {
   const playerRegion = MAP_REGION[state.map];
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#0a0507]/90 p-3">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/75 p-5 backdrop-blur-sm">
       <ScrollPanel
-        title="JOURNEY"
+        title="Journey"
+        subtitle="Everything you know, and where to go next"
         onClose={() => { questSfx.panelClose(); setOverlay(null); }}
-        className="flex h-full max-h-[640px] w-full max-w-[960px] flex-col"
+        className="flex h-full max-h-[720px] w-full max-w-[1040px] flex-col"
       >
-        {/* tabs */}
-        <div className="flex shrink-0 border-b-2 border-[#3a2229]">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => { setTab(t.id); sfx("menu"); }}
-              className="flex-1 border-r border-[#241a1e] px-2 py-2 text-[7px] tracking-[0.18em] last:border-r-0"
-              style={{
-                color: tab === t.id ? "#f2dfa6" : "#6d5f57",
-                background: tab === t.id ? "#7c141f" : "transparent",
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <div className="shrink-0 px-3 py-1 text-right text-[6px] tracking-[0.2em] text-[#5f5249]">
-          [LB/RB] or ←/→ SWITCH TAB
+        <div className="flex shrink-0 gap-1 border-b border-[rgba(217,180,91,.15)] px-4 pt-3">
+          {TABS.map((t) => {
+            const on = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => { setTab(t.id); sfx("menu"); }}
+                className="relative px-4 py-2.5 text-[12px] font-medium transition-colors"
+                style={{ color: on ? "#f2dfa6" : "var(--ink-3)" }}
+              >
+                {t.label}
+                {on && <span className="absolute inset-x-2 -bottom-px h-[2px] rounded-full bg-[#d9b45b]" />}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-[240px_1fr]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-[268px_1fr]">
           {/* list */}
-          <div className="min-h-0 overflow-y-auto border-r-2 border-[#3a2229] p-2">
+          <div className="scroll-area min-h-0 overflow-y-auto border-r border-[rgba(217,180,91,.15)] p-3">
             {!shown.length && (
-              <div className="p-6 text-center text-[7px] leading-[2] text-[#5f5249]">
-                Nothing here yet.
-              </div>
+              <p className="p-8 text-center text-[12px] leading-relaxed text-[var(--ink-4)]">Nothing here yet.</p>
             )}
             {shown.map((m, i) => (
               <button
                 key={m.id}
                 onClick={() => { setSel(i); sfx("menu"); }}
-                className="mb-1.5 flex w-full items-center gap-2 border px-2 py-2 text-left"
-                style={{
-                  borderColor: i === sel ? "#d9b45b" : "#241a1e",
-                  background: i === sel ? "#2a1016" : "transparent",
-                }}
+                className={`mb-2 flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors ${
+                  i === sel ? "border-[rgba(217,180,91,.45)] bg-white/[.05]" : "border-transparent hover:bg-white/[.025]"
+                }`}
               >
-                <PixelIcon name={m.icon} size={14} />
-                <span className="flex-1 truncate text-[7px] text-[#f7e6c8]">{m.title}</span>
+                <PixelIcon name={m.icon} size={17} />
+                <span className="flex-1 truncate text-[13px] text-[var(--ink-1)]">{m.title}</span>
                 {m.category === "completed" ? (
-                  <span className="text-[7px] text-[#7ddca4]">✓</span>
+                  <span className="text-[13px] text-[#7ddca4]">✓</span>
                 ) : (
-                  <span className="text-[6px] text-[#8a7a6a]">{Math.round(m.progress * 100)}%</span>
+                  <span className="text-[11px] tabular-nums text-[var(--ink-4)]">{Math.round(m.progress * 100)}%</span>
                 )}
               </button>
             ))}
           </div>
 
           {/* detail */}
-          <div className="min-h-0 overflow-y-auto p-4">
+          <div className="scroll-area min-h-0 overflow-y-auto p-6">
             {!mission ? (
-              <div className="text-[8px] text-[#8a7a6a]">Select a mission.</div>
+              <p className="text-[13px] text-[var(--ink-3)]">Select a mission.</p>
             ) : (
               <>
-                <div className="flex items-center gap-2">
-                  <PixelIcon name={mission.icon} size={20} />
-                  <h2 className="text-[12px] tracking-[0.14em] text-[#d9b45b]">{mission.title}</h2>
-                  {mission.finale && <span className="border border-[#b3252f] px-1 text-[6px] text-[#b3252f]">FINALE</span>}
+                <div className="flex items-center gap-3">
+                  <PixelIcon name={mission.icon} size={24} />
+                  <h2 className="title-lg text-[22px] text-[#f2dfa6]">{mission.title}</h2>
+                  {mission.finale && (
+                    <span className="rounded-full border border-[rgba(224,97,107,.5)] px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-[#e0616b]">
+                      FINALE
+                    </span>
+                  )}
                   {mission.category === "completed" && (
-                    <span className="ml-auto text-[7px] tracking-widest text-[#7ddca4]">COMPLETE</span>
+                    <span className="ml-auto text-[12px] font-semibold text-[#7ddca4]">Complete</span>
                   )}
                 </div>
-                <p className="mt-2 text-[7px] leading-[2.1] text-[#c9b9a5]">{mission.blurb}</p>
+                <p className="mt-3 text-[13px] leading-relaxed text-[var(--ink-2)]">{mission.blurb}</p>
 
-                <GoldRule />
-
-                {/* WHAT TO DO */}
                 {mission.category !== "completed" && mission.guide && (
-                  <section className="border-2 border-[#7c141f] bg-[#150b0f] p-3">
-                    <div className="mb-2 text-[7px] tracking-[0.28em] text-[#d9b45b]">WHAT TO DO</div>
-                    <Field label="OBJECTIVE" value={mission.guide.objective} accent />
-                    <Field label="WHERE" value={mission.guide.place} />
-                    <Field label="HINT" value={mission.guide.hints[0]} />
+                  <section className="mt-5 rounded-xl border border-[rgba(217,180,91,.28)] bg-black/30 p-5">
+                    <div className="eyebrow mb-3">What to do</div>
+                    <Field label="Objective" value={mission.guide.objective} accent />
+                    <Field label="Where" value={mission.guide.place} />
+                    <Field label="Hint" value={mission.guide.hints[0]} />
                     {mission.guide.chain && (
-                      <div className="mt-2">
-                        <div className="mb-1 text-[6px] tracking-[0.22em] text-[#8a7a6a]">ROUTE</div>
-                        <div className="flex flex-wrap items-center gap-1">
-                          {mission.guide.chain.map((step, i) => (
-                            <span key={step + i} className="flex items-center gap-1">
-                              <span className="border border-[#3a2229] bg-[#0a0507] px-1.5 py-0.5 text-[6px] text-[#f7e6c8]">
-                                {step}
+                      <div className="mt-4">
+                        <div className="eyebrow mb-2">Route</div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {mission.guide.chain.map((s, i) => (
+                            <span key={s + i} className="flex items-center gap-1.5">
+                              <span className="rounded-md border border-[rgba(217,180,91,.22)] bg-black/40 px-2.5 py-1 text-[11px] text-[var(--ink-1)]">
+                                {s}
                               </span>
-                              {i < mission.guide!.chain!.length - 1 && <span className="text-[7px] text-[#d9b45b]">›</span>}
+                              {i < mission.guide!.chain!.length - 1 && <span className="text-[12px] text-[#d9b45b]">›</span>}
                             </span>
                           ))}
                         </div>
@@ -152,84 +147,77 @@ export default function JourneyPanel() {
                   </section>
                 )}
 
-                {/* objective ladder */}
-                <section className="mt-4">
-                  <div className="mb-1.5 text-[6px] tracking-[0.28em] text-[#7c141f]">OBJECTIVES</div>
+                <section className="mt-6">
+                  <div className="eyebrow mb-2.5">Objectives</div>
                   {mission.objectives.map((o) => (
-                    <div key={o.stepId} className="flex items-start gap-2 py-1">
-                      <span
-                        className="mt-[2px] text-[8px]"
-                        style={{ color: o.done ? "#7ddca4" : o.active ? "#d9b45b" : "#3a2229" }}
-                      >
-                        {o.done ? "✓" : o.active ? "→" : "○"}
+                    <div key={o.stepId} className="flex items-start gap-2.5 py-1.5">
+                      <span className="mt-[3px] text-[12px]"
+                            style={{ color: o.done ? "#7ddca4" : o.active ? "#d9b45b" : "var(--ink-4)" }}>
+                        {o.done ? "✓" : o.active ? "◆" : "○"}
                       </span>
-                      <span
-                        className="text-[7px] leading-[1.9]"
-                        style={{
-                          color: o.done ? "#5f7a68" : o.active ? "#f7e6c8" : "#4a3e3a",
-                          textDecoration: o.done ? "line-through" : undefined,
-                        }}
-                      >
+                      <span className="text-[13px] leading-snug"
+                            style={{
+                              color: o.done ? "var(--ink-4)" : o.active ? "var(--ink-1)" : "var(--ink-4)",
+                              textDecoration: o.done ? "line-through" : undefined,
+                            }}>
                         {o.label}
                       </span>
                     </div>
                   ))}
                 </section>
 
-                {/* cast */}
-                <section className="mt-4">
-                  <div className="mb-2 text-[6px] tracking-[0.28em] text-[#7c141f]">CHARACTERS</div>
-                  <div className="flex flex-wrap gap-3">
+                <section className="mt-6">
+                  <div className="eyebrow mb-3">Characters</div>
+                  <div className="flex flex-wrap gap-4">
                     {mission.cast.map((c) => (
-                      <FramedPortrait key={c} id={c} size={40} label={c} tone={c === "arshiya" ? "crimson" : "gold"} />
+                      <div key={c} className="flex flex-col items-center gap-1.5">
+                        <div className="overflow-hidden rounded-lg"
+                             style={{ border: `1px solid ${c === "arshiya" ? "rgba(224,97,107,.5)" : "rgba(217,180,91,.4)"}` }}>
+                          <CharacterPortrait id={c} size={46} />
+                        </div>
+                        <span className="text-[10px] capitalize text-[var(--ink-3)]">{c}</span>
+                      </div>
                     ))}
                   </div>
                 </section>
 
-                {/* rewards */}
-                <section className="mt-4">
-                  <div className="mb-1.5 text-[6px] tracking-[0.28em] text-[#7c141f]">REWARDS</div>
-                  <div className="flex flex-col gap-1">
+                <section className="mt-6">
+                  <div className="eyebrow mb-2.5">Rewards</div>
+                  <div className="flex flex-col gap-2">
                     {mission.rewards.map((r, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <PixelIcon name={(REWARD_ICON[r.kind] ?? "star") as IconName} size={12} />
-                        <span className="text-[7px] text-[#f7e6c8]">{r.label}</span>
-                        <span className="text-[6px] text-[#5f5249]">({r.kind})</span>
+                      <div key={i} className="flex items-center gap-2.5">
+                        <PixelIcon name={(REWARD_ICON[r.kind] ?? "star") as IconName} size={14} />
+                        <span className="text-[12px] text-[var(--ink-1)]">{r.label}</span>
+                        <span className="text-[10px] text-[var(--ink-4)]">{r.kind}</span>
                       </div>
                     ))}
                   </div>
                 </section>
 
-                {/* flames */}
-                <section className="mt-4 border border-[#3a2229] p-2">
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <span className="text-[6px] tracking-[0.28em] text-[#7c141f]">SACRED FLAMES</span>
-                    <span className="text-[7px] text-[#d9b45b]">{flames}/3</span>
+                <section className="mt-6 rounded-xl border border-[rgba(217,180,91,.18)] p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="eyebrow">Sacred flames</span>
+                    <span className="text-[12px] font-semibold text-[#d9b45b]">{flames}/3</span>
                   </div>
-                  <div className="flex gap-3">
-                    {[
-                      ["Stone", state.flags.flameMountain],
-                      ["Petals", state.flags.flameGarden],
-                      ["Echoes", state.flags.flameCave],
-                    ].map(([name, got]) => (
-                      <div key={name as string} className="flex items-center gap-1" style={{ opacity: got ? 1 : 0.3 }}>
-                        <PixelIcon name="flame" size={12} />
-                        <span className="text-[6px] text-[#f7e6c8]">{name as string}</span>
-                      </div>
-                    ))}
+                  <div className="flex gap-5">
+                    {([["Stone", state.flags.flameMountain], ["Petals", state.flags.flameGarden], ["Echoes", state.flags.flameCave]] as const).map(
+                      ([name, got]) => (
+                        <div key={name} className="flex items-center gap-2" style={{ opacity: got ? 1 : 0.32 }}>
+                          <PixelIcon name="flame" size={14} />
+                          <span className="text-[12px] text-[var(--ink-1)]">{name}</span>
+                        </div>
+                      )
+                    )}
                   </div>
                 </section>
 
-                {/* world map */}
-                <section className="mt-4">
-                  <div className="mb-1.5 text-[6px] tracking-[0.28em] text-[#7c141f]">WORLD MAP</div>
+                <section className="mt-6">
+                  <div className="eyebrow mb-2.5">World map</div>
                   <WorldMap targetRegion={mission.region} playerRegion={playerRegion} boss={!!mission.boss} />
-                  <div className="mt-2 flex flex-wrap gap-3 text-[6px] text-[#8a7a6a]">
+                  <div className="mt-3 flex flex-wrap gap-4 text-[11px] text-[var(--ink-4)]">
                     <span><span className="text-[#7ddca4]">●</span> You</span>
                     <span><span className="text-[#d9b45b]">◆</span> Mission</span>
-                    <span>🏯 Location</span>
-                    <span><span className="text-[#b3252f]">⚔</span> Boss</span>
-                    <span><span className="text-[#8a7a6a]">◇</span> Optional</span>
+                    <span><span className="text-[#e0616b]">⚔</span> Boss</span>
                   </div>
                 </section>
               </>
@@ -243,9 +231,9 @@ export default function JourneyPanel() {
 
 function Field({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className="mb-1.5 flex gap-2">
-      <span className="w-[62px] shrink-0 text-[6px] tracking-[0.18em] text-[#8a7a6a]">{label}</span>
-      <span className="flex-1 text-[7px] leading-[1.9]" style={{ color: accent ? "#f2dfa6" : "#f7e6c8" }}>
+    <div className="mb-2.5 flex gap-3">
+      <span className="w-[74px] shrink-0 text-[11px] uppercase tracking-wider text-[var(--ink-4)]">{label}</span>
+      <span className="flex-1 text-[13px] leading-relaxed" style={{ color: accent ? "#f2dfa6" : "var(--ink-1)" }}>
         {value}
       </span>
     </div>
@@ -255,23 +243,18 @@ function Field({ label, value, accent }: { label: string; value: string; accent?
 function WorldMap({
   targetRegion, playerRegion, boss,
 }: {
-  targetRegion: string;
-  playerRegion: string;
-  boss: boolean;
+  targetRegion: string; playerRegion: string; boss: boolean;
 }) {
   const target = regionById(targetRegion as never);
   return (
-    <div className="relative h-[150px] w-full border-2 border-[#3a2229] bg-[#0f1512]">
-      {/* connective paths */}
+    <div className="relative h-[190px] w-full overflow-hidden rounded-xl border border-[rgba(217,180,91,.18)]"
+         style={{ background: "radial-gradient(ellipse at 50% 50%, #16211a 0%, #0c1210 70%)" }}>
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
         {REGIONS.slice(0, -1).map((r, i) => {
           const n = REGIONS[i + 1];
           return (
-            <line
-              key={r.id}
-              x1={r.x * 100} y1={r.y * 100} x2={n.x * 100} y2={n.y * 100}
-              stroke="#2a2028" strokeWidth={0.6} strokeDasharray="2 2"
-            />
+            <line key={r.id} x1={r.x * 100} y1={r.y * 100} x2={n.x * 100} y2={n.y * 100}
+                  stroke="rgba(217,180,91,.16)" strokeWidth={0.5} strokeDasharray="2 2.5" />
           );
         })}
       </svg>
@@ -280,36 +263,27 @@ function WorldMap({
         const isTarget = r.id === targetRegion;
         const isPlayer = r.id === playerRegion;
         return (
-          <div
-            key={r.id}
-            className="absolute -translate-x-1/2 -translate-y-1/2 text-center"
-            style={{ left: `${r.x * 100}%`, top: `${r.y * 100}%` }}
-          >
-            <div
-              className="flex flex-col items-center gap-0.5"
-              style={isTarget ? { animation: "sb-glow 1.4s ease-in-out infinite" } : undefined}
-            >
-              <PixelIcon name={r.icon} size={isTarget ? 16 : 11} />
-              <span
-                className="whitespace-nowrap text-[5px] tracking-wider"
-                style={{ color: isTarget ? "#d9b45b" : isPlayer ? "#7ddca4" : "#5f5249" }}
-              >
+          <div key={r.id} className="absolute -translate-x-1/2 -translate-y-1/2 text-center"
+               style={{ left: `${r.x * 100}%`, top: `${r.y * 100}%` }}>
+            <div className="flex flex-col items-center gap-1"
+                 style={isTarget ? { animation: "sb-glow 1.6s ease-in-out infinite" } : undefined}>
+              {isTarget && (
+                <span className="absolute -top-4 text-[13px]" style={{ color: boss ? "#e0616b" : "#d9b45b" }}>
+                  {boss ? "⚔" : "◆"}
+                </span>
+              )}
+              <PixelIcon name={r.icon} size={isTarget ? 19 : 13} />
+              <span className="whitespace-nowrap text-[9px] font-medium"
+                    style={{ color: isTarget ? "#f2dfa6" : isPlayer ? "#7ddca4" : "var(--ink-4)" }}>
                 {r.name}
               </span>
-              <span className="text-[6px]" style={{ color: isPlayer ? "#7ddca4" : "transparent" }}>●</span>
+              {isPlayer && <span className="text-[9px] text-[#7ddca4]">●</span>}
             </div>
-            {isTarget && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[8px] text-[#d9b45b]">
-                {boss ? "⚔" : "◆"}
-              </div>
-            )}
           </div>
         );
       })}
 
-      <div className="absolute bottom-1 right-2 text-[5px] tracking-widest text-[#3a2229]">
-        {target.name.toUpperCase()}
-      </div>
+      <div className="absolute bottom-2 right-3 text-[10px] tracking-wider text-[var(--ink-4)]">{target.name}</div>
     </div>
   );
 }
