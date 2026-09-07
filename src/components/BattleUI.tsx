@@ -21,7 +21,6 @@ export default function BattleUI() {
   const overlay = useGameStore((s) => s.overlay);
   const party = useGameStore((s) => s.party);
   const inventory = useGameStore((s) => s.inventory);
-  const store = useGameStore;
 
   const enemyId = overlay?.kind === "battle" ? overlay.enemyId : "wild_bunny";
   const enemy = ENEMIES[enemyId] ?? ENEMIES.wild_bunny;
@@ -39,10 +38,26 @@ export default function BattleUI() {
   const [outcome, setOutcome] = useState<"win" | "lose" | null>(null);
   const floatId = useRef(0);
   const settled = useRef(false);
+  /**
+   * Arshiya reads the fighter in front of her. Every hit she lands on the same
+   * fighter deepens that read and multiplies her damage against them; the read
+   * fades again while that fighter is benched. One fighter alone therefore
+   * cannot outlast her — you have to rotate Palakshi and Mimo, and the tempo of
+   * the rotation is the fight. Tracked per party member, not globally.
+   */
+  const [readStacks, setReadStacks] = useState<number[]>(() => party.map(() => 0));
+  /**
+   * Turns of "tag cover" left: for two turns after a swap the incoming fighter
+   * is covered by their partner and takes 30% less. It is the only reason the
+   * fragile Mimo can stand in front of Arshiya at all, and it is what makes
+   * rotating strictly better than digging in.
+   */
+  const [cover, setCover] = useState(0);
+  const reads = enemy.id === "fashion_teacher";
+  const activeRead = readStacks[active] ?? 0;
 
   const healers = useMemo(() => inventory.filter((i) => ITEMS[i.id].heal), [inventory]);
   const activeFighter = party[active] ?? party[0];
-  const alive = party.some((p) => p.hp > 0);
 
   // ------------------------------------------------------------------ setup
   useEffect(() => {
@@ -68,8 +83,13 @@ export default function BattleUI() {
     window.setTimeout(() => setFloats((f) => f.filter((x) => x.id !== id)), 900);
   }, []);
 
+  /**
+   * power * atk / def, scaled so a boss fight lasts ~10-14 turns rather than 4.
+   * The 2.6 factor is what keeps the long fights long; changing it re-tunes
+   * every encounter in the game at once.
+   */
   const roll = (power: number, atk: number, def: number) => {
-    const base = (power * atk) / Math.max(8, def);
+    const base = (power * atk) / Math.max(10, def * 2.6);
     const variance = 0.85 + Math.random() * 0.3;
     const crit = Math.random() < 0.11;
     return { dmg: Math.max(1, Math.round(base * variance * (crit ? 1.6 : 1))), crit };
@@ -99,14 +119,39 @@ export default function BattleUI() {
 
     const pool = enrage > 0 && enemy.rageMoves ? enemy.rageMoves : enemy.moves;
     const mv = MOVES[pool[Math.floor(Math.random() * pool.length)]];
-    const target = living[Math.floor(Math.random() * living.length)];
+    // She attacks whoever is standing in front of her. A benched fighter is out
+    // of reach — that is the whole point of swapping.
+    const target = living.find((x) => x.i === active) ?? living[0];
 
-    const { dmg, crit } = roll(mv.power, enemy.atk, target.p.def);
+    // Phase scaling, plus Arshiya's read on the fighter she keeps hitting.
+    const tgtRead = readStacks[target.i] ?? 0;
+    // The read only runs away with you while you actually have someone to tag
+    // in. If your partner is down, staying in is forced, so cap it — losing a
+    // partner should make the fight hard, not unwinnable with no way out.
+    const canSwap = s.party.some((p, i) => i !== target.i && p.hp > 0);
+    const readMult = reads ? Math.min(canSwap ? 5 : 2, 1 + 0.5 * tgtRead) : 1;
+    const atk = enemy.atk * (1 + 0.3 * enrage) * readMult;
+    const hit = roll(mv.power, atk, target.p.def);
+    const crit = hit.crit;
+    let dmg = hit.dmg;
+    if (reads && cover > 0 && target.i === active) dmg = Math.round(dmg * 0.7);
     const dealt = s.damage(target.i, dmg);
     addFloat(`-${dealt}`, "player", crit);
     setShake("player");
     sfx("hit");
     pushLog(`${enemy.name} used ${mv.name}${crit ? " — critical!" : ""}.`);
+    if (reads) {
+      setCover((c) => Math.max(0, c - 1));
+      const deepened = Math.min(8, (readStacks[target.i] ?? 0) + 1);
+      // The fighter she just hit is read harder; benched fighters shake it off
+      // and catch their breath.
+      setReadStacks((cur) => cur.map((v, i) => (i === target.i ? Math.min(8, v + 1) : Math.max(0, v - 2))));
+      s.party.forEach((f, i) => {
+        if (i !== target.i && f.hp > 0 && f.hp < f.maxHp) s.heal(i, Math.ceil(f.maxHp * 0.1));
+      });
+      if (deepened === 2) pushLog("She has your measure. SWAP — a benched fighter recovers.");
+      else if (deepened > 2) pushLog(`Her read on ${target.p.name} deepens (x${deepened}).`);
+    }
     window.setTimeout(() => setShake(null), 280);
 
     window.setTimeout(() => {
@@ -122,7 +167,7 @@ export default function BattleUI() {
       setMenu("root");
       setCursor(0);
     }, 720);
-  }, [active, addFloat, enemy, enrage, finish, pushLog]);
+  }, [active, addFloat, cover, enemy, enrage, finish, readStacks, pushLog, reads]);
 
   useEffect(() => {
     if (phase !== "enemy") return;
@@ -213,13 +258,14 @@ export default function BattleUI() {
         return;
       }
       setActive(i);
+      setCover(2);
       sfx("confirm");
-      pushLog(`${s.party[i].name} steps forward!`);
+      pushLog(`${s.party[i].name} steps forward!${reads ? " Covered for two turns." : ""}`);
       setMenu("root");
       setCursor(0);
       window.setTimeout(() => setPhase("enemy"), 560);
     },
-    [active, pushLog]
+    [active, pushLog, reads]
   );
 
   const tryRun = useCallback(() => {
@@ -237,8 +283,6 @@ export default function BattleUI() {
         useGameStore.getState().setOverlay(null);
         bus.emit("battle:end", { enemyId, won: false, fled: true });
       }, 700);
-      // fleeing must not send the player back to the title screen
-      settled.current = true;
     } else {
       sfx("error");
       pushLog("Couldn't get away!");
@@ -324,11 +368,18 @@ export default function BattleUI() {
           <div className="w-[210px] border-2 border-[#7c141f] bg-[#0a0507]/85 px-3 py-2">
             <div className="flex items-center justify-between">
               <span className="text-[8px] tracking-[0.16em] text-[#f7e6c8]">{enemy.name.toUpperCase()}</span>
-              {enrage > 0 && (
-                <span className="border border-[#b3252f] px-1 text-[6px] text-[#b3252f] sb-blink">
-                  ENRAGED{enrage > 1 ? ` ${enrage + 1}` : ""}
-                </span>
-              )}
+              <span className="flex items-center gap-1">
+                {reads && activeRead >= 2 && (
+                  <span className="border border-[#d9b45b] px-1 text-[6px] text-[#d9b45b] sb-blink">
+                    READ x{activeRead}
+                  </span>
+                )}
+                {enrage > 0 && (
+                  <span className="border border-[#b3252f] px-1 text-[6px] text-[#b3252f] sb-blink">
+                    ENRAGED{enrage > 1 ? ` ${enrage + 1}` : ""}
+                  </span>
+                )}
+              </span>
             </div>
             <div className="mt-1.5">
               <HpBar hp={enemyHp} max={enemy.hp} width={186} showText={isBoss} />
@@ -361,9 +412,14 @@ export default function BattleUI() {
             <CharacterPortrait id={activeFighter?.portrait ?? "palakshi"} size={112} />
           </div>
           <div className="w-[210px] border-2 border-[#d9b45b] bg-[#0a0507]/85 px-3 py-2">
-            <span className="text-[8px] tracking-[0.16em] text-[#f7e6c8]">
-              {(activeFighter?.name ?? "").toUpperCase()}
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-[8px] tracking-[0.16em] text-[#f7e6c8]">
+                {(activeFighter?.name ?? "").toUpperCase()}
+              </span>
+              {reads && cover > 0 && (
+                <span className="border border-[#7ddca4] px-1 text-[6px] text-[#7ddca4]">COVER {cover}</span>
+              )}
+            </div>
             <div className="mt-1.5">
               <HpBar hp={activeFighter?.hp ?? 0} max={activeFighter?.maxHp ?? 1} width={186} />
             </div>
@@ -458,7 +514,7 @@ export default function BattleUI() {
             </>
           ) : (
             <div className="flex h-full items-center justify-center text-[8px] tracking-[0.2em] text-[#8a7a6a]">
-              {phase === "intro" ? "…" : phase === "enemy" ? "ENEMY TURN" : alive ? "" : ""}
+              {phase === "intro" ? "…" : phase === "enemy" ? "ENEMY TURN" : ""}
             </div>
           )}
         </div>

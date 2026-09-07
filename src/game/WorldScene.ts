@@ -25,6 +25,12 @@ const STEP_MS = 150;
 const DIR_FRAME: Record<Dir, number> = { down: 0, up: 2, left: 4, right: 6 };
 const DELTA: Record<Dir, [number, number]> = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 
+/** Key -> direction, for edge-triggered movement on keydown. */
+const MOVE_KEYS: Record<string, Dir> = {
+  ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
+  w: "up", W: "up", s: "down", S: "down", a: "left", A: "left", d: "right", D: "right",
+};
+
 type Entity = {
   sprite: Phaser.GameObjects.Sprite;
   x: number;
@@ -54,7 +60,6 @@ export class WorldScene extends Phaser.Scene {
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private lastPrompt = "";
   private autosaveAt = 0;
-  private pendingLines: string | null = null;
 
   constructor() {
     super("WorldScene");
@@ -77,7 +82,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.busUnsubs.push(bus.on("input:lock", (v: boolean) => { this.inputLocked = !!v; }));
     this.busUnsubs.push(bus.on("dialogue:end", (evt: string | null) => this.handleDialogueEnd(evt)));
-    this.busUnsubs.push(bus.on("battle:end", (r: { enemyId: string; won: boolean }) => this.handleBattleEnd(r)));
+    this.busUnsubs.push(bus.on("battle:end", (r: { enemyId: string; won: boolean; fled?: boolean }) => this.handleBattleEnd(r)));
     this.busUnsubs.push(bus.on("world:reload", () => this.loadMap(useGameStore.getState().map, true)));
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.teardown, this);
@@ -322,9 +327,13 @@ export class WorldScene extends Phaser.Scene {
   private spawnAmbience(def: MapDef) {
     const W = mapWidth(def) * TILE;
     const H = mapHeight(def) * TILE;
-    const add = (key: string, count: number, depth: number, speed: number, drift: number) => {
+    const add = (key: string, count: number, depth: number, speed: number, drift: number, alpha = 0.55, scale = 0.75) => {
       for (let i = 0; i < count; i++) {
-        const s = this.add.image(Math.random() * W, Math.random() * H, key).setDepth(depth).setAlpha(0.85);
+        const s = this.add
+          .image(Math.random() * W, Math.random() * H, key)
+          .setDepth(depth)
+          .setAlpha(alpha)
+          .setScale(scale);
         this.decorLayer!.add(s);
         this.tweens.add({
           targets: s,
@@ -337,13 +346,15 @@ export class WorldScene extends Phaser.Scene {
       }
     };
 
-    if (def.theme === "garden") add("fx_petal", 22, 120, 3200, 40);
-    if (def.theme === "bamboo") add("fx_leaf", 14, 120, 3600, 34);
+    // Ambience is atmosphere, not furniture — kept small and semi-transparent so
+    // it never competes with things the player can actually interact with.
+    if (def.theme === "garden") add("fx_petal", 22, 120, 3200, 40, 0.6, 0.8);
+    if (def.theme === "bamboo") add("fx_leaf", 14, 120, 3600, 34, 0.5, 0.7);
     if (!def.indoor && (def.theme === "outdoor" || def.theme === "village")) {
-      add("fx_butterfly", 6, 120, 2400, 26);
-      add("fx_bird", 3, 200, 5200, 90);
+      add("fx_butterfly", 5, 120, 2400, 26, 0.4, 0.55);
+      add("fx_bird", 3, 200, 5200, 90, 0.35, 0.6);
     }
-    if (def.theme === "cave") add("fx_spark", 8, 120, 2600, 8);
+    if (def.theme === "cave") add("fx_spark", 8, 120, 2600, 8, 0.35, 0.5);
   }
 
   private playArrivalCinematic(title: string, subtitle: string, mapId: MapId) {
@@ -500,6 +511,12 @@ export class WorldScene extends Phaser.Scene {
     cam.fadeOut(180, 10, 5, 7);
     cam.once("camerafadeoutcomplete", () => {
       const store = useGameStore.getState();
+      // Leaving the bedroom is what completes the opening objective.
+      if (to === "house" && store.quests[0].step === 0) {
+        store.advanceQuest("main", "mom");
+        questSfx.objective();
+        bus.emit("objective:done");
+      }
       store.setMap(to, tx, ty, dir);
       this.loadMap(to);
       cam.fadeIn(220, 10, 5, 7);
@@ -835,9 +852,14 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  private handleBattleEnd(r: { enemyId: string; won: boolean }) {
+  private handleBattleEnd(r: { enemyId: string; won: boolean; fled?: boolean }) {
     const store = useGameStore.getState();
     this.inputLocked = false;
+    if (r.fled) {
+      // Running away returns you to the world, not to the title screen.
+      playBgm(this.mapDef.bgm, 1.0);
+      return;
+    }
     if (!r.won) {
       store.setScreen("title");
       return;
@@ -1077,6 +1099,17 @@ export class WorldScene extends Phaser.Scene {
     if (["e", "z", "Enter", " "].includes(ev.key)) {
       ev.preventDefault();
       this.tryInteract();
+      return;
+    }
+
+    // Movement is edge-triggered here as well as polled in update(). Polling
+    // alone drops a quick tap whose keyup lands between two frames, which makes
+    // single-tile steps feel unreliable; tryMove() ignores the extra call while
+    // a step is already tweening, so holding a key still repeats normally.
+    const dir = MOVE_KEYS[ev.key];
+    if (dir) {
+      ev.preventDefault();
+      this.tryMove(dir);
     }
   }
 

@@ -3,7 +3,7 @@ import type Phaser from "phaser";
 import { useGameStore } from "../store/useGameStore";
 import { bus } from "../game/bus";
 import { createGame } from "../game/PhaserGame";
-import { initAudio, playBgm, setVolumes, stopBgm } from "../game/sound";
+import { initAudio, playBgm, setVolumes, stopBgm, loadAudioManifest } from "../game/sound";
 import { questSfx } from "../lib/questSfx";
 
 import TitleScreen from "./TitleScreen";
@@ -20,6 +20,11 @@ import MissionCinematic from "./MissionCinematic";
 import LocationCard from "./LocationCard";
 import InteractPrompt from "./InteractPrompt";
 import { ThemeKeyframes } from "./pixel/decor";
+
+// Dev-only handle so the game can be driven and inspected from the console.
+if (import.meta.env.DEV) {
+  (window as any).__game = { store: useGameStore, bus };
+}
 
 export default function GameApp() {
   const screen = useGameStore((s) => s.screen);
@@ -50,6 +55,11 @@ export default function GameApp() {
   useEffect(() => {
     setVolumes(settings.musicVol, settings.sfxVol);
   }, [settings.musicVol, settings.sfxVol]);
+
+  // --- optional user-supplied music (public/audio/manifest.json)
+  useEffect(() => {
+    void loadAudioManifest();
+  }, []);
 
   // --- title / credits music
   useEffect(() => {

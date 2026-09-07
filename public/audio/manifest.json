@@ -1,0 +1,4 @@
+{
+  "_readme": "Map a cue name to a file in this folder to override the procedural score. See README.md. Keys starting with _ are ignored.",
+  "_example": "\"bgm_title\": \"my-theme.mp3\""
+}

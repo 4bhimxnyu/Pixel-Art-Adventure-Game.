@@ -62,6 +62,18 @@ let noiseBuf: AudioBuffer | null = null;
 let musicVol = 0.7;
 let sfxVol = 0.8;
 
+/**
+ * Optional user-supplied music. `public/audio/manifest.json` maps track keys
+ * (bgm_title, bgm_town, ...) to files in `public/audio/`. Anything listed there
+ * plays instead of the procedural track of the same name; anything absent falls
+ * back to synthesis, so the game ships and runs with no audio files at all.
+ */
+let fileManifest: Record<string, string> = {};
+let manifestLoaded = false;
+type FileTrack = { key: string; el: HTMLAudioElement; gain: GainNode; src: MediaElementAudioSourceNode };
+let currentFile: FileTrack | null = null;
+const fileNodes = new WeakMap<HTMLAudioElement, MediaElementAudioSourceNode>();
+
 /** Clamp: never schedule in the past. See invariant note above. */
 function at(t: number) {
   return Math.max(t, (ctx?.currentTime ?? 0) + 0.25);
@@ -118,9 +130,112 @@ function makeImpulse(c: AudioContext, seconds: number, decay: number) {
 export function setVolumes(music: number, sfxV: number) {
   musicVol = music;
   sfxVol = sfxV;
+  applyMusicGain();
   if (!ctx) return;
-  musicBus.gain.setTargetAtTime(music, ctx.currentTime, 0.05);
   sfxBus.gain.setTargetAtTime(sfxV, ctx.currentTime, 0.05);
+}
+
+function applyMusicGain() {
+  if (!ctx) return;
+  musicBus.gain.setTargetAtTime(musicVol, ctx.currentTime, 0.08);
+}
+
+/** Load the optional custom-audio manifest. Safe to call repeatedly. */
+export async function loadAudioManifest() {
+  if (manifestLoaded) return fileManifest;
+  manifestLoaded = true;
+  try {
+    const res = await fetch("audio/manifest.json", { cache: "no-cache" });
+    if (!res.ok) return fileManifest;
+    const json = await res.json();
+    if (json && typeof json === "object") {
+      fileManifest = Object.fromEntries(
+        Object.entries(json as Record<string, unknown>)
+          .filter(([k, v]) => !k.startsWith("_") && typeof v === "string" && v)
+          .map(([k, v]) => [k, String(v)])
+      );
+    }
+  } catch {
+    // No manifest, malformed JSON, or offline — procedural score covers it.
+  }
+  return fileManifest;
+}
+
+export function hasCustomTrack(key: string) {
+  return !!fileManifest[key];
+}
+
+function stopFileTrack(sec: number) {
+  const old = currentFile;
+  if (!old || !ctx) return;
+  currentFile = null;
+  const now = ctx.currentTime;
+  try {
+    old.gain.gain.cancelScheduledValues(now);
+    old.gain.gain.setValueAtTime(Math.max(0.0001, old.gain.gain.value), now);
+    old.gain.gain.exponentialRampToValueAtTime(0.0001, now + Math.max(0.05, sec));
+  } catch {
+    /* noop */
+  }
+  window.setTimeout(() => {
+    try {
+      old.el.pause();
+      old.el.currentTime = 0;
+      old.gain.disconnect();
+    } catch {
+      /* noop */
+    }
+  }, sec * 1000 + 250);
+}
+
+/**
+ * Play a user-supplied file through the same music bus as the synth, so the
+ * volume slider and crossfades behave identically.
+ */
+function playFileTrack(key: string, file: string, fadeSec: number) {
+  if (!ctx) return false;
+  try {
+    const url = `audio/${file}`;
+    const el = new Audio(url);
+    el.loop = true;
+    el.crossOrigin = "anonymous";
+    el.preload = "auto";
+
+    // An <audio> element can only be wired into WebAudio once.
+    let src = fileNodes.get(el);
+    if (!src) {
+      src = ctx.createMediaElementSource(el);
+      fileNodes.set(el, src);
+    }
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(1, ctx.currentTime + Math.max(0.05, fadeSec));
+    src.connect(gain);
+    gain.connect(musicBus);
+
+    // A missing or undecodable file must not mean silence — drop back to the
+    // procedural track for this cue rather than leaving the player with nothing.
+    el.addEventListener("error", () => {
+      if (currentFile?.el !== el) return;
+      console.warn(`[sound] could not load audio/${file} — falling back to the procedural track`);
+      currentFile = null;
+      try {
+        gain.disconnect();
+      } catch {
+        /* noop */
+      }
+      startProceduralTrack(key, 0.4);
+    });
+
+    el.play().catch(() => {
+      // Autoplay blocked until the first gesture; the title screen arms audio.
+    });
+    currentFile = { key, el, gain, src };
+    return true;
+  } catch (err) {
+    console.warn(`[sound] custom track "${file}" failed, using the procedural score`, err);
+    return false;
+  }
 }
 
 function noise(): AudioBufferSourceNode {
@@ -782,7 +897,7 @@ function scheduleBar(p: Playing, startTime: number) {
   }
 
   if (t.pad) {
-    playSheng(mtof(degToMidi(t, cd) - 12), startTime, barLen, 0.12 * vol);
+    playSheng(mtof(degToMidi(t, cd) - 12), startTime, barLen, 0.12 * vol, musicBus);
   }
 
   // --- Chinese percussion -------------------------------------------------
@@ -872,6 +987,12 @@ function ambientDrip(t: number) {
 
 function tick() {
   if (!current || !ctx) return;
+  // Before the first user gesture the context is suspended. Idle the playhead
+  // forward instead of queueing bars that would all fire at once on resume.
+  if (ctx.state !== "running") {
+    current.nextTime = ctx.currentTime + 0.3;
+    return;
+  }
   const t = current.track;
   const barLen = (60 / t.bpm) * t.beats;
   while (current.nextTime < ctx.currentTime + LOOKAHEAD) {
@@ -884,8 +1005,20 @@ function tick() {
 export function playBgm(key: string, fadeSec = 1.2) {
   initAudio();
   if (!ctx) return;
-  if (current?.key === key) return;
+  if (current?.key === key || currentFile?.key === key) return;
 
+  // A user-supplied file for this cue wins over the procedural track.
+  const file = fileManifest[key];
+  if (file) {
+    fadeOut(fadeSec);
+    if (playFileTrack(key, file, fadeSec)) return;
+  }
+
+  startProceduralTrack(key, fadeSec);
+}
+
+function startProceduralTrack(key: string, fadeSec: number) {
+  if (!ctx) return;
   const track = TRACKS[key];
   if (!track) {
     console.warn(`[sound] unknown track "${key}"`);
@@ -916,6 +1049,7 @@ export function setIntensity(v: number) {
 }
 
 export function fadeOut(sec = 1.2) {
+  stopFileTrack(sec);
   if (!current || !ctx) return;
   const old = current;
   current = null;
@@ -938,7 +1072,7 @@ export function stopBgm() {
 }
 
 export function currentBgm() {
-  return current?.key ?? null;
+  return current?.key ?? currentFile?.key ?? null;
 }
 
 // --------------------------------------------------------------------------- sfx
@@ -984,18 +1118,18 @@ export function sfx(name: SfxName) {
       break;
     }
     case "heal":
-      [660, 880, 1100].forEach((f, i) => window.setTimeout(() => beepLater(f, 0.12, 0.09, i), i * 70));
+      [660, 880, 1100].forEach((f, i) => window.setTimeout(() => beepLater(f, 0.12, 0.09), i * 70));
       break;
     case "pickup":
-      [880, 1320].forEach((f, i) => window.setTimeout(() => beepLater(f, 0.1, 0.11, i), i * 80));
+      [880, 1320].forEach((f, i) => window.setTimeout(() => beepLater(f, 0.1, 0.11), i * 80));
       break;
     case "win":
-      [523, 659, 784, 1046].forEach((f, i) => window.setTimeout(() => beepLater(f, 0.16, 0.11, i), i * 120));
+      [523, 659, 784, 1046].forEach((f, i) => window.setTimeout(() => beepLater(f, 0.16, 0.11), i * 120));
       break;
   }
 }
 
-function beepLater(freq: number, dur: number, vol: number, _i: number) {
+function beepLater(freq: number, dur: number, vol: number) {
   if (!ctx) return;
   const c = ctx;
   const t = c.currentTime;

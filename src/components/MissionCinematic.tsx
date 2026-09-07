@@ -10,7 +10,7 @@ import { PetalRain } from "./pixel/decor";
 import { PixelIcon } from "./pixel/MissionIcons";
 
 type Payload = {
-  kind: "mission-start" | "mission-complete" | "region" | "objective";
+  kind: "mission-start" | "mission-complete" | "region" | "objective" | "location";
   title: string;
   subtitle: string;
 };

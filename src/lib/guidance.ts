@@ -89,9 +89,9 @@ export const STEP_GUIDE: Record<string, Guide> = {
     place: "Route 1",
     region: "home",
     hints: [
-      "The kid said she dropped something red on the eastern road.",
-      "Route 1 is east of Sparkle Town. Search the grass.",
-      "On Route 1, walk to the red ball in the tall grass and press E.",
+      "Mimo never goes anywhere without that red ball.",
+      "Take the eastern road out of Sparkle Town and search the roadside.",
+      "On Route 1, face the red ball beside the path and press E.",
     ],
     chain: ["Sparkle Town", "Route 1", "Red ball"],
   },

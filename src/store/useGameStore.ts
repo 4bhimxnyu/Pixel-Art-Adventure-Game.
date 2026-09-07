@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import {
-  PALAKSHI, DOG, ABHIMANYU, ITEMS, QUEST_MAIN, QUEST_PRAKRITI, QUEST_HIDDEN, DIALOGUES,
+  PALAKSHI, ITEMS, QUEST_MAIN, DIALOGUES,
   type Fighter, type ItemId, type Quest, type DialogueLine,
 } from "../data/content";
 import type { MapId } from "../game/maps";

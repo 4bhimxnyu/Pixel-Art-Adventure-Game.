@@ -69,7 +69,7 @@ export const MAPS: Record<MapId, MapDef> = {
       "#ffffffffff#",
       "#rfffffffff#",
       "#ffffffffhf#",
-      "#ffffsfffff#",
+      "#ffsfffffff#",
       "#####dd#####",
     ],
     portals: [

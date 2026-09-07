@@ -83,7 +83,7 @@ export function makeTile(scene: Phaser.Scene, key: string, paint: (c: Ctx) => vo
 
 // --------------------------------------------------------------------------- ground
 
-function grass(c: Ctx, seed: number, base = PAL.grass1, alt = PAL.grass2) {
+function grass(c: Ctx, seed: number, base: string = PAL.grass1, alt: string = PAL.grass2) {
   px(c, 0, 0, TILE, TILE, base);
   const r = rng(seed);
   for (let i = 0; i < 22; i++) dot(c, Math.floor(r() * TILE), Math.floor(r() * TILE), r() > 0.5 ? alt : PAL.grass3);
@@ -129,7 +129,6 @@ export function buildBaseTiles(scene: Phaser.Scene) {
     for (let y = 4; y < TILE; y += 6) px(c, 2, y, 9, 1, "#3d6d92");
   });
   makeTile(scene, "t_t", (c) => {
-    grass(c, 53);
     px(c, 7, 10, 2, 6, PAL.wood1);
     px(c, 3, 2, 10, 9, "#204a2b");
     px(c, 4, 1, 8, 2, "#2b5c35");
@@ -186,7 +185,6 @@ export function buildBaseTiles(scene: Phaser.Scene) {
     px(c, 6, 12, 4, 3, PAL.stone3);
   });
   makeTile(scene, "t_s", (c) => {
-    grass(c, 61);
     px(c, 3, 3, 10, 7, PAL.wood2);
     px(c, 3, 3, 10, 1, PAL.gold);
     px(c, 7, 10, 2, 5, PAL.wood1);
@@ -208,21 +206,18 @@ export function buildBaseTiles(scene: Phaser.Scene) {
     px(c, 0, 12, TILE, 1, PAL.wood1);
   });
   makeTile(scene, "t_^", (c) => {
-    grass(c, 71);
     px(c, 2, 5, 12, 9, PAL.stone1);
     px(c, 3, 4, 10, 2, PAL.stone2);
     px(c, 4, 8, 3, 2, PAL.stone3);
     px(c, 9, 11, 3, 2, PAL.stone3);
   });
   makeTile(scene, "t_y", (c) => {
-    grass(c, 81);
     px(c, 5, 6, 6, 6, PAL.red);
     px(c, 6, 5, 4, 8, PAL.red);
     px(c, 6, 7, 2, 2, "#e0616b");
     px(c, 5, 9, 6, 1, PAL.burgundy);
   });
   makeTile(scene, "t_p", (c) => {
-    path(c, 91);
     const paws = [[3, 4], [9, 8], [5, 12]];
     for (const [x, y] of paws) {
       px(c, x, y, 2, 2, PAL.charcoal);
@@ -230,11 +225,12 @@ export function buildBaseTiles(scene: Phaser.Scene) {
       dot(c, x + 2, y - 1, PAL.charcoal);
     }
   });
+  // hidden pickup: a small glint, readable on any ground (indoor or out)
   makeTile(scene, "t_h", (c) => {
-    grass(c, 101);
-    px(c, 5, 5, 6, 6, "#2c4a32");
-    dot(c, 7, 7, PAL.brightgold);
-    dot(c, 9, 9, PAL.gold);
+    px(c, 7, 4, 2, 8, PAL.brightgold);
+    px(c, 4, 7, 8, 2, PAL.brightgold);
+    px(c, 6, 6, 4, 4, PAL.offwhite);
+    dot(c, 7, 7, PAL.gold);
   });
 }
 
