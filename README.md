@@ -1,10 +1,13 @@
 # Shaolin Baddie — Palakshi's Birthday Adventure
 
-A browser-based, Pokemon-inspired Chinese/Wuxia pixel RPG, built as a birthday gift
-for **Palakshi**. Single player, keyboard + gamepad, no backend, saves to LocalStorage.
+A browser-based, Pokemon-inspired Chinese/Wuxia adventure RPG, built as a birthday gift
+for **Palakshi**. Single player, keyboard + mouse, gamepad or touch, no backend, saves
+to LocalStorage. The world is a stylised low-poly 3D third-person adventure rendered
+with Three.js; the original pixel-art renderer is still in the box as "Classic 2D".
 
-Explore 12 tile maps, talk and interact, advance the mission chain, fight turn-based
-battles, gather the three Sacred Flames, beat the final boss, get the birthday ending.
+Explore 14 regions, talk and interact, advance the mission chain, fight turn-based
+battles, gather the three Sacred Flames, beat the final boss, get the birthday ending,
+then walk the West Road to F-1205 for the final chapter and one goodbye, for now.
 
 ```bash
 npm install
@@ -14,26 +17,34 @@ npm run build      # typecheck + production build
 
 ## Controls
 
-| Action | Keyboard | Gamepad |
-| --- | --- | --- |
-| Move | WASD / arrows | D-pad / left stick |
-| Interact / advance | E, Z, Enter, Space | A |
-| Cancel / back | Esc, X | B |
-| Items | I | X |
-| Journey (missions) | Q | Y |
-| Menu | Esc | Start |
-| Hint | H | on-panel button |
-| Save | F5 | — |
+| Action | Keyboard / mouse | Gamepad | Touch |
+| --- | --- | --- | --- |
+| Move | WASD / arrows | Left stick / D-pad | Left-side joystick |
+| Look | Drag with a mouse button, wheel to zoom | Right stick, triggers to zoom | Drag on the right half |
+| Interact / advance | E, Z, Enter, Space | A | Big red button |
+| Dash | Shift | B | Dash button |
+| Mimo sniffs | F | RB | Paw button |
+| Items | I | X | Bag button |
+| Journey (missions) | Q, M | Y | Diamond button |
+| Menu | Esc | Start | Menu button |
+| Hint | H | LB | ? button |
+| Save | F5 | — | Menu > Save |
+
+Input is detected automatically: a connected controller switches the prompts to
+button glyphs, a touch on the screen brings up the on-screen controls, and the
+keyboard always keeps working. Menus and battles accept all three.
 
 ## Stack
 
 | Concern | Choice |
 | --- | --- |
 | Framework | React 19 + Vite 7, routed with TanStack Router |
-| Game engine | Phaser 3 — one scene, `WorldScene` |
+| World | Three.js, `src/world3d/World3D.ts`: one imperative engine instance (no React Three Fiber) |
+| Classic renderer | Phaser 3, one scene `WorldScene`; Settings > World renderer |
+| Story | `src/game/story.ts`: one StoryController shared by both renderers |
 | State | Zustand, single store `src/store/useGameStore.ts` |
-| UI | React overlays over the Phaser canvas; Tailwind v4; Cinzel + Inter |
-| Art | 100% procedural pixel art generated at runtime. No image files. |
+| UI | React overlays over the canvas; Tailwind v4; Cinzel + Inter; responsive down to phones |
+| Art | 100% procedural: low-poly props and character rigs built from Three primitives; pixel art for Classic. No image files. |
 | Audio | 100% procedural WebAudio synthesis. No audio files. |
 | Persistence | LocalStorage, key `palakshi_save_v1` |
 
@@ -92,22 +103,82 @@ after a local build.
 ```
 src/
   routes/            route + html shell; mounts GameApp client-side
-  components/        HUD, MissionTracker, JourneyPanel, DialogueBox, BattleUI, panels
+  components/        HUD, MissionTracker, JourneyPanel, DialogueBox, BattleUI, panels,
+                     TouchControls, FadeOverlay, TheEnd
     pixel/           SVG pixel portraits, mission icons, shared decor
+  world3d/
+    World3D.ts       the 3D engine: regions, player, companion, NPCs, camera, battle stage, cinematics
+    MapBuilder.ts    MapDef rows -> instanced low-poly region + theme (sky, fog, light, particles)
+    props.ts         the prop catalogue (one entry per tile character)
+    CharacterRig.ts  procedural human rig (walk / idle variants / attack / hug ...)
+    DogRig.ts        Mimo
+    EnemyRig.ts      every battle species
+    CameraRig.ts     third-person camera, wall awareness, cinematics
+    characters.ts    per-character identity specs (colours, build, hair, props)
+  input/
+    InputManager.ts  keyboard + mouse, gamepad, touch -> one input state; synthetic keys for menus
+    useDevice.ts     which device is live, prompt glyphs
   game/
-    PhaserGame.ts    Phaser config (pixelArt, 15x11 tiles visible)
-    WorldScene.ts    map rendering, movement, follower, interactions, story branches
-    maps.ts          MAPS: 12 MapDef with rows/portals/interacts/bgm/cinematic
-    textures*.ts     all procedural tile / character / enemy art
+    story.ts         StoryController: interactions, dialogue:end branches, battle:end (shared)
+    storyFinal.ts    the F-1205 chapter
+    PhaserGame.ts    Classic 2D renderer config
+    WorldScene.ts    Classic 2D scene (delegates to StoryController)
+    maps.ts          MAPS: 14 MapDef with rows/portals/interacts/bgm/cinematic
+    textures*.ts     procedural pixel art for Classic
     sound.ts         instrument models, TRACKS, playBgm/sfx/gong, custom-file support
-    bus.ts           React <-> Phaser event bus
+    bus.ts           React <-> engine event bus
   data/content.ts    MOVES, ENEMIES, fighters, items, quests, DIALOGUES
   lib/
     missionMeta.ts   REGIONS, MAIN_MISSIONS, buildMissions(), activeMission()
     guidance.ts      STEP_GUIDE: objective, place, 3-step hint ladder, route chain
   store/             all game state + actions + save/load
 public/audio/        optional user-supplied music (empty by default)
+public/models/       optional GLB overrides: <characterId>.glb replaces a procedural rig
+scripts/e2e.js       scripted start-to-THE-END playthrough against the real engine (dev server)
 ```
+
+## The 3D world
+
+The grid is still the truth. `maps.ts` rows drive collision, portals, encounters and
+interactables exactly as before; one tile is one world unit, columns run along +x and
+rows along -z. `MapBuilder` turns each row into instanced low-poly props per theme
+(bamboo, cherry, temple, cave, village at dusk, the flat) so a whole region is a few
+dozen draw calls. Movement is free and camera-relative; the third-person camera rises
+over walls (rooms read like dollhouses) rather than pulling in, holds a side-on view in
+battles, and plays keyframed cinematics for arrivals, discoveries, boss intros, the
+F-1205 evening and the final hug.
+
+Characters are procedural rigs built from their `characters.ts` spec: Palakshi's long
+black hair and gold pin, Abhimanyu's white guitar, Hakim's iPad, Dev's build, Garv's
+grey temples, with procedural walk, idle, attack, hit, cheer and hug. Drop
+`public/models/<id>.glb` (with optional `idle` / `walk` clips) to replace any rig.
+
+One active instance per character is guaranteed structurally: `World3D` is a
+singleton, rigs live in a Map keyed by id, every map load disposes before it builds,
+and NPC markers are skipped for party members.
+
+Performance: toon materials, instancing, one shadow-casting light (shadows off and
+pixel ratio capped on phones), four pooled point lights, a few hundred particles, no
+post-processing, full disposal on region change.
+
+## Final chapter: F-1205
+
+After Arshiya and the celebration, Mission 26 opens the West Road out of Sparkle Town.
+Missions 26-28 (`storyFinal.ts`): find Abhimanyu and Faizal, meet Garv, Hakim and Dev
+at the flat, the last evening together, and the goodbye. The hug plays as a camera
+pull-back, fades to black, shows THE END, rolls the credits and returns to the title.
+Nothing loops back into the world.
+
+## Testing the whole game
+
+With `npm run dev` running, open the game and in the browser console:
+
+```js
+await import("/scripts/e2e.js?x=" + Date.now()); await window.__e2e.run();
+```
+
+It plays from New Game to THE END through the real engine (movement, portals,
+encounters, dialogues, every battle, the final chapter) and returns `{ log, fails }`.
 
 ## Interface
 

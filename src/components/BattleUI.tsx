@@ -184,11 +184,19 @@ export default function BattleUI() {
     }, 720);
   }, [active, addFloat, cover, enemy, enrage, finish, readStacks, pushLog, reads]);
 
+  /**
+   * One enemy action per enemy phase. The turn is scheduled on the PHASE only:
+   * enemyTurn's own state updates (Arshiya's read stacks, tag cover) used to
+   * re-create the callback mid-turn and schedule it a second time, which gave
+   * her two attacks for every one of yours.
+   */
+  const enemyTurnRef = useRef(enemyTurn);
+  enemyTurnRef.current = enemyTurn;
   useEffect(() => {
     if (phase !== "enemy") return;
-    const t = window.setTimeout(enemyTurn, 620);
+    const t = window.setTimeout(() => enemyTurnRef.current(), 620);
     return () => window.clearTimeout(t);
-  }, [phase, enemyTurn]);
+  }, [phase]);
 
   const checkEnemyPhase = useCallback(
     (hp: number) => {

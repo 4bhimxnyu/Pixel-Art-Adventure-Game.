@@ -54,7 +54,7 @@ export default function JourneyPanel() {
   const playerRegion = MAP_REGION[state.map];
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/75 p-5 backdrop-blur-sm">
+    <div className="panel-shell absolute inset-0 z-50 flex items-center justify-center bg-black/75 p-5 backdrop-blur-sm">
       <ScrollPanel
         title="Journey"
         subtitle="Everything you know, and where to go next"
@@ -78,9 +78,9 @@ export default function JourneyPanel() {
           })}
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-[268px_1fr]">
+        <div className="journey-grid grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-[268px_1fr]">
           {/* list */}
-          <div className="scroll-area min-h-0 overflow-y-auto border-r border-[rgba(217,180,91,.15)] p-3">
+          <div className="journey-list scroll-area min-h-0 overflow-y-auto border-r border-[rgba(217,180,91,.15)] p-3">
             {!shown.length && (
               <p className="p-8 text-center text-[12px] leading-relaxed text-[var(--ink-4)]">Nothing here yet.</p>
             )}

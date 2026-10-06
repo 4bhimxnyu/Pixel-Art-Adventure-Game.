@@ -37,7 +37,7 @@ export default function InventoryPanel() {
   };
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm">
+    <div className="panel-shell absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm">
       <ScrollPanel title="Items" subtitle={`${inventory.length} kinds carried`}
                    onClose={() => { questSfx.panelClose(); setOverlay(null); }}
                    className="w-full max-w-[780px]">

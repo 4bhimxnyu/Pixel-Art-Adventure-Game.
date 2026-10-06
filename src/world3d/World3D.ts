@@ -129,7 +129,6 @@ export class World3D {
 
   private inputLocked = false;
   private lastPrompt = "";
-  private facing: { kind: string; name?: string; x: number; y: number; entity?: Entity } | null = null;
   private lastCell = { x: -1, y: -1 };
   private dashT = 0;
   private dashDir = new THREE.Vector3();
@@ -137,6 +136,9 @@ export class World3D {
   private mimoIdle = 0;
   private battle: Battle | null = null;
   private mode: "explore" | "battle" | "cinematic" = "explore";
+  /** The NPC the player last spoke to — hidden while their own battle rig stands in. */
+  private lastTalked: Entity | null = null;
+  private hiddenForBattle: Entity | null = null;
   private quality: { shadows: boolean; mobile: boolean; particles: number };
   private timers: number[] = [];
   private hugDone = false;
@@ -634,7 +636,6 @@ export class World3D {
 
     // --- contextual prompt
     const hit = locked ? null : this.facedInteract();
-    this.facing = hit;
     const label = hit ? promptLabel(hit.kind, hit.name) : "";
     if (label !== this.lastPrompt) {
       this.lastPrompt = label;
@@ -875,13 +876,15 @@ export class World3D {
   }
 
   private tryInteract() {
-    const hit = this.facing ?? this.facedInteract();
+    // always re-evaluate: the player may have turned since the last frame
+    const hit = this.facedInteract();
     if (!hit) return;
     sfx("confirm");
     if (hit.entity?.rig) {
       hit.entity.rig.faceToward(this.playerPos.x, this.playerPos.z);
       this.player.faceToward(hit.entity.object.position.x, hit.entity.object.position.z);
       this.heading = this.player.heading;
+      this.lastTalked = hit.entity;
     }
     this.story.handleInteract(hit.kind, hit.x, hit.y);
   }
@@ -951,6 +954,19 @@ export class World3D {
       enemyPos = this.playerPos.clone().addScaledVector(fwd, 2.4);
     }
 
+    // the character we just challenged steps into the ring as the enemy rig
+    if (boss && this.lastTalked && this.lastTalked.kind.startsWith("npc_")) {
+      this.lastTalked.object.visible = false;
+      this.hiddenForBattle = this.lastTalked;
+      enemyPos.copy(this.lastTalked.object.position);
+      const toPlayer = this.playerPos.clone().sub(enemyPos);
+      toPlayer.y = 0;
+      if (toPlayer.length() > 0.01) {
+        toPlayer.normalize();
+        fwd.copy(toPlayer).multiplyScalar(-1);
+        right.set(fwd.z, 0, -fwd.x);
+      }
+    }
     const rig = makeEnemyRig(enemy.portrait, boss);
     rig.setShadows(this.quality.shadows);
     rig.group.position.copy(enemyPos);
@@ -982,19 +998,37 @@ export class World3D {
       frames.push({ pos: face, look: enemyPos.clone().setY(rig.height * 0.75), dur: 0.9, hold: 1.1 });
     }
     frames.push({ pos: view.pos, look: view.look, dur: boss ? 1.2 : 0.7 });
-    this.cam.playCinematic({ frames });
+    this.cam.playCinematic({ frames, onDone: () => { if (this.battle) this.cam.hold = { pos: view.pos, look: view.look }; } });
     this.delay(boss ? 1700 : 320, () => {
       useGameStore.getState().setOverlay({ kind: "battle", enemyId, boss });
     });
   }
 
-  private battleView(side = 1) {
+  /** Side-on battle framing; picks the side with open space, rising over walls if neither has it. */
+  private battleView() {
     const b = this.battle!;
     const span = b.playerPos.distanceTo(b.enemyPos);
-    const pos = b.center.clone().addScaledVector(b.right, side * (span * 1.15 + 2.6));
-    pos.y = 1.9;
-    pos.addScaledVector(b.forward, -0.4);
     const look = b.center.clone().setY(0.9);
+    const make = (side: number, dist: number, height: number) => {
+      const pos = b.center.clone().addScaledVector(b.right, side * dist);
+      pos.y = height;
+      pos.addScaledVector(b.forward, -0.4);
+      return pos;
+    };
+    // portrait phones need the camera further out to fit both fighters
+    const aspect = this.cam.camera.aspect;
+    const dist = (span * 1.15 + 2.6) * (aspect < 1 ? Math.min(2.1, 0.85 / aspect) : 1);
+    for (const side of [1, -1]) {
+      const pos = make(side, dist, 1.9);
+      let clear = true;
+      for (let k = 0.25; k <= 1; k += 0.25) {
+        const p = look.clone().lerp(pos, k);
+        if (this.cameraObstacle(p.x, p.z) > p.y) { clear = false; break; }
+      }
+      if (clear) return { pos, look };
+    }
+    // walls on both sides: look down from above the near side
+    const pos = make(1, Math.min(dist, 3.2), 4.2);
     return { pos, look };
   }
 
@@ -1072,6 +1106,10 @@ export class World3D {
 
   private endBattle(r: { enemyId: string; won: boolean; fled?: boolean }) {
     const b = this.battle;
+    if (this.hiddenForBattle) {
+      this.hiddenForBattle.object.visible = true;
+      this.hiddenForBattle = null;
+    }
     if (b) {
       b.enemy.dispose();
       for (const rig of this.rigs.values()) rig.setKO(false);
@@ -1085,7 +1123,9 @@ export class World3D {
       this.battle = null;
     }
     this.mode = "explore";
+    this.cam.hold = null;
     this.cam.stopCinematic();
+    this.cam.snapBehind(this.playerPos, this.heading);
     this.inputLocked = false;
     this.story.handleBattleEnd(r);
   }

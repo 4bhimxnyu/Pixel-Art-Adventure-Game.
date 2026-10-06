@@ -32,8 +32,11 @@ async function walkTo(x, y, opts = {}) {
   const w = W();
   const target = { x: x + 0.5, z: -(y + 0.5) };
   const t0 = performance.now();
-  while (performance.now() - t0 < 12000) {
-    if (S().overlay) { await sleep(60); if (opts.stopOnOverlay) return; continue; }
+  while (performance.now() - t0 < 20000) {
+    const ov = S().overlay?.kind;
+    if (ov === "battle") { say("  (wild encounter on " + S().map + ")"); await fight(); continue; }
+    if (ov === "dialogue") { if (opts.stopOnOverlay) return true; await dialogueThrough(); continue; }
+    if (ov) { await sleep(60); continue; }
     const p = w.playerPos;
     const dx = target.x - p.x;
     const dz = target.z - p.z;
@@ -48,6 +51,7 @@ async function walkTo(x, y, opts = {}) {
     if (opts.untilMap && S().map === opts.untilMap) return true;
   }
   fails.push(`walkTo(${x},${y}) timed out on ${S().map}`);
+  say(`TIMEOUT walkTo(${x},${y}) on ${S().map} overlay=${S().overlay?.kind ?? "-"}`);
   return false;
 }
 
@@ -80,35 +84,54 @@ function key(k) {
   window.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true }));
 }
 
-/** Fight the current battle: pick the strongest attack; swap when the active fighter is low; use potions if any. */
+/**
+ * Fight the current battle the way the game teaches: attack with the strongest
+ * move, drink a potion when low, and against Arshiya rotate fighters when her
+ * read deepens (she multiplies damage against whoever stays in front).
+ */
 async function fight() {
   await until(() => S().overlay?.kind === "battle", 5000, "battle opens");
+  const arshiya = S().overlay?.enemyId === "fashion_teacher";
   const t0 = performance.now();
-  while (S().overlay?.kind === "battle" && performance.now() - t0 < 120000) {
-    await sleep(700);
-    // the command bar accepts Enter when it is the player's phase; we just
-    // keep choosing FIGHT → first move (the strongest for everyone) and
-    // occasionally SWAP when the front fighter is low and a partner stands.
+  let frontIdx = 0;
+  let lastAction = "";
+  while (S().overlay?.kind === "battle" && performance.now() - t0 < 240000) {
+    await sleep(400);
+    // the command buttons only exist during the player's phase
+    if (!document.querySelector(".battle-ui button.btn")) continue;
     const st = S();
     const party = st.party;
-    const living = party.filter((p) => p.hp > 0);
-    const front = party.find((p) => p.hp > 0);
+    if (!party[frontIdx] || party[frontIdx].hp <= 0) frontIdx = party.findIndex((p) => p.hp > 0);
+    const front = party[frontIdx];
     if (!front) break;
-    const low = front.hp < front.maxHp * 0.3;
-    const potion = st.inventory.find((i) => i.id === "potion" || i.id === "super_potion");
-    if (low && potion) {
-      key("ArrowDown"); await sleep(60); key("Enter"); await sleep(120); key("Enter"); await sleep(400);
-      continue;
+    const lines = Array.from(document.querySelectorAll(".battle-log > div")).map((d) => d.textContent || "");
+    const recent = lines.slice(-2).join(" ");
+    const readM = recent.match(/deepens \(x(\d+)\)/);
+    const read = readM ? +readM[1] : 0;
+    const measure = /has your measure/.test(recent);
+    const potion = st.inventory.find((i) => i.id === "super_potion" || i.id === "potion");
+    const other = party.findIndex((p, i) => i !== frontIdx && p.hp > p.maxHp * 0.3);
+    let act = "fight";
+    if (front.hp < front.maxHp * 0.33 && potion) act = "item";
+    else if (arshiya && other >= 0 && lastAction !== "swap" && (read >= 3 || measure || front.hp < front.maxHp * 0.45)) act = "swap";
+    else if (!arshiya && other >= 0 && front.hp < front.maxHp * 0.2 && !potion) act = "swap";
+    if (act === "item") {
+      key("ArrowDown"); await sleep(120); key("Enter"); await sleep(250); key("Enter");
+    } else if (act === "swap") {
+      key("ArrowDown"); await sleep(120); key("ArrowDown"); await sleep(120); key("Enter"); await sleep(250);
+      for (let i = 0; i < other; i++) { key("ArrowDown"); await sleep(120); }
+      key("Enter");
+      frontIdx = other;
+    } else {
+      key("Enter"); await sleep(250); key("Enter");
     }
-    if (low && living.length > 1 && Math.random() < 0.5) {
-      key("ArrowDown"); await sleep(60); key("ArrowDown"); await sleep(60); key("Enter"); await sleep(120);
-      key("ArrowDown"); await sleep(60); key("Enter"); await sleep(400);
-      continue;
-    }
-    key("Enter"); await sleep(120); key("Enter"); await sleep(300);
+    lastAction = act;
+    await sleep(1400); // let the enemy phase play out
   }
   await until(() => S().overlay?.kind !== "battle", 8000, "battle closes");
   await sleep(600);
+  // the story opens its follow-up dialogue 300ms after the battle closes
+  await dialogueThroughIfAny();
 }
 
 async function run() {

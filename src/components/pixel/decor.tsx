@@ -95,7 +95,7 @@ export function ScrollPanel({
   onClose?: () => void;
 }) {
   return (
-    <div className={`surface relative overflow-hidden ${className}`}>
+    <div className={`panel-sheet surface relative flex max-h-full flex-col overflow-hidden ${className}`}>
       {title && (
         <header className="gilded relative flex items-center justify-between border-b border-[rgba(217,180,91,.18)] px-5 py-3.5">
           <div>

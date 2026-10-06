@@ -57,9 +57,15 @@ canvas[data-pixel], .vignette canvas { image-rendering: pixelated; }
   .hud { padding: 10px !important; }
   .hud .title-lg { font-size: 11px !important; }
   .hud-keys { display: none !important; }
-  .mission-tracker { width: min(46vw, 260px) !important; }
-  .panel-sheet { max-width: 100% !important; max-height: 100% !important; }
-  .dialogue-box { max-width: 100% !important; }
+  .mission-tracker { width: min(48vw, 260px) !important; }
+  .mission-tracker .title-lg { font-size: 11px !important; }
+  .panel-sheet { max-width: 100% !important; max-height: 100% !important; border-radius: 12px; }
+  .panel-shell { padding: 8px !important; }
+  .dialogue-box { padding: 10px !important; }
+  .journey-grid { grid-template-rows: auto 1fr; }
+  .journey-list { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 1px solid rgba(217,180,91,.15); padding: 8px !important; }
+  .journey-list > button { width: auto !important; min-width: 150px; margin-bottom: 0 !important; }
+  .journey-list > p { display: none; }
   .dialogue-box .dialogue-portrait { display: none; }
   .dialogue-box .dialogue-body { padding: 12px 14px !important; }
   .dialogue-box .dialogue-text { font-size: 14px !important; min-height: 40px !important; }
@@ -70,8 +76,11 @@ canvas[data-pixel], .vignette canvas { image-rendering: pixelated; }
 /* Touch devices: the bottom corners belong to the on-screen controls. */
 html.touch .toasts { bottom: auto !important; top: 92px !important; }
 html.touch .interact-prompt-desktop { display: none; }
-html.touch .dialogue-box { margin-bottom: 86px; }
-html.touch .battle-ui .battle-bar { padding-bottom: 96px !important; }
+html.touch .hud-keys { display: none !important; }
+@media (max-width: 760px) {
+  .mission-tracker .tracker-place { display: none; }
+  .mission-tracker .tracker-body { padding: 8px 12px !important; }
+}
 
 .font-display { font-family: var(--font-display); }
 .font-pixel   { font-family: var(--font-pixel); }

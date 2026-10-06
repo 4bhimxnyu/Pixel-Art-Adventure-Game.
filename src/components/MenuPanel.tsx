@@ -13,7 +13,7 @@ export default function MenuPanel() {
   const go = (fn: () => void) => { questSfx.confirm(); fn(); };
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm">
+    <div className="panel-shell absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm">
       <ScrollPanel title="Menu" onClose={() => { questSfx.panelClose(); setOverlay(null); }} className="w-full max-w-[480px]">
         <div className="p-6">
           <div className="mb-6 flex flex-col gap-2.5">

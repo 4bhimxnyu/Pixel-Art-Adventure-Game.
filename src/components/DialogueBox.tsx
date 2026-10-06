@@ -61,7 +61,7 @@ export default function DialogueBox() {
   const last = overlay.idx === overlay.lines.length - 1;
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-50 flex justify-center p-5">
+    <div className="dialogue-box absolute inset-x-0 bottom-0 z-50 flex justify-center p-5">
       {/* light pools under the box so it sits in the scene instead of on it */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-52"
@@ -80,9 +80,9 @@ export default function DialogueBox() {
           }
         }}
       >
-        <div className="flex items-start gap-5 p-6">
+        <div className="dialogue-body flex items-start gap-5 p-6">
           {line.portrait && (
-            <div className="shrink-0">
+            <div className="dialogue-portrait shrink-0">
               <div
                 className="overflow-hidden rounded-xl"
                 style={{
@@ -101,7 +101,7 @@ export default function DialogueBox() {
               <span className="h-px flex-1 bg-gradient-to-r from-[rgba(217,180,91,.45)] to-transparent" />
             </div>
 
-            <p className="min-h-[62px] text-[15px] leading-[1.75] text-[var(--ink-1)]">
+            <p className="dialogue-text min-h-[62px] text-[15px] leading-[1.75] text-[var(--ink-1)]">
               {shown}
               {!done && <span className="sb-blink ml-0.5 text-[#d9b45b]">▍</span>}
             </p>

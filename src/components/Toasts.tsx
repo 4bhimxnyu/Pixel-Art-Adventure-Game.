@@ -19,7 +19,7 @@ export default function Toasts() {
     tone === "good" ? "#7ddca4" : tone === "warn" ? "#e0616b" : "#d9b45b";
 
   return (
-    <div className="pointer-events-none absolute bottom-5 right-5 z-40 flex flex-col items-end gap-2.5">
+    <div className="toasts pointer-events-none absolute bottom-5 right-5 z-40 flex flex-col items-end gap-2.5">
       {items.map((t) => (
         <div key={t.id} className="surface sb-rise flex max-w-[330px] items-start gap-3 px-4 py-3">
           <span

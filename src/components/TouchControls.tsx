@@ -97,22 +97,20 @@ export default function TouchControls() {
     input.press(a);
   };
 
-  const inBattle = overlay?.kind === "battle";
-  const inDialogue = overlay?.kind === "dialogue";
-  const inMenu = !!overlay && !inBattle && !inDialogue;
+  // Panels, dialogue and the battle bar are tappable on their own; the
+  // on-screen controls belong to the world only.
+  if (overlay) return null;
 
   return (
     <div className="absolute inset-0 z-30 select-none" style={{ touchAction: "none" }}>
-      {/* movement + look surface — only when the world has control */}
-      {!overlay && (
-        <div
-          className="absolute inset-0"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-        />
-      )}
+      {/* movement + look surface */}
+      <div
+        className="absolute inset-0"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      />
 
       {/* joystick */}
       {stick && (
@@ -129,44 +127,24 @@ export default function TouchControls() {
           />
         </div>
       )}
-      {!stick && !overlay && (
+      {!stick && (
         <div className="pointer-events-none absolute bottom-[18%] left-[9%] text-[10px] tracking-[.2em] text-[rgba(242,223,166,.35)]">
           DRAG TO MOVE · RIGHT SIDE TO LOOK
         </div>
       )}
 
-      {/* menu arrows for panels */}
-      {inMenu && (
-        <div className="absolute bottom-4 left-4 grid grid-cols-3 gap-1.5" style={{ width: 150 }}>
-          <span />
-          <TouchBtn label="▲" small onPress={act("interact", "ArrowUp")} />
-          <span />
-          <TouchBtn label="◀" small onPress={act("interact", "ArrowLeft")} />
-          <TouchBtn label="▼" small onPress={act("interact", "ArrowDown")} />
-          <TouchBtn label="▶" small onPress={act("interact", "ArrowRight")} />
-        </div>
-      )}
-
       {/* action cluster */}
       <div className="absolute bottom-5 right-4 flex flex-col items-end gap-2.5">
-        {!overlay && (
-          <div className="flex gap-2.5">
-            <TouchBtn label="☰" small onPress={(e) => { e.preventDefault(); useGameStore.getState().setOverlay({ kind: "menu" }); }} />
-            <TouchBtn label="◆" small title="Missions" onPress={(e) => { e.preventDefault(); useGameStore.getState().setOverlay({ kind: "quests" }); }} />
-            <TouchBtn label="▣" small title="Items" onPress={(e) => { e.preventDefault(); useGameStore.getState().setOverlay({ kind: "inventory" }); }} />
-            <TouchBtn label="?" small title="Hint" onPress={(e) => { e.preventDefault(); bus.emit("hint:next"); }} />
-          </div>
-        )}
+        <div className="flex gap-2.5">
+          <TouchBtn label="☰" small onPress={(e) => { e.preventDefault(); useGameStore.getState().setOverlay({ kind: "menu" }); }} />
+          <TouchBtn label="◆" small title="Missions" onPress={(e) => { e.preventDefault(); useGameStore.getState().setOverlay({ kind: "quests" }); }} />
+          <TouchBtn label="▣" small title="Items" onPress={(e) => { e.preventDefault(); useGameStore.getState().setOverlay({ kind: "inventory" }); }} />
+          <TouchBtn label="?" small title="Hint" onPress={(e) => { e.preventDefault(); bus.emit("hint:next"); }} />
+        </div>
         <div className="flex items-end gap-3">
-          {!overlay && hasMimo && <TouchBtn label="🐾" title="Mimo sniffs" onPress={act("sniff")} />}
-          {!overlay && <TouchBtn label="↯" title="Dash" onPress={act("dodge")} />}
-          {(inMenu || inBattle) && <TouchBtn label="✕" title="Back" onPress={act("cancel", "Escape")} />}
-          <TouchBtn
-            label={inDialogue ? "▼" : inBattle || inMenu ? "●" : prompt ? "●" : "●"}
-            primary
-            title={prompt || "Interact"}
-            onPress={act("interact", "e")}
-          />
+          {hasMimo && <TouchBtn label="🐾" title="Mimo sniffs" onPress={act("sniff")} />}
+          <TouchBtn label="↯" title="Dash" onPress={act("dodge")} />
+          <TouchBtn label="●" primary title={prompt || "Interact"} onPress={act("interact", "e")} />
         </div>
       </div>
     </div>

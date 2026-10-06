@@ -14,7 +14,7 @@ export default function SettingsPanel({ onClose }: { onClose?: () => void }) {
   };
 
   return (
-    <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm">
+    <div className="panel-shell absolute inset-0 z-[60] flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm">
       <ScrollPanel title="Settings" subtitle="Audio and pacing" onClose={close} className="w-full max-w-[520px]">
         <div className="flex flex-col gap-7 p-6">
           <Slider label="Music" value={settings.musicVol} onChange={(v) => setSettings({ musicVol: v })}

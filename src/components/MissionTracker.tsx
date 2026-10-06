@@ -49,7 +49,7 @@ export default function MissionTracker() {
 
   return (
     <div
-      className="surface pointer-events-auto w-[330px] overflow-hidden transition-shadow duration-500"
+      className="mission-tracker surface pointer-events-auto w-[330px] overflow-hidden transition-shadow duration-500"
       style={flash ? { boxShadow: "0 0 0 1px rgba(217,180,91,.8), 0 0 40px -4px rgba(217,180,91,.6)" } : undefined}
     >
       <div className="flex items-center gap-2.5 border-b border-[rgba(217,180,91,.15)] px-4 py-2.5">
@@ -62,7 +62,7 @@ export default function MissionTracker() {
         )}
       </div>
 
-      <div className="px-4 py-3">
+      <div className="tracker-body px-4 py-3">
         <div className="flex items-start gap-2">
           <span className="mt-[3px] text-[11px] text-[#d9b45b]">◆</span>
           <span className="text-[13px] font-medium leading-snug text-[var(--ink-1)]">
@@ -71,7 +71,7 @@ export default function MissionTracker() {
         </div>
 
         {guide && (
-          <div className="mt-2 flex items-center gap-1.5 pl-5 text-[11px] text-[var(--ink-3)]">
+          <div className="tracker-place mt-2 flex items-center gap-1.5 pl-5 text-[11px] text-[var(--ink-3)]">
             <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden>
               <circle cx="6" cy="5" r="2.6" fill="none" stroke="currentColor" strokeWidth="1.2" />
               <path d="M6 7.6V11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />

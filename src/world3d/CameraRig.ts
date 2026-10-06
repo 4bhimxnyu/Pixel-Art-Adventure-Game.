@@ -43,6 +43,9 @@ export class CameraRig {
   obstacle: (x: number, z: number) => number = () => 0;
   indoor = false;
   private lift = 0;
+  /** A fixed pose the camera settles into (battles). Cinematics still win. */
+  hold: { pos: THREE.Vector3; look: THREE.Vector3; sway?: number } | null = null;
+  private holdT = 0;
 
   constructor(aspect: number) {
     this.camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 120);
@@ -127,6 +130,25 @@ export class CameraRig {
         this.pos.copy(this.camera.position);
         return;
       }
+    }
+
+    // --- held pose (battle stage)
+    if (this.hold) {
+      this.holdT += dt;
+      const sway = this.hold.sway ?? 0.18;
+      const p = this.hold.pos.clone();
+      p.x += Math.sin(this.holdT * 0.35) * sway;
+      p.y += Math.sin(this.holdT * 0.5) * sway * 0.4;
+      this.pos.lerp(p, Math.min(1, dt * 4));
+      this.look.lerp(this.hold.look, Math.min(1, dt * 6));
+      this.camera.position.copy(this.pos);
+      if (this.shakeT > 0) {
+        this.shakeT -= dt;
+        this.camera.position.x += (Math.random() - 0.5) * this.shakeAmp;
+        this.camera.position.y += (Math.random() - 0.5) * this.shakeAmp;
+      }
+      this.camera.lookAt(this.look);
+      return;
     }
 
     // --- soft auto-align behind the player while walking without look input
