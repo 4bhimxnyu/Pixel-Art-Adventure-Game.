@@ -1,10 +1,9 @@
 import { useEffect, useRef } from "react";
-import type Phaser from "phaser";
 import { useGameStore } from "../store/useGameStore";
 import { bus } from "../game/bus";
-import { createGame } from "../game/PhaserGame";
 import { initAudio, playBgm, setVolumes, stopBgm, loadAudioManifest } from "../game/sound";
 import { questSfx } from "../lib/questSfx";
+import { useDevice } from "../input/useDevice";
 
 import TitleScreen from "./TitleScreen";
 import HUD from "./HUD";
@@ -20,6 +19,8 @@ import TheEnd from "./TheEnd";
 import MissionCinematic from "./MissionCinematic";
 import LocationCard from "./LocationCard";
 import InteractPrompt from "./InteractPrompt";
+import FadeOverlay from "./FadeOverlay";
+import TouchControls from "./TouchControls";
 import { ThemeKeyframes } from "./pixel/decor";
 
 // Dev-only handle so the game can be driven and inspected from the console.
@@ -27,30 +28,49 @@ if (import.meta.env.DEV) {
   (window as any).__game = { store: useGameStore, bus };
 }
 
+/** Either renderer, behind one tiny interface. */
+type Engine = { destroy(): void };
+
 export default function GameApp() {
   const screen = useGameStore((s) => s.screen);
   const overlay = useGameStore((s) => s.overlay);
   const settings = useGameStore((s) => s.settings);
+  const renderer = settings.renderer ?? "3d";
+  const device = useDevice();
   const mountRef = useRef<HTMLDivElement | null>(null);
-  const gameRef = useRef<Phaser.Game | null>(null);
+  const engineRef = useRef<Engine | null>(null);
 
-  // --- Phaser lifecycle: created once we're actually playing, destroyed on exit
+  // --- engine lifecycle: created once we're actually playing, destroyed on exit.
+  // The 3D world is a singleton (World3D.instance); a StrictMode double-mount or a
+  // re-render can never leave two worlds, and so never two Palakshis.
   useEffect(() => {
     if (screen !== "playing") {
-      if (gameRef.current) {
-        gameRef.current.destroy(true);
-        gameRef.current = null;
-      }
+      engineRef.current?.destroy();
+      engineRef.current = null;
       return;
     }
-    if (gameRef.current || !mountRef.current) return;
+    if (engineRef.current || !mountRef.current) return;
     initAudio();
-    gameRef.current = createGame(mountRef.current);
+    let cancelled = false;
+    const mount = mountRef.current;
+    if (renderer === "classic") {
+      import("../game/PhaserGame").then(({ createGame }) => {
+        if (cancelled) return;
+        const game = createGame(mount);
+        engineRef.current = { destroy: () => game.destroy(true) };
+      });
+    } else {
+      import("../world3d/World3D").then(({ World3D }) => {
+        if (cancelled) return;
+        engineRef.current = new World3D(mount);
+      });
+    }
     return () => {
-      gameRef.current?.destroy(true);
-      gameRef.current = null;
+      cancelled = true;
+      engineRef.current?.destroy();
+      engineRef.current = null;
     };
-  }, [screen]);
+  }, [screen, renderer]);
 
   // --- volumes
   useEffect(() => {
@@ -62,7 +82,7 @@ export default function GameApp() {
     void loadAudioManifest();
   }, []);
 
-  // --- title / credits music
+  // --- title / end / credits music
   useEffect(() => {
     if (screen === "title") playBgm("bgm_title", 1.2);
     if (screen === "end") playBgm("bgm_end", 3.0);
@@ -72,7 +92,7 @@ export default function GameApp() {
     };
   }, [screen]);
 
-  // --- tell Phaser to stop reading movement while an overlay is up
+  // --- tell the engine to stop reading movement while an overlay is up
   useEffect(() => {
     bus.emit("input:lock", !!overlay);
   }, [overlay]);
@@ -120,6 +140,12 @@ export default function GameApp() {
     return () => window.clearInterval(t);
   }, [screen]);
 
+  // --- device class for responsive CSS
+  useEffect(() => {
+    document.documentElement.classList.toggle("touch", device.touch);
+    document.documentElement.classList.toggle("gamepad", device.kind === "gamepad");
+  }, [device.touch, device.kind]);
+
   if (screen === "title") {
     return (
       <>
@@ -147,26 +173,29 @@ export default function GameApp() {
     );
   }
 
+  const classic = renderer === "classic";
+
   return (
-    <div className="vignette relative flex h-full w-full items-center justify-center overflow-hidden bg-[#0a0507]">
+    <div className={`${classic ? "vignette" : ""} relative flex h-full w-full items-center justify-center overflow-hidden bg-[#0a0507]`}>
       <ThemeKeyframes />
 
-      {/* The canvas letterboxes on wide screens; this makes the surround feel
-          deliberate rather than like empty black bars. */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: "radial-gradient(ellipse at 50% 40%, #1a0f14 0%, #0a0507 70%)" }}
-      />
+      {classic && (
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: "radial-gradient(ellipse at 50% 40%, #1a0f14 0%, #0a0507 70%)" }}
+        />
+      )}
 
-      {/* Phaser canvas */}
+      {/* the world: a Three.js canvas (or the classic Phaser canvas) */}
       <div ref={mountRef} className="absolute inset-0" />
 
-      {/* Always-on world UI */}
-      <HUD />
+      {/* Always-on world UI (the battle layer brings its own cards) */}
+      {overlay?.kind !== "battle" && <HUD />}
       <InteractPrompt />
       <LocationCard />
       <MissionCinematic />
       <Toasts />
+      {device.touch && <TouchControls />}
 
       {/* Overlay router */}
       {overlay?.kind === "dialogue" && <DialogueBox />}
@@ -175,6 +204,8 @@ export default function GameApp() {
       {overlay?.kind === "quests" && <JourneyPanel />}
       {overlay?.kind === "menu" && <MenuPanel />}
       {overlay?.kind === "settings" && <SettingsPanel />}
+
+      <FadeOverlay />
     </div>
   );
 }

@@ -46,8 +46,32 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Only the Phaser canvas is pixel-scaled. */
-canvas { image-rendering: pixelated; display: block; }
+/* Only the classic Phaser canvas is pixel-scaled; the 3D canvas is smooth. */
+canvas { display: block; }
+canvas[data-pixel], .vignette canvas { image-rendering: pixelated; }
+
+/* ------------------------------------------------------------- responsive */
+
+/* Phones: the HUD compacts, panels become sheets, the dialogue hugs the bottom. */
+@media (max-width: 760px), (max-height: 520px) {
+  .hud { padding: 10px !important; }
+  .hud .title-lg { font-size: 11px !important; }
+  .hud-keys { display: none !important; }
+  .mission-tracker { width: min(46vw, 260px) !important; }
+  .panel-sheet { max-width: 100% !important; max-height: 100% !important; }
+  .dialogue-box { max-width: 100% !important; }
+  .dialogue-box .dialogue-portrait { display: none; }
+  .dialogue-box .dialogue-body { padding: 12px 14px !important; }
+  .dialogue-box .dialogue-text { font-size: 14px !important; min-height: 40px !important; }
+  .battle-ui .combatant-card { width: 150px !important; }
+  .battle-ui .battle-bar { padding: 8px !important; gap: 8px !important; grid-template-columns: 1fr !important; }
+  .battle-ui .battle-log { min-height: 48px !important; font-size: 12px !important; }
+}
+/* Touch devices: the bottom corners belong to the on-screen controls. */
+html.touch .toasts { bottom: auto !important; top: 92px !important; }
+html.touch .interact-prompt-desktop { display: none; }
+html.touch .dialogue-box { margin-bottom: 86px; }
+html.touch .battle-ui .battle-bar { padding-bottom: 96px !important; }
 
 .font-display { font-family: var(--font-display); }
 .font-pixel   { font-family: var(--font-pixel); }

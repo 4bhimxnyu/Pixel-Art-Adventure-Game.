@@ -28,6 +28,11 @@ export default function MissionTracker() {
     window.setTimeout(() => setFlash(false), 1100);
   }), []);
 
+  // gamepad / touch "hint" button
+  useEffect(() => bus.on("hint:next", () => {
+    setHintLevel((l) => { if (l >= 3) return l; questSfx.hint(); return l + 1; });
+  }), []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (useGameStore.getState().overlay) return;

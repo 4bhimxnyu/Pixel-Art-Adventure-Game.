@@ -1,5 +1,11 @@
 // ---------------------------------------------------------------------------
 // Turn-based battle. Turn order by spd; phases player -> enemy -> done.
+//
+// The rules live here, unchanged from the 2D game. The FIELD is now the 3D
+// world itself: this component is a transparent layer with the two status
+// cards and the command bar, and it tells the world what to animate through
+// `battle:fx` bus events (attack / heal / swap / enrage / ko / win / lose).
+// In the classic renderer the same layout sits over the pixel canvas.
 // Bosses gain phases at HP thresholds with a stronger move set, and Arshiya's
 // HP pool is tuned so a solo fighter cannot outlast her — you must swap.
 // ---------------------------------------------------------------------------
@@ -11,6 +17,9 @@ import { bus } from "../game/bus";
 import { playBgm, sfx, setIntensity, gong } from "../game/sound";
 import { CharacterPortrait } from "./pixel/Portrait";
 import { HpBar } from "./pixel/decor";
+import { useDevice, glyph } from "../input/useDevice";
+
+const fx = (p: { kind: string; side?: "player" | "enemy"; crit?: boolean; fighterId?: string }) => bus.emit("battle:fx", p);
 
 type Menu = "root" | "fight" | "item" | "swap";
 type Float = { id: number; text: string; side: "enemy" | "player"; crit: boolean };
@@ -21,6 +30,8 @@ export default function BattleUI() {
   const overlay = useGameStore((s) => s.overlay);
   const party = useGameStore((s) => s.party);
   const inventory = useGameStore((s) => s.inventory);
+  const classic = useGameStore((s) => s.settings.renderer === "classic");
+  const device = useDevice();
 
   const enemyId = overlay?.kind === "battle" ? overlay.enemyId : "wild_bunny";
   const enemy = ENEMIES[enemyId] ?? ENEMIES.wild_bunny;
@@ -103,6 +114,7 @@ export default function BattleUI() {
       settled.current = true;
       setOutcome(won ? "win" : "lose");
       setPhase("done");
+      fx({ kind: won ? "win" : "lose" });
       if (won) sfx("win");
       window.setTimeout(() => {
         useGameStore.getState().setOverlay(null);
@@ -135,6 +147,7 @@ export default function BattleUI() {
     const crit = hit.crit;
     let dmg = hit.dmg;
     if (reads && cover > 0 && target.i === active) dmg = Math.round(dmg * 0.7);
+    fx({ kind: "attack", side: "enemy", crit });
     const dealt = s.damage(target.i, dmg);
     addFloat(`-${dealt}`, "player", crit);
     setShake("player");
@@ -159,8 +172,10 @@ export default function BattleUI() {
       if (!s2.party.some((p) => p.hp > 0)) return finish(false);
       // If the current fighter went down, move to someone standing.
       if (s2.party[active]?.hp <= 0) {
+        fx({ kind: "ko", side: "player" });
         const next = s2.party.findIndex((p) => p.hp > 0);
         setActive(next);
+        fx({ kind: "swap", fighterId: s2.party[next].id });
         pushLog(`${s2.party[next].name} steps forward.`);
       }
       setPhase("player");
@@ -187,6 +202,7 @@ export default function BattleUI() {
       }
       if (want > enrage) {
         setEnrage(want);
+        fx({ kind: "enrage" });
         setIntensity(0.6 + want * 0.2);
         gong();
         setShake("enemy");
@@ -206,12 +222,14 @@ export default function BattleUI() {
 
       if (mv.kind === "heal") {
         s.heal(active, mv.power);
+        fx({ kind: "heal", side: "player" });
         addFloat(`+${mv.power}`, "player");
         sfx("heal");
         pushLog(`${me.name} used ${mv.name} and recovered.`);
       } else {
         const { dmg, crit } = roll(mv.power, me.atk, enemy.def + enrage * 3);
         const next = Math.max(0, enemyHp - dmg);
+        fx({ kind: "attack", side: "player", crit });
         setEnemyHp(next);
         addFloat(`-${dmg}`, "enemy", crit);
         setShake("enemy");
@@ -241,6 +259,7 @@ export default function BattleUI() {
         return;
       }
       addFloat(`+${ITEMS[id].heal}`, "player");
+      fx({ kind: "heal", side: "player" });
       sfx("heal");
       pushLog(`${s.party[active].name} used ${ITEMS[id].name}.`);
       setMenu("root");
@@ -259,6 +278,7 @@ export default function BattleUI() {
       }
       setActive(i);
       setCover(2);
+      fx({ kind: "swap", fighterId: s.party[i].id });
       sfx("confirm");
       pushLog(`${s.party[i].name} steps forward!${reads ? " Covered for two turns." : ""}`);
       setMenu("root");
@@ -349,18 +369,24 @@ export default function BattleUI() {
   // ------------------------------------------------------------------ view
 
   return (
-    <div className="vignette absolute inset-0 z-50 flex flex-col overflow-hidden bg-[#0a0507]">
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: isBoss
-            ? "radial-gradient(ellipse at 50% 28%, #4a121d 0%, #1a0810 45%, #0a0507 78%)"
-            : "radial-gradient(ellipse at 50% 32%, #16281c 0%, #0d1410 48%, #0a0507 80%)",
-        }}
-      />
+    <div className={`battle-ui absolute inset-0 z-50 flex flex-col overflow-hidden ${classic ? "vignette bg-[#0a0507]" : ""}`}>
+      {classic && (
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: isBoss
+              ? "radial-gradient(ellipse at 50% 28%, #4a121d 0%, #1a0810 45%, #0a0507 78%)"
+              : "radial-gradient(ellipse at 50% 32%, #16281c 0%, #0d1410 48%, #0a0507 80%)",
+          }}
+        />
+      )}
+      {/* a soft letterbox so the cards and bar read against any scene */}
+      {!classic && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-28" style={{ background: "linear-gradient(to bottom, rgba(5,2,4,.7), transparent)" }} />
+      )}
 
-      {/* --- field ------------------------------------------------------- */}
-      <div className="relative flex flex-1 items-center justify-center gap-16 px-8 py-6">
+      {/* --- field: the 3D world shows through; cards sit at the top corners */}
+      <div className="relative flex flex-1 items-start justify-between px-5 pt-5">
         <Combatant
           side="player"
           name={activeFighter?.name ?? ""}
@@ -371,7 +397,12 @@ export default function BattleUI() {
           floats={floats.filter((f) => f.side === "player")}
           badge={reads && cover > 0 ? { text: `COVER ${cover}`, color: "#7ddca4" } : null}
           accent="#d9b45b"
+          showPortrait={classic}
         />
+
+        {isBoss && (
+          <div className="sb-pop title-lg mt-1 hidden text-[13px] tracking-[.3em] text-[#e0616b] sm:block">BOSS</div>
+        )}
 
         <Combatant
           side="enemy"
@@ -391,6 +422,7 @@ export default function BattleUI() {
           }
           accent={enrage > 0 ? "#e0616b" : "#8a8698"}
           defeated={enemyHp <= 0}
+          showPortrait={classic}
         />
       </div>
 
@@ -424,8 +456,8 @@ export default function BattleUI() {
       )}
 
       {/* --- command bar ------------------------------------------------- */}
-      <div className="relative grid grid-cols-1 gap-3 border-t border-[rgba(217,180,91,.18)] bg-black/50 p-4 backdrop-blur-md sm:grid-cols-[1fr_380px]">
-        <div className="surface-raised min-h-[92px] px-4 py-3">
+      <div className="battle-bar relative grid grid-cols-1 gap-3 border-t border-[rgba(217,180,91,.18)] bg-black/55 p-4 backdrop-blur-md sm:grid-cols-[1fr_380px]">
+        <div className="battle-log surface-raised min-h-[92px] px-4 py-3">
           {log.map((l, i) => (
             <div
               key={i}
@@ -448,7 +480,7 @@ export default function BattleUI() {
               {menu !== "root" && (
                 <div className="mb-2 flex items-center justify-between">
                   <span className="eyebrow">{menu}</span>
-                  <span className="text-[10px] text-[var(--ink-4)]">X · back</span>
+                  <span className="text-[10px] text-[var(--ink-4)]">{glyph("cancel", device.kind)} · back</span>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-2">
@@ -495,7 +527,7 @@ export default function BattleUI() {
 }
 
 function Combatant({
-  name, portrait, hp, maxHp, shaking, floats, badge, accent, showNumbers = true, defeated,
+  name, portrait, hp, maxHp, shaking, floats, badge, accent, showNumbers = true, defeated, showPortrait, side,
 }: {
   side?: "player" | "enemy";
   name: string;
@@ -508,10 +540,11 @@ function Combatant({
   accent: string;
   showNumbers?: boolean;
   defeated?: boolean;
+  showPortrait?: boolean;
 }) {
   return (
-    <div className={`relative flex flex-col items-center gap-3 ${shaking ? "sb-shake" : ""}`}>
-      <div className="surface w-[250px] px-4 py-3">
+    <div className={`relative flex flex-col gap-3 ${side === "enemy" ? "items-end" : "items-start"} ${shaking ? "sb-shake" : ""}`}>
+      <div className="combatant-card surface w-[250px] px-4 py-3" style={{ borderColor: `${accent}55` }}>
         <div className="flex items-center justify-between gap-2">
           <span className="title-lg truncate text-[14px] text-[var(--ink-1)]">{name}</span>
           {badge && (
@@ -528,18 +561,20 @@ function Combatant({
         </div>
       </div>
 
-      <div
-        className="sb-float relative overflow-hidden rounded-2xl p-1"
-        style={{
-          background: `linear-gradient(160deg, ${accent}66, rgba(10,5,7,.6))`,
-          boxShadow: `0 22px 50px -18px rgba(0,0,0,.95), 0 0 44px -10px ${accent}55`,
-          filter: defeated ? "grayscale(1) brightness(.45)" : undefined,
-        }}
-      >
-        <div className="overflow-hidden rounded-xl bg-[#0a0507]">
-          <CharacterPortrait id={portrait} size={128} />
+      {showPortrait && (
+        <div
+          className="sb-float relative overflow-hidden rounded-2xl p-1"
+          style={{
+            background: `linear-gradient(160deg, ${accent}66, rgba(10,5,7,.6))`,
+            boxShadow: `0 22px 50px -18px rgba(0,0,0,.95), 0 0 44px -10px ${accent}55`,
+            filter: defeated ? "grayscale(1) brightness(.45)" : undefined,
+          }}
+        >
+          <div className="overflow-hidden rounded-xl bg-[#0a0507]">
+            <CharacterPortrait id={portrait} size={128} />
+          </div>
         </div>
-      </div>
+      )}
 
       {floats.map((f) => (
         <FloatNum key={f.id} text={f.text} crit={f.crit} />
@@ -552,7 +587,7 @@ function FloatNum({ text, crit }: { text: string; crit: boolean }) {
   const heal = text.startsWith("+");
   return (
     <div
-      className="title-lg pointer-events-none absolute left-1/2 top-10 -translate-x-1/2 text-[26px]"
+      className="title-lg pointer-events-none absolute left-1/2 top-16 -translate-x-1/2 text-[26px]"
       style={{
         color: heal ? "#7ddca4" : crit ? "#f2dfa6" : "#e0616b",
         textShadow: "0 3px 12px rgba(0,0,0,.95)",

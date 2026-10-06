@@ -10,6 +10,10 @@ export type BusEvent =
   | "objective:done"
   | "puzzle"
   | "battle:end"
+  | "battle:fx"
+  | "fade"
+  | "mimo:ping"
+  | "hint:next"
   | "tutorial";
 
 type Handler = (payload?: any) => void;

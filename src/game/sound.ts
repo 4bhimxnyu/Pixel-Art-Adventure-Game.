@@ -852,6 +852,19 @@ export const TRACKS: Record<string, Track> = {
     perc: { luo: "1......." },
   },
 
+  bgm_hug: {
+    // The embrace: the goodbye theme at full voice — erhu high, chant swelling.
+    root: 52, mode: "yu", bpm: 62, beats: 8, lead: "erhu", counter: "guzheng", pad: "sheng",
+    sad: 0.2, chant: [1, 6, 4, 5], gain: 0.95,
+    phrases: [
+      P(n(8, 3, "bend"), n(6, 1), n(5, 2), n(3, 2)),
+      P(n(5, 2, "grace"), n(6, 2), n(8, 4, "trem")),
+      P(n(10, 2, "gliss"), n(8, 2), n(6, 3), r(1)),
+      P(n(5, 2), n(3, 2), n(1, 4, "bend")),
+    ],
+    perc: { luo: "1.......", muyu: "....1..." },
+  },
+
   bgm_end: {
     // THE END: xiao alone over the quietest bed. Nothing follows this.
     root: 52, mode: "gong", bpm: 60, beats: 8, lead: "xiao", counter: "guzheng", pad: "sheng",
