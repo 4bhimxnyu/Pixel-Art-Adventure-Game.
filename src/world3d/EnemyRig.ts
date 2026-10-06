@@ -33,6 +33,7 @@ export class CreatureRig extends BaseRig {
   constructor(readonly species: Species, readonly boss: boolean) {
     super();
     this.build();
+    this.bake();
     if (boss) {
       const s = this.species === "guardian" ? 1.25 : 1.3;
       this.body.scale.setScalar(s);

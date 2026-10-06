@@ -95,7 +95,7 @@ export class World3D {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
   readonly cam: CameraRig;
-  private clock = new THREE.Clock();
+  private timer = new THREE.Timer();
   private raf = 0;
   private running = false;
   private parent: HTMLElement;
@@ -154,7 +154,7 @@ export class World3D {
     this.renderer = new THREE.WebGLRenderer({ antialias: !mobile, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2));
     this.renderer.shadowMap.enabled = this.quality.shadows;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
@@ -219,7 +219,6 @@ export class World3D {
     if (!s.flags.introDone) this.delay(420, () => useGameStore.getState().openDialogue("intro"));
 
     this.running = true;
-    this.clock.start();
     this.loop();
     if (import.meta.env.DEV) (window as any).__world = this;
   }
@@ -518,7 +517,8 @@ export class World3D {
   private loop = () => {
     if (!this.running) return;
     this.raf = requestAnimationFrame(this.loop);
-    const dt = Math.min(0.05, this.clock.getDelta());
+    this.timer.update();
+    const dt = Math.min(0.05, this.timer.getDelta());
     this.update(dt);
     this.renderer.render(this.scene, this.cam.camera);
   };
@@ -611,7 +611,8 @@ export class World3D {
     // --- ambience
     this.particles?.update(dt);
     this.bursts = this.bursts.filter((b) => b.update(dt));
-    const pulse = 0.25 + Math.abs(Math.sin(this.clock.elapsedTime * 2.2)) * 0.3;
+    const now = this.timer.getElapsed();
+    const pulse = 0.25 + Math.abs(Math.sin(now * 2.2)) * 0.3;
     for (const d of this.highlightDiscs) {
       (d.material as THREE.MeshBasicMaterial).opacity = pulse;
       d.scale.setScalar(0.9 + pulse * 0.4);
@@ -622,7 +623,7 @@ export class World3D {
         this.pingMarker = null;
       } else {
         this.pingMarker.rotation.y += dt * 1.5;
-        this.pingMarker.position.y = 0.2 + Math.sin(this.clock.elapsedTime * 4) * 0.1;
+        this.pingMarker.position.y = 0.2 + Math.sin(now * 4) * 0.1;
       }
     }
     this.updatePointLights();

@@ -31,10 +31,11 @@ export class DogRig extends BaseRig {
     const tan = mat("#c9a06a");
     const dark = glow("#141014");
 
-    // body: a fluffy ellipsoid
+    // body: a fluffy ellipsoid (own joint: it breathes by scaling, so it stays unbaked)
+    const bodyJoint = this.joint(0, 0, 0);
     this.bodyMesh = this.mesh(G.sphere(0.26, 12), fur, 0, 0.34, -0.02);
     this.bodyMesh.scale.set(0.95, 0.78, 1.3);
-    this.body.add(this.bodyMesh);
+    bodyJoint.add(this.bodyMesh);
     const saddle = this.mesh(G.sphere(0.2, 10), tan, 0, 0.46, -0.08);
     saddle.scale.set(0.9, 0.45, 1.05);
     this.body.add(saddle);
@@ -93,6 +94,7 @@ export class DogRig extends BaseRig {
     const t2 = this.mesh(G.sphere(0.065, 7), tan, 0, 0.14, 0.03);
     const t3 = this.mesh(G.sphere(0.05, 7), fur, 0, 0.17, 0.1);
     this.tail.add(t1, t2, t3);
+    this.bake();
   }
 
   protected pose(dt: number) {

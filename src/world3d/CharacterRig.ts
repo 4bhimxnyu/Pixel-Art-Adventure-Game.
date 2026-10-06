@@ -154,6 +154,7 @@ export class CharacterRig extends BaseRig {
 
     this.p = { hips, torso, head, armL, armR, legL, legR, handL, handR };
     this.buildProps(torso, handR, handL, armT);
+    this.bake();
   }
 
   private buildHair(head: THREE.Group, r: number, hair: THREE.Material) {

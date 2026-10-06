@@ -252,6 +252,8 @@ export class WorldScene extends Phaser.Scene {
 
   /** The ground texture painted under every tile of this map. */
   private baseTileFor(def: MapDef, ch: string) {
+    // the F-1205 flat uses '.' for its floorboards
+    if (def.theme === "flat" && (ch === "." || !this.textures.exists(`t_${ch}`))) return "t_f";
     if (this.textures.exists(`t_${ch}`) && "._,gFwtfbBDTsdr#kK:jqvcnHLm%eo^uz=!$&~i*+Ihyp".includes(ch)) {
       // solid props still want ground under them
       if ("tHLm%^uq=$&*z!$iI+h~ypsBDTb".includes(ch)) {

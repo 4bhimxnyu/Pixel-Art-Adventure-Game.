@@ -168,9 +168,10 @@ async function run() {
   await sleep(300);
   await walkTo(7, 8); placeAt(7, 8, "up"); await interact(); // toy at (7,7)
   expect(S().flags.clueToyFound, "toy found");
-  await walkTo(8, 9); // paw print tile (8,8)/(8,9)
+  await walkTo(8, 9, { stopOnOverlay: true }); // paw print tiles (8,8)/(8,9) open the clue
+  await dialogueThroughIfAny();
   await walkTo(8, 8, { stopOnOverlay: true });
-  await dialogueThrough();
+  await dialogueThroughIfAny();
   expect(S().flags.cluePawsSeen, "paw prints seen");
   // avoid tall grass: go up the path x=8/9
   await walkTo(8, 1); await walkTo(8, 0, { untilMap: "forest" });
@@ -238,7 +239,7 @@ async function run() {
   await fight();
   expect(S().flags.prakritiDone, "Prakriti defeated");
   await sleep(500);
-  await walkTo(14, 5); placeAt(14, 5, "up"); await interact(); // garden flame at (14,4)
+  await walkTo(14, 5); placeAt(14, 5, "up"); await interact(false); // garden flame at (14,4)
   expect(S().flags.flameGarden, "garden flame");
   await sleep(2500);
   // --- Temple
@@ -249,7 +250,7 @@ async function run() {
   await fight();
   expect(S().flags.miniboss2Done, "warden defeated");
   await sleep(500);
-  await walkTo(14, 10); placeAt(14, 10, "up"); await interact(); // mountain flame at (14,9)
+  await walkTo(14, 10); placeAt(14, 10, "up"); await interact(false); // mountain flame at (14,9)
   expect(S().flags.flameMountain, "mountain flame");
   await sleep(2500);
   await walkTo(8, 1); await walkTo(8, 0, { untilMap: "temple" });
@@ -268,7 +269,7 @@ async function run() {
   await walkTo(18, 7); await walkTo(19, 7, { untilMap: "cave" });
   await until(() => S().map === "cave", 3000, "entered cave");
   await sleep(3000);
-  await walkTo(10, 10); placeAt(10, 10, "up"); await interact(); // cave flame at (10,9)
+  await walkTo(10, 10); placeAt(10, 10, "up"); await interact(false); // cave flame at (10,9)
   expect(S().flags.flameCave, "cave flame");
   await sleep(2500);
   expect(S().quests[0].steps[S().quests[0].step].id === "lantern", "all three flames → lantern step");

@@ -5,7 +5,16 @@
 // ---------------------------------------------------------------------------
 
 import * as THREE from "three";
-import { G, glow } from "./materials";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { G, glow, toonGradient } from "./materials";
+
+let bakedMat: THREE.MeshToonMaterial | null = null;
+function bakedMaterial() {
+  if (!bakedMat) {
+    bakedMat = new THREE.MeshToonMaterial({ color: "#ffffff", vertexColors: true, gradientMap: toonGradient() });
+  }
+  return bakedMat;
+}
 
 export type RigAction = "attack" | "hit" | "cheer" | "hug" | "bark" | "sniff" | "dig" | "jump" | "enrage" | "wave";
 
@@ -126,10 +135,66 @@ export abstract class BaseRig {
     });
   }
 
+  /**
+   * Performance: every joint's plain toon-coloured meshes become ONE mesh with
+   * vertex colours, so a character costs ~10 draw calls instead of ~40. Glow
+   * parts (eyes, screens) keep their own material. Call once after building.
+   */
+  protected bake() {
+    const groups: THREE.Group[] = [];
+    this.body.traverse((o) => {
+      if ((o as THREE.Group).isGroup || o === this.body) groups.push(o as THREE.Group);
+    });
+    const tmpColor = new THREE.Color();
+    for (const g of groups) {
+      const parts = g.children.filter((c) => {
+        const m = c as THREE.Mesh;
+        return m.isMesh && (m.material as THREE.Material).type === "MeshToonMaterial" && !(m.material as THREE.MeshToonMaterial).vertexColors;
+      }) as THREE.Mesh[];
+      if (parts.length < 2) continue;
+      const geos: THREE.BufferGeometry[] = [];
+      let castShadow = false;
+      for (const m of parts) {
+        const geo = m.geometry.clone();
+        m.updateMatrix();
+        geo.applyMatrix4(m.matrix);
+        // drop attributes the merge doesn't need to agree on
+        geo.deleteAttribute("uv");
+        geo.deleteAttribute("uv2");
+        if (geo.index) {
+          const g2 = geo.toNonIndexed();
+          geo.dispose();
+          geos.push(g2);
+        } else geos.push(geo);
+        const n = geos[geos.length - 1].attributes.position.count;
+        const col = new Float32Array(n * 3);
+        tmpColor.copy((m.material as THREE.MeshToonMaterial).color);
+        for (let i = 0; i < n; i++) {
+          col[i * 3] = tmpColor.r;
+          col[i * 3 + 1] = tmpColor.g;
+          col[i * 3 + 2] = tmpColor.b;
+        }
+        geos[geos.length - 1].setAttribute("color", new THREE.BufferAttribute(col, 3));
+        castShadow = castShadow || m.castShadow;
+        g.remove(m);
+      }
+      const merged = mergeGeometries(geos, false);
+      geos.forEach((x) => x.dispose());
+      if (!merged) continue;
+      const mesh = new THREE.Mesh(merged, bakedMaterial());
+      mesh.castShadow = castShadow;
+      g.add(mesh);
+      this.baked.push(merged);
+    }
+  }
+  private baked: THREE.BufferGeometry[] = [];
+
   dispose() {
     this.unflash();
     this.group.removeFromParent();
-    // geometries / materials are shared caches — nothing else to free
+    // baked geometries are per-rig; everything else is a shared cache
+    for (const g of this.baked) g.dispose();
+    this.baked = [];
   }
 
   // ------------------------------------------------------- build helpers
