@@ -31,12 +31,14 @@ export const MAP_PLACE: Record<MapId, string> = {
   garden: "Cherry Blossom Garden",
   cave: "Ancient Cave",
   academy: "Style Academy",
+  road: "The West Road",
+  f1205: "F-1205",
 };
 
 export const MAP_REGION: Record<MapId, string> = {
   bedroom: "home", house: "home", town: "home", route1: "home", forest: "home",
   village: "village", bamboo: "bamboo", mountain: "mountain", temple: "temple",
-  garden: "garden", cave: "cave", academy: "academy",
+  garden: "garden", cave: "cave", academy: "academy", road: "f1205", f1205: "f1205",
 };
 
 export const STEP_GUIDE: Record<string, Guide> = {
@@ -215,6 +217,61 @@ export const STEP_GUIDE: Record<string, Guide> = {
       "Fight Arshiya at the Academy — swap between Palakshi and Mimo to survive all three phases.",
     ],
     chain: ["Style Academy", "Arshiya"],
+  },
+  finale: {
+    objective: "Join the celebration",
+    place: "Style Academy",
+    region: "academy",
+    hints: [
+      "The flame is going home. So is everyone else.",
+      "Listen to the people who came.",
+      "The celebration plays out on its own — press E to continue.",
+    ],
+    chain: ["Style Academy"],
+  },
+  find_abhi: {
+    objective: "Find Abhimanyu and Faizal",
+    place: "The West Road",
+    region: "f1205",
+    hints: [
+      "Abhimanyu went home. He said the boys would be waiting.",
+      "West road out of Sparkle Town, past the river.",
+      "Leave Sparkle Town by the west path, cross the bridge on the West Road, and enter the door of the flats.",
+    ],
+    chain: ["Sparkle Town", "The West Road", "F-1205"],
+  },
+  f1205: {
+    objective: "Meet everyone at F-1205",
+    place: "F-1205",
+    region: "f1205",
+    hints: [
+      "Five flatmates. One of them will not look up.",
+      "Talk to Faizal, Garv, Hakim and Dev — they are all somewhere in the flat.",
+      "Hakim is on the sofa, Garv by the table, Faizal in the kitchen, Dev by the weights. Talk to each of them.",
+    ],
+    chain: ["F-1205", "Faizal", "Garv", "Hakim", "Dev"],
+  },
+  evening: {
+    objective: "Spend the evening with the flatmates",
+    place: "F-1205",
+    region: "f1205",
+    hints: [
+      "The day is done. Sit with them.",
+      "Abhimanyu wants everyone together.",
+      "Talk to Abhimanyu to start the evening.",
+    ],
+    chain: ["F-1205", "Abhimanyu"],
+  },
+  goodbye: {
+    objective: "Say goodbye to Abhimanyu",
+    place: "F-1205",
+    region: "f1205",
+    hints: [
+      "Everyone's said what they wanted to. Almost everyone.",
+      "Abhimanyu is waiting near the door.",
+      "Talk to Abhimanyu one last time.",
+    ],
+    chain: ["Abhimanyu"],
   },
 };
 

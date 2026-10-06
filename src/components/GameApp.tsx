@@ -16,6 +16,7 @@ import MenuPanel from "./MenuPanel";
 import SettingsPanel from "./SettingsPanel";
 import Toasts from "./Toasts";
 import CreditsRoll from "./CreditsRoll";
+import TheEnd from "./TheEnd";
 import MissionCinematic from "./MissionCinematic";
 import LocationCard from "./LocationCard";
 import InteractPrompt from "./InteractPrompt";
@@ -64,6 +65,7 @@ export default function GameApp() {
   // --- title / credits music
   useEffect(() => {
     if (screen === "title") playBgm("bgm_title", 1.2);
+    if (screen === "end") playBgm("bgm_end", 3.0);
     if (screen === "credits") playBgm("bgm_credits", 1.6);
     return () => {
       if (screen === "credits") stopBgm();
@@ -123,6 +125,15 @@ export default function GameApp() {
       <>
         <ThemeKeyframes />
         <TitleScreen />
+      </>
+    );
+  }
+
+  if (screen === "end") {
+    return (
+      <>
+        <ThemeKeyframes />
+        <TheEnd />
       </>
     );
   }

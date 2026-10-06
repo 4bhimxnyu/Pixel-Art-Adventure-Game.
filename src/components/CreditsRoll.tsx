@@ -9,6 +9,7 @@ const CREDITS: { head?: string; lines: string[] }[] = [
   { head: "STARRING", lines: ["Palakshi — the Shaolin Baddie", "Mimo — Shih Tzu, unshakeable"] },
   { head: "WITH", lines: ["Abhimanyu and the white guitar", "Bidisha, who waited up", "Prakriti, rival and almost-friend", "Elder Shu of Lantern Village", "Prof. Kaajal, narrator"] },
   { head: "AND", lines: ["Arshiya — Style Academy"] },
+  { head: "F-1205", lines: ["Faizal, who holds the door", "Garv, who buys the rice", "Hakim, who is nearly finished", "Dev, who visits the weights"] },
   { head: "ART", lines: ["100% procedural pixel art", "Generated at runtime. No image files."] },
   { head: "MUSIC", lines: ["100% procedural WebAudio synthesis", "Sadeness-based foundation:", "Gregorian chant, shakuhachi, sub bass, half-time break", "Wuxia colour per region:", "guzheng · pipa · yangqin · erhu · dizi · xiao · sheng", "dagu · luo · bangzi · muyu"] },
   { head: "THE THREE SACRED FLAMES", lines: ["Stone · Petals · Echoes", "Returned to Lantern Village"] },
@@ -17,7 +18,6 @@ const CREDITS: { head?: string; lines: string[] }[] = [
 
 export default function CreditsRoll() {
   const setScreen = useGameStore((s) => s.setScreen);
-  const newGame = useGameStore((s) => s.newGame);
   const [showEnd, setShowEnd] = useState(false);
 
   useEffect(() => {
@@ -89,22 +89,15 @@ export default function CreditsRoll() {
             PALAKSHI ❤
           </h1>
 
+          <p className="mt-6 text-[12px] tracking-[.3em] text-[var(--ink-3)]">GOODBYE, FOR NOW</p>
+
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-            <button
-              onClick={() => {
-                questSfx.confirm();
-                newGame();
-              }}
-              className="btn btn-primary min-w-[210px] px-7 py-3.5 text-[15px]"
-            >
-              Play again
-            </button>
             <button
               onClick={() => {
                 questSfx.panelClose();
                 setScreen("title");
               }}
-              className="btn min-w-[210px] px-7 py-3.5 text-[15px]"
+              className="btn btn-primary min-w-[210px] px-7 py-3.5 text-[15px]"
             >
               Main menu
             </button>

@@ -58,6 +58,17 @@ export type Flags = {
   flameGarden: boolean;
   flameCave: boolean;
   lanternRestored: boolean;
+  // final chapter
+  finaleDone: boolean;
+  f1205Arrived: boolean;
+  metFaizal: boolean;
+  metGarv: boolean;
+  metHakim: boolean;
+  metDev: boolean;
+  eveningDone: boolean;
+  hugDone: boolean;
+  seenRoad: boolean;
+  seenF1205: boolean;
   plates: Record<string, boolean>;
   statues: Record<string, boolean>;
   digs: Record<string, boolean>;
@@ -79,11 +90,22 @@ export const INITIAL_FLAGS: Flags = {
   trialDone: false, miniboss1Done: false, miniboss2Done: false, templeOpened: false,
   guardianDone: false, gateOpen: false, flameMountain: false, flameGarden: false,
   flameCave: false, lanternRestored: false,
+  finaleDone: false, f1205Arrived: false, metFaizal: false, metGarv: false, metHakim: false,
+  metDev: false, eveningDone: false, hugDone: false, seenRoad: false, seenF1205: false,
   plates: {}, statues: {}, digs: {}, chests: {}, lore: {}, hidden: {}, npcSpoken: {},
   tutorialSeen: {},
 };
 
-export type Settings = { musicVol: number; sfxVol: number; textSpeed: number };
+export type Settings = {
+  musicVol: number;
+  sfxVol: number;
+  textSpeed: number;
+  /** "3d" is the game; "classic" keeps the original Phaser pixel renderer available. */
+  renderer?: "3d" | "classic";
+  /** Camera look sensitivity multiplier. */
+  lookSens?: number;
+  invertY?: boolean;
+};
 
 export type InvEntry = { id: ItemId; count: number };
 
@@ -94,7 +116,7 @@ type SavePayload = {
 };
 
 export type GameState = {
-  screen: "title" | "playing" | "credits";
+  screen: "title" | "playing" | "end" | "credits";
   overlay: Overlay;
   map: MapId;
   playerX: number;
@@ -138,6 +160,21 @@ export type GameState = {
 };
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
+
+/**
+ * Saves from an older build carry an older step list. The step INDEX is what
+ * the save stores, and new steps are only ever appended, so refreshing the
+ * step list from canon keeps old saves loading and lets them reach the new
+ * final chapter.
+ */
+function mergeQuests(saved: Quest[]): Quest[] {
+  return saved.map((q) => {
+    if (q.id !== "main") return q;
+    const steps = clone(QUEST_MAIN.steps);
+    const step = Math.min(q.step, steps.length);
+    return { ...q, steps, step, done: step >= steps.length };
+  });
+}
 
 function detectSave(): boolean {
   try {
@@ -329,7 +366,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const p = JSON.parse(raw) as SavePayload;
       set({
         map: p.map, playerX: p.playerX, playerY: p.playerY, playerDir: p.playerDir,
-        party: p.party, inventory: p.inventory, quests: p.quests,
+        party: p.party, inventory: p.inventory, quests: mergeQuests(p.quests),
         // Merge over INITIAL_FLAGS so saves from an older build keep loading.
         flags: { ...clone(INITIAL_FLAGS), ...p.flags },
         settings: { ...get().settings, ...p.settings },

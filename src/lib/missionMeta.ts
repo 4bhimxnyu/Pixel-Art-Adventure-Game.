@@ -7,7 +7,7 @@ import type { GameState } from "../store/useGameStore";
 import { guideFor, type Guide } from "./guidance";
 import type { IconName } from "../components/pixel/MissionIcons";
 
-export type RegionId = "home" | "village" | "bamboo" | "mountain" | "temple" | "garden" | "cave" | "academy";
+export type RegionId = "home" | "village" | "bamboo" | "mountain" | "temple" | "garden" | "cave" | "academy" | "f1205";
 
 export type Region = { id: RegionId; name: string; x: number; y: number; icon: IconName };
 
@@ -21,6 +21,7 @@ export const REGIONS: Region[] = [
   { id: "temple",   name: "Temple of Echoes",      x: 0.86, y: 0.18, icon: "temple" },
   { id: "cave",     name: "Ancient Cave",          x: 0.78, y: 0.58, icon: "cave" },
   { id: "academy",  name: "Style Academy",         x: 0.88, y: 0.80, icon: "boss" },
+  { id: "f1205",    name: "F-1205",                x: 0.08, y: 0.36, icon: "guitar" },
 ];
 
 export type Reward = { kind: "ability" | "region" | "item" | "lore"; label: string };
@@ -36,6 +37,8 @@ export type MissionDef = {
   rewards: Reward[];
   finale?: boolean;
   boss?: boolean;
+  /** Chapter number shown as a small tag (the final chapter is numbered 26–28). */
+  code?: string;
 };
 
 export const MAIN_MISSIONS: MissionDef[] = [
@@ -123,8 +126,29 @@ export const MAIN_MISSIONS: MissionDef[] = [
       { kind: "lore", label: "The flame comes home" },
       { kind: "item", label: "Happy birthday, Palakshi" },
     ],
-    finale: true,
     boss: true,
+  },
+  {
+    id: "m_find", title: "Find Abhimanyu & Faizal", region: "f1205", icon: "guitar", code: "26",
+    blurb: "The flame is home and the village is lit. Abhimanyu slipped away before the lanterns went up — back to his place, F-1205, where the others are waiting.",
+    steps: ["finale", "find_abhi"],
+    cast: ["palakshi", "mimo", "abhimanyu", "faizal"],
+    rewards: [{ kind: "region", label: "The West Road opens" }],
+  },
+  {
+    id: "m_f1205", title: "F-1205", region: "f1205", icon: "home", code: "27",
+    blurb: "Abhimanyu's flat. Five flatmates, one sofa, a guitar on a stand and an iPad that never gets put down.",
+    steps: ["f1205"],
+    cast: ["palakshi", "abhimanyu", "faizal", "garv", "hakim", "dev"],
+    rewards: [{ kind: "lore", label: "The F-1205 flatmates" }],
+  },
+  {
+    id: "m_evening", title: "One Last Evening", region: "f1205", icon: "lantern", code: "28",
+    blurb: "A quiet evening after a long day. The adventure, Arshiya, Mimo, and what comes next — and then one goodbye, for now.",
+    steps: ["evening", "goodbye"],
+    cast: ["palakshi", "abhimanyu", "mimo"],
+    rewards: [{ kind: "lore", label: "Goodbye, for now" }],
+    finale: true,
   },
 ];
 

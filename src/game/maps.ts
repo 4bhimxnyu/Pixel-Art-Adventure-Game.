@@ -15,7 +15,8 @@
 
 export type MapId =
   | "bedroom" | "house" | "town" | "route1" | "forest" | "village"
-  | "bamboo" | "mountain" | "temple" | "garden" | "cave" | "academy";
+  | "bamboo" | "mountain" | "temple" | "garden" | "cave" | "academy"
+  | "road" | "f1205";
 
 export type Portal = {
   x: number;
@@ -43,7 +44,7 @@ export type MapDef = {
   id: MapId;
   name: string;
   indoor: boolean;
-  theme: "indoor" | "outdoor" | "village" | "bamboo" | "mountain" | "temple" | "garden" | "cave";
+  theme: "indoor" | "outdoor" | "village" | "bamboo" | "mountain" | "temple" | "garden" | "cave" | "flat";
   rows: string[];
   portals: Portal[];
   interacts: Record<string, InteractDef>;
@@ -56,7 +57,9 @@ export type MapDef = {
 // Anything the player INTERACTS with must be solid, so they walk up to it and
 // face it. A walkable interactable is a trap: you step onto the tile, "E" then
 // targets whatever is past it, and the object becomes impossible to use.
-export const SOLID = new Set(["#","t","K","c","j","H","L","m","%","^","u","q","=","$","&","*","B","b","s","D","T","w","o","_","!","y"]);
+export const SOLID = new Set(["#","t","K","c","j","H","L","m","%","^","u","q","=","$","&","*","B","b","s","D","T","w","o","_","!","y",
+  // F-1205 furniture: sofa, guitar stand, poster, window, counter, fridge, weights, table, plant
+  "S","l","@","0","[","]","x","7","a"]);
 /** Tiles you can stand on but that trigger something under-foot. */
 export const WALKABLE_SPECIAL = new Set(["z", "p", "~", "h", "y", "+", "I", "i", "!"]);
 
@@ -119,7 +122,7 @@ export const MAPS: Record<MapId, MapDef> = {
       "t..s..............,,",
       "t..................,",
       "t........W.........t",
-      "t..................t",
+      ",..................t",
       "t....F......F......t",
       "t.................ht",
       "t..................t",
@@ -139,6 +142,11 @@ export const MAPS: Record<MapId, MapDef> = {
         x: 9, y: 14, to: "academy", tx: 9, ty: 13, dir: "down",
         requiresFlag: "lanternRestored",
         lockedText: "The Style Academy gates are shut. Nothing to say to Arshiya yet.",
+      },
+      {
+        x: 0, y: 10, to: "road", tx: 1, ty: 5, dir: "left",
+        requiresFlag: "finaleDone",
+        lockedText: "The west road out of town. Nothing out there for you yet.",
       },
     ],
     interacts: {
@@ -480,11 +488,68 @@ export const MAPS: Record<MapId, MapDef> = {
       Y: { kind: "npc_boss", sprite: "arshiya", name: "Arshiya" },
     },
   },
+
+  // -------------------------------------------------------- final chapter
+  road: {
+    id: "road", name: "The West Road", indoor: false, theme: "outdoor", bgm: "bgm_road",
+    cinematic: { title: "THE WEST ROAD", subtitle: "Past the river, where the valley lets go", flag: "seenRoad" },
+    rows: [
+      "tttttttttttttttttttt",
+      "t........t.........t",
+      "t.ttt......L...ttt.t",
+      "t..........,.......t",
+      "t.....s....,...F...t",
+      ",,,,,,,,,,,,,,.....t",
+      "t..........,.......t",
+      "twwwwwwwwwwewwwwwwwt",
+      "twwwwwwwwwwewwwwwwwt",
+      "t..........,.......t",
+      "t.L........,.....L.t",
+      "t..........,.......t",
+      "t....HHHHHHHHHH....t",
+      "t....HHHHHHdHHH....t",
+      "tttttttttttttttttttt",
+    ],
+    portals: [
+      { x: 0, y: 5, to: "town", tx: 1, ty: 10, dir: "right" },
+      { x: 11, y: 13, to: "f1205", tx: 6, ty: 9, dir: "up" },
+    ],
+    interacts: {},
+  },
+
+  f1205: {
+    id: "f1205", name: "F-1205", indoor: true, theme: "flat", bgm: "bgm_f1205",
+    cinematic: { title: "F-1205", subtitle: "Abhimanyu's place. Shoes optional.", flag: "seenF1205" },
+    rows: [
+      "##############",
+      "#0...@...0...#",
+      "#..SQS...l...#",
+      "#..........7.#",
+      "#.....N......#",
+      "#]..[[...A...#",
+      "#.Z.......x..#",
+      "#.......V....#",
+      "#..r....a....#",
+      "#......B.....#",
+      "######dd######",
+    ],
+    portals: [
+      { x: 6, y: 10, to: "road", tx: 11, ty: 12, dir: "up" },
+      { x: 7, y: 10, to: "road", tx: 11, ty: 12, dir: "up" },
+    ],
+    interacts: {
+      A: { kind: "npc_abhimanyu_home", sprite: "abhimanyu", name: "Abhimanyu" },
+      Z: { kind: "npc_faizal", sprite: "faizal", name: "Faizal" },
+      N: { kind: "npc_garv", sprite: "garv", name: "Garv" },
+      Q: { kind: "npc_hakim", sprite: "hakim", name: "Hakim" },
+      V: { kind: "npc_dev", sprite: "dev", name: "Dev" },
+    },
+  },
 };
 
 export const MAP_ORDER: MapId[] = [
   "bedroom", "house", "town", "route1", "forest", "village",
-  "bamboo", "mountain", "temple", "garden", "cave", "academy",
+  "bamboo", "mountain", "temple", "garden", "cave", "academy", "road", "f1205",
 ];
 
 /** Which flag opens a '=' barrier on a given map. */

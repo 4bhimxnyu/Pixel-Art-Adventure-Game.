@@ -88,6 +88,31 @@ const SPECS: Record<string, Spec> = {
     robe: "#5a4a3a", robeHi: "#6d5b47", trim: "#8a7458",
     extra: [[4, 8, 2, 2, "#b3252f"], [10, 8, 2, 2, "#b3252f"], [3, 11, 2, 3, "#f7e6c8"], [11, 11, 2, 3, "#f7e6c8"]],
   },
+  // ---- F-1205 flatmates
+  faizal: {
+    // short, heavy-set, curly hair, green tee
+    bg: "#16261a", hair: "#2a1a12", hairHi: "#4a3220", skin: "#d9a074", shade: "#a87a52",
+    robe: "#2f7a3f", robeHi: "#3f9a52", trim: "#2a5a33", wide: true,
+    extra: [[2, 1, 12, 1, "#2a1a12"], [2, 2, 1, 2, "#2a1a12"], [13, 2, 1, 2, "#2a1a12"], [4, 0, 2, 1, "#2a1a12"], [10, 0, 2, 1, "#2a1a12"], [7, 0, 2, 1, "#2a1a12"]],
+  },
+  garv: {
+    // oldest flatmate: grey at the temples, short beard, calm earth tones
+    bg: "#241f1a", hair: "#3a3236", hairHi: "#8a8290", skin: "#cfa079", shade: "#a87a52",
+    robe: "#5a4a3c", robeHi: "#6e5c4c", trim: "#c9b48a",
+    extra: [[3, 2, 2, 1, "#8a8290"], [11, 2, 2, 1, "#8a8290"], [5, 10, 6, 2, "#4a3e40"], [6, 11, 4, 1, "#3a3236"]],
+  },
+  hakim: {
+    // always on his iPad — the tablet is in frame, below the chin, never over the eyes
+    bg: "#1a1f2e", hair: "#1c1416", skin: "#d4a07a", shade: "#a87a52",
+    robe: "#3a3f5a", robeHi: "#4d546f", trim: "#c9c4bb",
+    extra: [[3, 12, 10, 4, "#c9c4bb"], [4, 13, 8, 3, "#2a3a55"], [5, 14, 6, 1, "#5b7fb5"]],
+  },
+  dev: {
+    // bodybuilder: wide shoulders, strong jaw, fitted vest
+    bg: "#2a1a1a", hair: "#121010", hairHi: "#2a2424", skin: "#d0946a", shade: "#a8724e",
+    robe: "#1f1f24", robeHi: "#2e2e36", trim: "#e0616b", wide: true,
+    extra: [[0, 11, 3, 5, "#d0946a"], [13, 11, 3, 5, "#d0946a"], [4, 9, 8, 1, "#a8724e"]],
+  },
   bunny:   { bg: "#1c2a22", hair: "#cfe0d2", skin: "#cfe0d2", shade: "#9fb8a6", robe: "#cfe0d2", robeHi: "#e2eee5", trim: "#7ddca4", extra: [[4, 0, 2, 6, "#cfe0d2"], [10, 0, 2, 6, "#cfe0d2"], [5, 8, 2, 2, "#0a0507"], [9, 8, 2, 2, "#0a0507"]] },
   sparrow: { bg: "#241f16", hair: "#8a6f4f", skin: "#8a6f4f", shade: "#6b563d", robe: "#8a6f4f", robeHi: "#a3865f", trim: "#f7e6c8", extra: [[11, 8, 4, 2, "#d9b45b"], [5, 7, 2, 2, "#0a0507"]] },
   wolf:    { bg: "#1b1a20", hair: "#4d4a55", skin: "#4d4a55", shade: "#38363f", robe: "#4d4a55", robeHi: "#67636f", trim: "#8a8698", extra: [[3, 1, 3, 4, "#4d4a55"], [10, 1, 3, 4, "#4d4a55"], [5, 8, 2, 2, "#b3252f"], [9, 8, 2, 2, "#b3252f"]] },

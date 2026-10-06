@@ -812,6 +812,59 @@ export const TRACKS: Record<string, Track> = {
     perc: { dagu: "1.111.11", bangzi: ".1.1.1.1", luo: "1...1...", muyu: "..1...1." },
   },
 
+  // ------------------------------------------------------- final chapter
+  bgm_road: {
+    // The walk out of the valley: unhurried dizi over guzheng, barely any drums.
+    root: 55, mode: "zhi", bpm: 88, beats: 8, lead: "dizi", counter: "guzheng", pad: "sheng",
+    sad: 0.2, chant: [1, 5, 6, 5], gain: 0.62, wind: true, birds: true,
+    phrases: [
+      P(n(5, 2), n(6, 1), n(8, 1), n(6, 2), n(5, 2)),
+      P(n(3, 2, "grace"), n(5, 2), n(2, 4)),
+      P(n(1, 1), n(2, 1), n(3, 2), n(5, 2), n(6, 2)),
+      P(n(5, 3), n(3, 1), n(1, 4, "bend")),
+    ],
+    perc: { muyu: "1...1..." },
+  },
+
+  bgm_f1205: {
+    // Warm and relaxed: yangqin and pipa trading lines, a soft muyu pulse.
+    root: 57, mode: "gong", bpm: 80, beats: 8, lead: "yangqin", counter: "pipa", pad: "sheng",
+    sad: 0.15, chant: [1, 3, 5, 3], gain: 0.6,
+    phrases: [
+      P(n(3, 2), n(5, 1), n(6, 1), n(5, 2), n(3, 2)),
+      P(n(2, 2), n(3, 2), n(1, 4)),
+      P(n(5, 1, "grace"), n(6, 1), n(5, 2), n(3, 2), n(2, 2)),
+      P(n(1, 2), n(3, 2), r(4)),
+    ],
+    perc: { muyu: "1.......", bangzi: "....1..." },
+  },
+
+  bgm_goodbye: {
+    // The hug. Erhu carries it; guzheng answers; the chant swells under it.
+    root: 52, mode: "yu", bpm: 66, beats: 8, lead: "erhu", counter: "guzheng", pad: "sheng",
+    sad: 0.1, chant: [1, 6, 5, 4], gain: 0.8,
+    phrases: [
+      P(n(5, 3, "bend"), n(4, 1), n(3, 2), n(1, 2)),
+      P(n(3, 2, "grace"), n(5, 2), n(6, 4, "trem")),
+      P(n(8, 2, "gliss"), n(6, 2), n(5, 3), r(1)),
+      P(n(3, 2), n(2, 2), n(1, 4, "bend")),
+    ],
+    perc: { luo: "1......." },
+  },
+
+  bgm_end: {
+    // THE END: xiao alone over the quietest bed. Nothing follows this.
+    root: 52, mode: "gong", bpm: 60, beats: 8, lead: "xiao", counter: "guzheng", pad: "sheng",
+    sad: 0.05, chant: [1, 1, 5, 1], gain: 0.7,
+    phrases: [
+      P(n(5, 4), n(6, 2), n(5, 2)),
+      P(n(3, 4, "bend"), n(1, 4)),
+      P(r(2), n(5, 2, "grace"), n(3, 4)),
+      P(n(1, 8)),
+    ],
+    perc: {},
+  },
+
   bgm_credits: {
     root: 53, mode: "gong", bpm: 84, beats: 8, lead: "guzheng", counter: "shakuhachi", pad: "sheng",
     sad: 0.4, chant: [1, 5, 6, 4], gain: 0.75,
