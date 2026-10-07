@@ -1603,6 +1603,14 @@ export class World3D {
         break;
       }
       case "evening-gather": this.eveningGather(); break;
+      case "evening-end": {
+        // the conversation is over: hand the camera back at once instead of
+        // finishing the slow orbit (a quick reader would otherwise wait ~30 s)
+        if (this.cam.cinematicActive) this.cam.stopCinematic();
+        this.inputLocked = false;
+        this.cam.snapBehind(this.playerPos, this.heading);
+        break;
+      }
       case "final-hug": this.finalHug(payload?.onDone); break;
       default:
         break;

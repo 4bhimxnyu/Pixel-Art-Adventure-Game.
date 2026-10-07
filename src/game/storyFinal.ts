@@ -140,6 +140,7 @@ export function handleFinalChapterDialogue(
 
     case "evening_done":
       store.setFlag("eveningDone", true);
+      fx.cinematic?.("evening-end");
       playBgm("bgm_goodbye", 2.0);
       adv("goodbye");
       bus.emit("toast", { text: "The evening winds down. Abhimanyu is by the door.", tone: "info" });
