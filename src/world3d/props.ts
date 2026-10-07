@@ -690,6 +690,52 @@ const defs: Record<string, () => PropDef> = {
       P(G.ico(0.18, 0), mat(C.leaf2), 0.14, 0.66, 0.1),
     ],
   }),
+  clutterBags: () => ({
+    spin: true, jitter: 0.1,
+    parts: [
+      P(G.box(0.46, 0.34, 0.3), mat("#3a3f5a"), -0.12, 0.17, 0.05),
+      P(G.box(0.3, 0.1, 0.2), mat("#2a2d38"), -0.12, 0.38, 0.05, { shadow: false }),
+      P(G.box(0.34, 0.26, 0.26), mat("#8a2a2a"), 0.24, 0.13, -0.12, { ry: 0.5 }),
+      P(G.box(0.16, 0.05, 0.3), mat("#1f1f24"), 0.1, 0.03, 0.3, { ry: -0.4, shadow: false }),
+      P(G.box(0.2, 0.06, 0.14), mat(C.white), 0.3, 0.3, -0.1, { ry: 0.2, shadow: false }),
+    ],
+  }),
+  clutterBooks: () => ({
+    spin: true, jitter: 0.1,
+    parts: [
+      P(G.box(0.3, 0.05, 0.22), mat("#b3252f"), 0, 0.025, 0, { shadow: false }),
+      P(G.box(0.28, 0.05, 0.2), mat("#2b5171"), 0.03, 0.075, 0.02, { ry: 0.25, shadow: false }),
+      P(G.box(0.26, 0.05, 0.2), mat("#d9b45b"), -0.02, 0.125, -0.01, { ry: -0.15, shadow: false }),
+      P(G.box(0.34, 0.02, 0.24), mat("#2a2d38"), 0.3, 0.02, 0.2, { ry: 0.7, shadow: false }),
+      P(G.box(0.3, 0.012, 0.2), glow("#9fd0ff", 0.9), 0.3, 0.035, 0.2, { ry: 0.7, shadow: false }),
+      P(G.box(0.36, 0.1, 0.32), mat("#4a5c80"), -0.3, 0.05, -0.2, { ry: 0.3 }),
+    ],
+  }),
+  chair: () => ({
+    parts: [
+      P(G.box(0.44, 0.05, 0.44), mat(C.wood3), 0, 0.46, 0),
+      P(G.box(0.44, 0.5, 0.05), mat(C.wood3), 0, 0.73, 0.2),
+      P(G.box(0.05, 0.46, 0.05), mat(C.wood1), -0.18, 0.23, -0.18),
+      P(G.box(0.05, 0.46, 0.05), mat(C.wood1), 0.18, 0.23, -0.18),
+      P(G.box(0.05, 0.46, 0.05), mat(C.wood1), -0.18, 0.23, 0.18),
+      P(G.box(0.05, 0.46, 0.05), mat(C.wood1), 0.18, 0.23, 0.18),
+      P(G.box(0.3, 0.08, 0.2), mat("#1f1f24"), 0.05, 0.53, -0.02, { ry: 0.3, shadow: false }),
+    ],
+  }),
+  snackTable: () => ({
+    parts: [
+      P(G.box(0.7, 0.05, 0.5), mat(C.wood3), 0, 0.42, 0),
+      P(G.box(0.06, 0.42, 0.06), mat(C.wood1), -0.3, 0.21, -0.2),
+      P(G.box(0.06, 0.42, 0.06), mat(C.wood1), 0.3, 0.21, -0.2),
+      P(G.box(0.06, 0.42, 0.06), mat(C.wood1), -0.3, 0.21, 0.2),
+      P(G.box(0.06, 0.42, 0.06), mat(C.wood1), 0.3, 0.21, 0.2),
+      P(G.cyl(0.13, 0.1, 0.08, 10), mat(C.offwhite), -0.15, 0.48, 0, { shadow: false }),
+      P(G.cyl(0.1, 0.1, 0.02, 8), mat("#e0b050"), -0.15, 0.53, 0, { shadow: false }),
+      P(G.cyl(0.04, 0.04, 0.22, 6), mat("#2a6a3a"), 0.15, 0.55, 0.1, { shadow: false }),
+      P(G.cyl(0.04, 0.04, 0.2, 6), mat("#8a2a2a"), 0.24, 0.54, -0.08, { shadow: false }),
+      P(G.box(0.14, 0.08, 0.1), mat("#d9b45b"), 0.05, 0.49, -0.15, { ry: 0.5, shadow: false }),
+    ],
+  }),
   flatWall: () => ({
     parts: [
       P(G.box(1, 1.7, 1), mat("#ead9c3"), 0, 0.85, 0),

@@ -45,6 +45,10 @@ export class CameraRig {
   private lift = 0;
   /** A fixed pose the camera settles into (battles). Cinematics still win. */
   hold: { pos: THREE.Vector3; look: THREE.Vector3; sway?: number } | null = null;
+  /** First-person: the camera is the player's eyes (F-1205). */
+  firstPerson = false;
+  private fppPitch = 0;
+  private bobT = 0;
   private holdT = 0;
 
   constructor(aspect: number) {
@@ -59,6 +63,10 @@ export class CameraRig {
   rotate(dYaw: number, dPitch: number) {
     if (this.cine) return;
     this.yaw -= dYaw;
+    if (this.firstPerson) {
+      this.fppPitch = THREE.MathUtils.clamp(this.fppPitch + dPitch, -0.9, 0.75);
+      return;
+    }
     this.pitch = THREE.MathUtils.clamp(this.pitch + dPitch, this.indoor ? 0.42 : 0.12, 1.15);
     this.autoAlign = 0;
   }
@@ -130,6 +138,21 @@ export class CameraRig {
         this.pos.copy(this.camera.position);
         return;
       }
+    }
+
+    // --- first person (F-1205): eye height, gentle walk bob, look where the stick points
+    if (this.firstPerson && !this.hold) {
+      this.bobT += dt * (moving ? 9 : 2);
+      const fwd = this.groundForward(new THREE.Vector3());
+      const eye = new THREE.Vector3(target.x, target.y + 1.38 + Math.sin(this.bobT) * (moving ? 0.025 : 0.006), target.z);
+      eye.addScaledVector(fwd, 0.12);
+      const cp = Math.cos(this.fppPitch);
+      const lookAt = eye.clone().add(new THREE.Vector3(fwd.x * cp, Math.sin(this.fppPitch), fwd.z * cp));
+      this.pos.lerp(eye, Math.min(1, dt * 20));
+      this.look.lerp(lookAt, Math.min(1, dt * 24));
+      this.camera.position.copy(this.pos);
+      this.camera.lookAt(this.look);
+      return;
     }
 
     // --- held pose (battle stage)

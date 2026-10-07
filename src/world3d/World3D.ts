@@ -383,11 +383,14 @@ export class World3D {
       let object: THREE.Object3D;
       let update: Entity["update"];
       if (idef.sprite) {
-        rig = idef.sprite === "mimo" ? new DogRig() : new CharacterRig(idef.sprite);
+        // "enemy:<species>" puts a creature in the world (the Blossom Warden at its shrine)
+        rig = idef.sprite === "mimo" ? new DogRig()
+          : idef.sprite.startsWith("enemy:") ? makeEnemyRig(idef.sprite.slice(6), true)
+          : new CharacterRig(idef.sprite);
         object = rig.group;
         rig.setShadows(this.quality.shadows);
         rig.setHeading(this.npcHeading(def, idef.kind, pos), true);
-        this.tryOverride(rig, idef.sprite);
+        if (!idef.sprite.startsWith("enemy:")) this.tryOverride(rig, idef.sprite);
       } else {
         // scenery interactable: the rustling bush, the undergrowth with a ribbon in it
         const g = propObject(idef.kind === "ribbon_spot" ? "bush" : "sparkleBush");
@@ -448,6 +451,7 @@ export class World3D {
     this.trail = [this.playerPos.clone()];
 
     // --- camera
+    this.cam.firstPerson = def.id === "f1205";
     if (!sameMap) this.cam.snapBehind(this.playerPos, this.heading);
 
     // --- audio + arrival UI
@@ -625,8 +629,48 @@ export class World3D {
 
   /** A few NPCs move with the story (Abhimanyu waits by the door after the evening). */
   private entityOverride(def: MapDef, kind: string, pos: { x: number; y: number }, flags: Flags) {
-    if (def.id === "f1205" && kind === "npc_abhimanyu_home" && flags.eveningDone) return { x: 7, y: 8 };
+    if (def.id !== "f1205") return pos;
+    if (kind === "npc_abhimanyu_home" && flags.eveningDone) return { x: 2, y: 7 };
+    // once everyone has said hello the flat rearranges itself: Abhimanyu drifts to the
+    // living room with the bass, Garv wanders over to heckle Faizal in the kitchen
+    const allMet = flags.metAbhiHome && flags.metFaizal && flags.metGarv && flags.metHakim && flags.metDev;
+    if (allMet && !flags.eveningDone) {
+      if (kind === "npc_abhimanyu_home") return { x: 6, y: 4 };
+      if (kind === "npc_garv") return { x: 11, y: 3 };
+    }
     return pos;
+  }
+
+  /** Little things the flatmates say to each other (or to you) when you wander near. */
+  private ambientAt = new Map<string, number>();
+  private ambientLines: Record<string, string[]> = {
+    npc_garv: ["Garv: \"Faizal, rice kab banega?\"", "Garv: \"Red hi hai. Red hi chalega.\""],
+    npc_faizal: ["Faizal: \"Jab tu bartan dhoega, tab banega.\"", "Faizal: \"Kisi ne namak dekha? Nahi? Theek hai.\""],
+    npc_hakim: ["Hakim: \"...bas do minute.\"", "Hakim: \"Compile ho raha hai. Mat bolo kuch.\""],
+    npc_dev: ["Dev: \"One more set.\"", "Dev: \"Protein khatam. Yeh emergency hai.\""],
+    npc_abhimanyu_home: ["Abhimanyu strums the same four chords, slower this time.", "Abhimanyu: \"Yeh wala sun. Nahi, yeh wala.\""],
+  };
+
+  private ambientChatter() {
+    const f = useGameStore.getState().flags;
+    if (this.mapDef.id !== "f1205" || !f.metDev || f.eveningDone) return;
+    const now = performance.now();
+    for (const e of this.entities) {
+      const lines = this.ambientLines[e.kind];
+      if (!lines) continue;
+      const d = e.object.position.distanceTo(this.playerPos);
+      if (d > 2.6) continue;
+      const last = this.ambientAt.get(e.kind) ?? -1e9;
+      if (now - last < 28000) continue;
+      this.ambientAt.set(e.kind, now);
+      bus.emit("toast", { text: lines[Math.floor(Math.random() * lines.length)], tone: "info" });
+      e.rig?.play("wave", 0.8);
+    }
+  }
+
+  /** F-1205 is explored through Palakshi's own eyes. */
+  private get firstPerson() {
+    return this.mapDef?.id === "f1205" && this.mode === "explore" && !this.cam.cinematicActive;
   }
 
   private npcHeading(def: MapDef, kind: string, pos: { x: number; y: number }) {
@@ -865,6 +909,13 @@ export class World3D {
     // re-align behind the player only while they walk away from the camera;
     // strafing or backing up must never swing the view around under them
     const walkingForward = moving && st.move.y > 0.35 && Math.abs(st.move.x) < 0.6;
+    const fpp = this.firstPerson;
+    if (fpp) {
+      // the body faces where the player looks; the eye is the camera
+      this.heading = this.cam.yaw + Math.PI;
+      this.player.setHeading(this.heading, true);
+    }
+    this.player.group.visible = !fpp || this.mode !== "explore";
     this.cam.update(dt, camTarget, this.heading, walkingForward, st.lookActive);
 
     // --- contextual prompt
@@ -890,6 +941,7 @@ export class World3D {
       });
     }
     if (this.warnCooldown > 0) this.warnCooldown -= dt;
+    if (!locked) this.ambientChatter();
   }
   private stepAccum = 0;
   private pawLast = new THREE.Vector3();
@@ -942,7 +994,7 @@ export class World3D {
     }
     // Mimo warns about a boss ahead
     if (this.companionId === "mimo" && this.warnCooldown <= 0) {
-      const boss = this.entities.find((e) => ["npc_miniboss1", "npc_miniboss2", "npc_guardian", "npc_boss", "npc_prakriti_duel"].includes(e.kind));
+      const boss = this.entities.find((e) => ["npc_miniboss1", "npc_miniboss2", "npc_miniboss3", "npc_guardian", "npc_boss", "npc_prakriti_duel"].includes(e.kind));
       if (boss && Math.hypot(boss.x - cx, boss.y - cy) < 4.5) this.mimoWarn(`Mimo stops and growls. ${boss.name ?? "Something"} is close.`);
     }
   }
@@ -1506,32 +1558,32 @@ export class World3D {
 
   /** Everyone drifts to the sofa for the last conversation; the camera circles slowly. */
   private eveningGather() {
-    // [column, row, heading] — everyone faces the middle of the room
+    // [column, row, heading] — everyone gathers in the living room, facing the middle
     const seats: Record<string, [number, number, number]> = {
       npc_hakim: [4.5, 2.4, Math.PI],
-      npc_garv: [6.2, 3.2, -Math.PI / 2],
-      npc_faizal: [2.6, 3.4, Math.PI / 2],
-      npc_dev: [5.8, 1.6, Math.PI],
-      npc_abhimanyu_home: [3.6, 3.9, Math.PI],
+      npc_garv: [7.2, 3.4, -Math.PI / 2],
+      npc_faizal: [2.0, 3.6, Math.PI / 2],
+      npc_dev: [6.6, 1.8, Math.PI],
+      npc_abhimanyu_home: [3.4, 4.3, 0.3],
     };
     for (const e of this.entities) {
       const s = seats[e.kind];
       if (!s || !e.rig) continue;
-      e.object.position.set(s[0], 0, -s[1]);
-      e.rig.setHeading(s[2], true);
       e.x = Math.floor(s[0]);
       e.y = Math.floor(s[1]);
+      this.walkEntity(e, new THREE.Vector3(s[0], 0, -s[1]), s[2]);
     }
-    this.playerPos.set(4.5, 0, -4.4);
+    this.playerPos.set(5.2, 0, -4.6);
     this.player.setHeading(0, true);
     this.heading = 0;
+    this.player.group.visible = true;
     if (this.companion) {
-      this.companion.group.position.set(5.3, 0, -4.2);
+      this.companion.group.position.set(6.2, 0, -4.4);
       this.companion.setHeading(0, true);
     }
     this.inputLocked = true;
-    const look = new THREE.Vector3(4.4, 0.8, -3.0);
-    const ring = (a: number, r: number, h: number) => new THREE.Vector3(4.4 + Math.sin(a) * r, h, -3.0 + Math.cos(a) * r);
+    const look = new THREE.Vector3(4.6, 0.8, -3.1);
+    const ring = (a: number, r: number, h: number) => new THREE.Vector3(4.6 + Math.sin(a) * r, h, -3.1 + Math.cos(a) * r);
     this.cam.playCinematic({
       frames: [
         { pos: ring(0.3, 4.2, 2.4), look, dur: 1.2 },
@@ -1542,6 +1594,26 @@ export class World3D {
       onDone: () => { this.inputLocked = false; },
     });
     this.delay(60000, () => { if (this.cam.cinematicActive) this.cam.stopCinematic(); });
+  }
+
+  /** An NPC strolls to a spot over a couple of seconds (straight line; rooms are open enough). */
+  private walkEntity(e: Entity, to: THREE.Vector3, finalHeading: number) {
+    const rig = e.rig!;
+    const from = e.object.position.clone();
+    const dist = from.distanceTo(to);
+    const dur = Math.max(0.4, dist / 1.6);
+    let t = 0;
+    rig.setHeading(Math.atan2(to.x - from.x, to.z - from.z));
+    const step = () => {
+      if (!this.running) return;
+      t += 1 / 60;
+      const k = Math.min(1, t / dur);
+      e.object.position.lerpVectors(from, to, k);
+      rig.setMoving(k < 1 ? 0.7 : 0);
+      if (k < 1) requestAnimationFrame(step);
+      else rig.setHeading(finalHeading);
+    };
+    step();
   }
 
   /** The end: Palakshi walks to Abhimanyu, they hold the hug, the camera pulls away, fade to black. */
@@ -1555,6 +1627,7 @@ export class World3D {
     }
     this.inputLocked = true;
     this.mode = "cinematic";
+    this.player.group.visible = true;
     playBgm("bgm_hug", 2.5);
     const ap = abhi.object.position.clone();
     const dir = this.playerPos.clone().sub(ap);

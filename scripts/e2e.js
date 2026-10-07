@@ -239,6 +239,10 @@ async function run() {
   await walkTo(18, 7); await walkTo(19, 7, { untilMap: "garden" });
   await until(() => S().map === "garden", 3000, "entered garden");
   await sleep(3000);
+  await walkTo(14, 6); placeAt(14, 6, "up"); await interact(); // Blossom Warden X at (14,5)
+  await fight();
+  expect(S().flags.miniboss3Done, "Blossom Warden defeated");
+  await expectGone("npc_miniboss3", "Blossom Warden");
   await walkTo(4, 9); placeAt(4, 9, "up"); await interact(); // Prakriti P at (4,8)
   await fight();
   expect(S().flags.prakritiDone, "Prakriti defeated");
@@ -246,7 +250,7 @@ async function run() {
   placeAt(4, 9, "up"); W().tryInteract(); await sleep(400);
   expect(S().overlay?.kind !== "battle" && S().overlay?.kind !== "dialogue", "Prakriti's duel cannot restart");
   await sleep(500);
-  await walkTo(14, 5); placeAt(14, 5, "up"); await interact(false); // garden flame at (14,4)
+  await walkTo(14, 6); await walkTo(14, 5); placeAt(14, 5, "up"); await interact(false); // garden flame at (14,4)
   expect(S().flags.flameGarden, "garden flame");
   await sleep(2500);
   // --- Temple
@@ -278,6 +282,9 @@ async function run() {
   await walkTo(18, 7); await walkTo(19, 7, { untilMap: "cave" });
   await until(() => S().map === "cave", 3000, "entered cave");
   await sleep(3000);
+  // echo stones: two statues, then two plates, then the flame
+  for (const [sx, sy] of [[5, 4], [14, 4]]) { await walkTo(sx, sy + 1); placeAt(sx, sy + 1, "up"); W().tryInteract(); await sleep(250); await dialogueThroughIfAny(); }
+  for (const [px, py] of [[5, 11], [14, 11]]) { await walkTo(px, py); W().tryInteract(); await sleep(250); await dialogueThroughIfAny(); }
   await walkTo(10, 10); placeAt(10, 10, "up"); await interact(false); // cave flame at (10,9)
   expect(S().flags.flameCave, "cave flame");
   await sleep(2500);
@@ -312,21 +319,25 @@ async function run() {
   await walkTo(11, 6); await walkTo(11, 9); await walkTo(11, 12); await walkTo(11, 13, { untilMap: "f1205" });
   await until(() => S().map === "f1205", 3000, "entered F-1205");
   await sleep(3000);
-  await walkTo(9, 6); placeAt(9, 6, "up"); await interact(); // Abhimanyu A at (9,5)
+  expect(W().cam.firstPerson === true, "F-1205 is first-person");
+  // Faizal in the kitchen (13,4) holds the door: the welcome is the arrival
+  await walkTo(4, 7); await walkTo(14, 7); await walkTo(14, 6); await walkTo(14, 5); placeAt(13, 5, "up"); await interact();
   expect(S().flags.f1205Arrived, "arrived at F-1205");
   await sleep(2800);
-  await walkTo(2, 7); placeAt(2, 7, "up"); await interact(); // Faizal Z at (2,6)
-  await walkTo(6, 5); placeAt(6, 5, "up"); await interact(); // Garv N at (6,4)
-  await walkTo(4, 3); placeAt(4, 3, "up"); await interact(); // Hakim Q at (4,2)
-  await walkTo(8, 8); placeAt(8, 8, "up"); await interact(); // Dev V at (8,7)
+  await walkTo(14, 7); await walkTo(4, 7); await walkTo(4, 9); await walkTo(4, 11); placeAt(4, 11, "down"); await interact(); // Abhimanyu A at (4,12)
+  expect(S().flags.metAbhiHome, "met Abhimanyu in his room");
+  await walkTo(4, 9); await walkTo(4, 7); await walkTo(4, 5); await walkTo(4, 3); placeAt(4, 3, "up"); await interact(); // Hakim Q at (4,2)
+  await walkTo(4, 5); await walkTo(4, 7); await walkTo(11, 7); await walkTo(11, 9); await walkTo(13, 11); placeAt(13, 11, "down"); await interact(); // Garv N at (13,12)
+  await walkTo(16, 13); placeAt(16, 13, "up"); await interact(); // Dev V at (16,12)
+  await walkTo(11, 9); await walkTo(11, 7); await walkTo(14, 7); await walkTo(14, 5); placeAt(13, 5, "up"); await interact(); // Faizal again
   expect(["metFaizal", "metGarv", "metHakim", "metDev"].every((k) => S().flags[k]), "met all four flatmates");
   await sleep(2800);
-  await walkTo(9, 6); placeAt(9, 6, "up"); await interact(); // evening
+  await walkTo(14, 7); await walkTo(4, 7); await walkTo(4, 5); placeAt(6, 5, "up"); await interact(); // Abhimanyu now in the living room (6,4): the evening
   await until(() => S().overlay?.kind === "dialogue", 4000, "evening conversation");
   await dialogueThrough();
   expect(S().flags.eveningDone, "evening done");
   await sleep(500);
-  await walkTo(7, 9); placeAt(7, 9, "up"); await interact(); // Abhimanyu by the door (7,8)
+  await walkTo(3, 7); placeAt(3, 7, "left"); await interact(); // Abhimanyu by the door (2,7)
   await until(() => S().flags.hugDone, 4000, "hug");
   await until(() => S().screen === "end", 20000, "THE END");
   expect(S().screen === "end", "the game ends with THE END");

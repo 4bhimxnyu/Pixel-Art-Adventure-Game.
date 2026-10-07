@@ -22,6 +22,9 @@ export const FINAL_CHAPTER_PROMPTS: Record<string, string> = {
   fridge: "Open the fridge",
   weights: "Try the weights",
   table: "Look",
+  clutter: "Look",
+  chair: "Look",
+  snacks: "Look",
   npc_abhimanyu_home: "Talk to Abhimanyu",
 };
 
@@ -29,7 +32,7 @@ const FLATMATES = ["metFaizal", "metGarv", "metHakim", "metDev"] as const;
 
 function allMet() {
   const f = useGameStore.getState().flags;
-  return FLATMATES.every((k) => f[k]);
+  return f.metAbhiHome && FLATMATES.every((k) => f[k]);
 }
 
 /** Returns true when the interaction was ours. */
@@ -49,13 +52,18 @@ export function handleFinalChapterInteract(story: StoryController, kind: string)
       D("road_sign");
       return true;
     }
-    case "npc_faizal": npc("faizal", "metFaizal"); return true;
     case "npc_garv": npc("garv", "metGarv"); return true;
     case "npc_hakim": npc("hakim", "metHakim"); return true;
     case "npc_dev": npc("dev", "metDev"); return true;
-    case "npc_abhimanyu_home": {
+    case "npc_faizal": {
+      // Faizal holds the door: the first conversation is the welcome itself
       if (!f.f1205Arrived) D("f1205_arrive");
-      else if (f.eveningDone) D("f1205_goodbye");
+      else npc("faizal", "metFaizal");
+      return true;
+    }
+    case "npc_abhimanyu_home": {
+      if (f.eveningDone) D("f1205_goodbye");
+      else if (!f.metAbhiHome) D("abhi_home_first");
       else if (allMet()) D("abhi_home_evening");
       else D("abhi_home_wait");
       return true;
@@ -68,6 +76,9 @@ export function handleFinalChapterInteract(story: StoryController, kind: string)
     case "fridge": story.say("Three kinds of protein, one lonely vegetable, and a note: DEV — STOP LABELLING THINGS."); return true;
     case "weights": story.say("Heavier than they look. Dev is not looking, which is somehow worse."); return true;
     case "table": story.say("Garv's spot. A newspaper, folded exactly once."); return true;
+    case "clutter": story.say(["Three bags, one of them definitely Dev's, and a book on hydroponics nobody has opened.", "Hakim's second laptop. The first is 'resting'.", "A hoodie, a charger, two odd socks and a very old packet of biscuits. Home."][Math.floor(Math.random() * 3)]); return true;
+    case "chair": story.say("Garv's chair. Nobody else sits in it. Nobody has ever been told not to."); return true;
+    case "snacks": story.say("A bowl of chips with exactly one left, which is how you know Hakim has been here."); return true;
     default:
       return false;
   }
@@ -85,18 +96,23 @@ export function handleFinalChapterDialogue(
   switch (evt) {
     case "after_finale":
       store.setFlag("finaleDone", true);
-      bus.emit("cinematic", { kind: "mission-start", title: "MISSION 26", subtitle: "Find Abhimanyu & Faizal" });
+      bus.emit("cinematic", { kind: "mission-start", title: "NEW MISSION", subtitle: "The West Road" });
       adv("find_abhi");
       fx.refresh();
       return true;
 
     case "f1205_arrived":
       store.setFlag("f1205Arrived", true);
-      bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "Find Abhimanyu & Faizal" });
+      bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "The West Road" });
       adv("f1205");
       fx.delay(2600, () =>
-        bus.emit("cinematic", { kind: "mission-start", title: "MISSION 27", subtitle: "F-1205" })
+        bus.emit("cinematic", { kind: "mission-start", title: "FINAL CHAPTER", subtitle: "F-1205" })
       );
+      return true;
+
+    case "met_abhi_home":
+      store.setFlag("metAbhiHome", true);
+      questSfx.objective();
       return true;
 
     case "met_faizal":
@@ -109,18 +125,15 @@ export function handleFinalChapterDialogue(
       const n = FLATMATES.filter((k) => useGameStore.getState().flags[k]).length;
       bus.emit("toast", { text: `Met ${n}/4 flatmates.`, tone: "info" });
       if (allMet()) {
-        bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "F-1205" });
+        bus.emit("cinematic", { kind: "objective", title: "EVERYONE'S HOME", subtitle: "Find Abhimanyu. It's time to sit down together." });
         adv("evening");
-        fx.delay(2600, () =>
-          bus.emit("cinematic", { kind: "mission-start", title: "MISSION 28", subtitle: "One Last Evening" })
-        );
       }
       return true;
     }
 
     case "evening_start":
       fx.cinematic?.("evening-gather");
-      fx.delay(900, () => useGameStore.getState().openDialogue("f1205_evening"));
+      fx.delay(fx.cinematic ? 4200 : 600, () => useGameStore.getState().openDialogue("f1205_evening"));
       return true;
 
     case "evening_done":

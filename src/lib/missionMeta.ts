@@ -37,14 +37,14 @@ export type MissionDef = {
   rewards: Reward[];
   finale?: boolean;
   boss?: boolean;
-  /** Chapter number shown as a small tag (the final chapter is numbered 26–28). */
+  /** Chapter number. */
   code?: string;
 };
 
 export const MAIN_MISSIONS: MissionDef[] = [
   {
-    id: "m_mimo", title: "Find Mimo", region: "home", icon: "paw",
-    blurb: "Mimo slipped the gate before sunrise. Follow her trail across town, the road and the woods — and bring her home.",
+    id: "m_mimo", title: "Find Mimo", region: "home", icon: "paw", code: "1",
+    blurb: "Mimo slipped the gate before sunrise. Meet Abhimanyu, follow the clues across town, the road and the woods, and bring Mimo home.",
     steps: ["wake", "mom", "abhi", "clue_npc", "clue_toy", "clue_paws", "mimo"],
     cast: ["palakshi", "bidisha", "abhimanyu", "mimo"],
     rewards: [
@@ -54,51 +54,43 @@ export const MAIN_MISSIONS: MissionDef[] = [
     ],
   },
   {
-    id: "m_village", title: "Lantern Village", region: "village", icon: "lantern",
-    blurb: "The Lantern Festival is cancelled for the first time in fifty years. The village knows why, and Elder Shu will say it plainly.",
+    id: "m_village", title: "Lantern Village", region: "village", icon: "lantern", code: "2",
+    blurb: "The Lantern Festival is cancelled for the first time in fifty years. The village knows why, the musician knows a secret, and Elder Shu will say it plainly.",
     steps: ["village"],
+    cast: ["palakshi", "mimo", "elder", "musician"],
+    rewards: [
+      { kind: "item", label: "Village Supplies" },
+      { kind: "lore", label: "Who took the flame" },
+      { kind: "region", label: "Bamboo Forest opens" },
+    ],
+  },
+  {
+    id: "m_bamboo", title: "The Bamboo Forest", region: "bamboo", icon: "bamboo", code: "3",
+    blurb: "The Lost Scroll lies past a wall no hand can move; sound can. Then the shrine tests footing before strength: wake the statues, hold the plates, and face the Sentinel that guards them.",
+    steps: ["scroll", "trial"],
     cast: ["palakshi", "mimo", "elder"],
     rewards: [
       { kind: "ability", label: "Sound Barrier" },
-      { kind: "item", label: "Village Supplies" },
-      { kind: "lore", label: "Who took the flame" },
-    ],
-  },
-  {
-    id: "m_scroll", title: "The Lost Scroll", region: "bamboo", icon: "scroll",
-    blurb: "A teaching was carried into the bamboo and left behind a wall no hand can move. Sound can.",
-    steps: ["scroll"],
-    cast: ["palakshi", "mimo", "elder"],
-    rewards: [
       { kind: "item", label: "Lost Scroll" },
-      { kind: "lore", label: "The rite of three flames" },
-    ],
-  },
-  {
-    id: "m_trial", title: "Bamboo Forest Trial", region: "bamboo", icon: "bamboo",
-    blurb: "The shrine tests footing before it tests strength. Wake the statues, hold the plates, then face what guards them.",
-    steps: ["trial"],
-    cast: ["palakshi", "mimo"],
-    rewards: [
       { kind: "item", label: "Trial Talisman" },
       { kind: "region", label: "Cherry Blossom Garden opens" },
     ],
     boss: true,
   },
   {
-    id: "m_prakriti", title: "Rival: Prakriti", region: "garden", icon: "sword",
-    blurb: "You trained beside her. She has the pass you need, and no intention of being generous about it.",
+    id: "m_garden", title: "The Hidden Garden", region: "garden", icon: "blossom", code: "4",
+    blurb: "A garden under cherry blossom, haunted by the warden of its shrine. And Prakriti, who trained beside you, holds the pass you need and no intention of being generous.",
     steps: ["prakriti"],
     cast: ["palakshi", "mimo", "prakriti"],
     rewards: [
       { kind: "item", label: "Fashion Pass" },
-      { kind: "item", label: "Flame of Petals" },
+      { kind: "region", label: "Mountain Trail opens" },
     ],
     boss: true,
   },
   {
-    id: "m_temple", title: "Temple of Echoes", region: "temple", icon: "temple",
-    blurb: "Above the Mountain Trail the temple sleeps behind four plates and a Guardian with a long memory.",
+    id: "m_mountain", title: "The Mountain Path", region: "mountain", icon: "mountain", code: "5",
+    blurb: "Stone, wind and a long way down. Cross the trail, answer the Mountain Warden, climb to the Temple of Echoes, wake its four statues and plates, and meet the Guardian with the long memory.",
     steps: ["temple"],
     cast: ["palakshi", "mimo"],
     rewards: [
@@ -108,17 +100,18 @@ export const MAIN_MISSIONS: MissionDef[] = [
     boss: true,
   },
   {
-    id: "m_flames", title: "Restore the Sacred Lantern", region: "mountain", icon: "flame",
-    blurb: "Stone, petals, echoes. Three flames, gathered and returned to the lantern they were split from.",
+    id: "m_flames", title: "The Three Flames", region: "temple", icon: "flame", code: "6",
+    blurb: "Stone, petals, echoes. Three flames split from one lantern, kept at three shrines. Gather them and carry the light back to the Temple of Echoes.",
     steps: ["flames", "lantern"],
     cast: ["palakshi", "mimo", "elder"],
     rewards: [
       { kind: "item", label: "Sacred Lantern relit" },
+      { kind: "ability", label: "The lantern's blessing" },
       { kind: "region", label: "Style Academy opens" },
     ],
   },
   {
-    id: "m_final", title: "Defeat Arshiya", region: "academy", icon: "boss",
+    id: "m_final", title: "Arshiya", region: "academy", icon: "boss", code: "7",
     blurb: "The teacher who took a village's light for her own stage. She fights in three phases, and no single fighter outlasts her.",
     steps: ["pass", "boss"],
     cast: ["palakshi", "mimo", "arshiya"],
@@ -129,24 +122,17 @@ export const MAIN_MISSIONS: MissionDef[] = [
     boss: true,
   },
   {
-    id: "m_find", title: "Find Abhimanyu & Faizal", region: "f1205", icon: "guitar", code: "26",
-    blurb: "The flame is home and the village is lit. Abhimanyu slipped away before the lanterns went up — back to his place, F-1205, where the others are waiting.",
+    id: "m_road", title: "The West Road", region: "f1205", icon: "guitar", code: "8",
+    blurb: "The flame is home and the village is lit. Abhimanyu slipped away before the lanterns went up, back to his place, F-1205, past the river.",
     steps: ["finale", "find_abhi"],
     cast: ["palakshi", "mimo", "abhimanyu", "faizal"],
-    rewards: [{ kind: "region", label: "The West Road opens" }],
+    rewards: [{ kind: "region", label: "F-1205" }],
   },
   {
-    id: "m_f1205", title: "F-1205", region: "f1205", icon: "home", code: "27",
-    blurb: "Abhimanyu's flat. Five flatmates, one sofa, a guitar on a stand and an iPad that never gets put down.",
-    steps: ["f1205"],
+    id: "m_f1205", title: "F-1205", region: "f1205", icon: "home", code: "9",
+    blurb: "Abhimanyu's flat, seen through Palakshi's own eyes. Five flatmates, each somewhere in the house with something to say. One last evening, and one goodbye, for now.",
+    steps: ["f1205", "evening", "goodbye"],
     cast: ["palakshi", "abhimanyu", "faizal", "garv", "hakim", "dev"],
-    rewards: [{ kind: "lore", label: "The F-1205 flatmates" }],
-  },
-  {
-    id: "m_evening", title: "One Last Evening", region: "f1205", icon: "lantern", code: "28",
-    blurb: "A quiet evening after a long day. The adventure, Arshiya, Mimo, and what comes next — and then one goodbye, for now.",
-    steps: ["evening", "goodbye"],
-    cast: ["palakshi", "abhimanyu", "mimo"],
     rewards: [{ kind: "lore", label: "Goodbye, for now" }],
     finale: true,
   },

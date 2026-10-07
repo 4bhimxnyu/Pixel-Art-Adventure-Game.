@@ -44,6 +44,7 @@ export const INTERACT_TILE: Record<string, string> = {
   h: "hidden", y: "clue_toy", "%": "banner",
   // final chapter props
   S: "sofa", l: "guitar_stand", "@": "poster", "0": "window", "[": "counter", "]": "fridge", x: "weights", "7": "table",
+  "6": "clutter", "8": "chair", "9": "snacks",
 };
 
 /** Tiles the player may stand ON and still interact with. */
@@ -64,6 +65,7 @@ export function shouldSkipEntity(kind: string, partyId: string | undefined, flag
     case "npc_prakriti_duel": return flags.prakritiDone;
     case "npc_miniboss1": return flags.miniboss1Done;
     case "npc_miniboss2": return flags.miniboss2Done;
+    case "npc_miniboss3": return flags.miniboss3Done;
     case "npc_guardian": return flags.guardianDone;
     case "npc_boss": return flags.bossDefeated;
     default: return false;
@@ -108,7 +110,7 @@ export function promptLabel(kind: string, name?: string) {
     case "clue_toy": case "clue_paws": return "Examine clue";
     case "hidden": case "chest": case "dig": case "ribbon_spot": return "Search";
     case "bed": return "Rest";
-    case "npc_miniboss1": case "npc_miniboss2": case "npc_guardian":
+    case "npc_miniboss1": case "npc_miniboss2": case "npc_miniboss3": case "npc_guardian":
     case "npc_boss": case "npc_prakriti_duel": return "Begin the fight";
     case "sign": case "inscription": case "bookshelf": case "desk": case "tv":
     case "statue": case "banner": case "viewpoint": return "Examine";
@@ -279,6 +281,14 @@ export class StoryController {
           questSfx.denied();
           return this.say("The Warden's staff bars the shrine. Face him first.");
         }
+        if (def.id === "garden" && !f.miniboss3Done) {
+          questSfx.denied();
+          return this.say("Wings beat the air around the shrine. The Blossom Warden won't let me near it.");
+        }
+        if (def.id === "cave" && Object.keys(f.plates).filter((k) => k.startsWith("cave")).length < 2) {
+          questSfx.denied();
+          return this.say("The brazier is sealed by the echo stones. Wake both statues, then hold both plates.");
+        }
         store.setFlag(which as keyof Flags, true as never);
         const item: ItemId =
           def.id === "mountain" ? "sacred_flame_mountain" : def.id === "garden" ? "sacred_flame_garden" : "sacred_flame_cave";
@@ -320,7 +330,7 @@ export class StoryController {
         if (f.ribbonFound && !q.done) return D("prakriti_ribbon_return");
         return D("prakriti_wait");
       }
-      case "npc_prakriti_duel": return D("prakriti_duel");
+      case "npc_prakriti_duel": return D(f.miniboss3Done ? "prakriti_duel" : "prakriti_wait_guardian");
       case "npc_villager5": {
         store.markRecord("npcSpoken", `${def.id}_${kind}`);
         store.healParty();
@@ -343,6 +353,7 @@ export class StoryController {
       case "npc_monk": return D("monk");
       case "npc_miniboss1": return D("miniboss1");
       case "npc_miniboss2": return D("miniboss2");
+      case "npc_miniboss3": return D("miniboss3");
       case "npc_guardian": {
         const needP = puzzlePlatesFor("temple");
         const lit = Object.keys(f.plates).filter((k) => k.startsWith("temple")).length;
@@ -382,6 +393,10 @@ export class StoryController {
       gong();
       bus.emit("toast", { text: "The shrine stirs. The Sentinel is awake.", tone: "warn" });
     }
+    if (id === "cave" && plates >= 2) {
+      gong();
+      bus.emit("toast", { text: "The echoes stop. The brazier is unsealed.", tone: "good" });
+    }
     if (id === "temple" && statues >= 4 && plates >= 4 && !store.flags.templeOpened) {
       store.setFlag("templeOpened", true);
       gong();
@@ -413,6 +428,7 @@ export class StoryController {
       case "wild_mimo": return open("mimo_recognize");
       case "boss_sentinel": return open("miniboss1_done");
       case "boss_warden": return open("miniboss2_done");
+      case "boss_blossom": return open("miniboss3_done");
       case "boss_guardian": return open("guardian_done");
       case "prakriti_boss": return open("prakriti_defeat");
       case "fashion_teacher": return open("boss_defeat");
@@ -528,7 +544,7 @@ export class StoryController {
 
       case "elder_brief":
         store.setFlag("elderBriefed", true);
-        bus.emit("cinematic", { kind: "mission-start", title: "NEW MISSION", subtitle: "The Lost Scroll" });
+        bus.emit("cinematic", { kind: "mission-start", title: "NEW MISSION", subtitle: "The Bamboo Forest" });
         adv("scroll");
         break;
 
@@ -549,11 +565,8 @@ export class StoryController {
 
       case "scroll_given":
         store.setFlag("scrollDelivered", true);
-        bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "The Lost Scroll" });
+        bus.emit("cinematic", { kind: "objective", title: "THE LOST SCROLL RETURNED", subtitle: "Now the shrine's trial: wake the statues, hold the plates" });
         adv("trial");
-        fx.delay(2400, () =>
-          bus.emit("cinematic", { kind: "mission-start", title: "NEW MISSION", subtitle: "Bamboo Forest Trial" })
-        );
         break;
 
       case "start_miniboss1": fx.startBattle("boss_sentinel", true); break;
@@ -562,8 +575,11 @@ export class StoryController {
         store.setFlag("miniboss1Done", true);
         store.setFlag("trialDone", true);
         store.addItem("trial_talisman");
-        bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "Bamboo Forest Trial" });
+        bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "The Bamboo Forest" });
         adv("prakriti");
+        fx.delay(2600, () =>
+          bus.emit("cinematic", { kind: "mission-start", title: "NEW MISSION", subtitle: "The Hidden Garden" })
+        );
         this.leaveThenRefresh("npc_miniboss1");
         break;
 
@@ -573,9 +589,20 @@ export class StoryController {
         store.setFlag("prakritiDone", true);
         store.addItem("fashion_pass");
         bus.emit("toast", { text: "Received the Fashion Pass.", tone: "good" });
-        bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "Rival: Prakriti" });
+        bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "The Hidden Garden" });
         adv("temple");
+        fx.delay(2600, () =>
+          bus.emit("cinematic", { kind: "mission-start", title: "NEW MISSION", subtitle: "The Mountain Path" })
+        );
         this.leaveThenRefresh("npc_prakriti_duel");
+        break;
+
+      case "start_miniboss3": fx.startBattle("boss_blossom", true); break;
+      case "miniboss3_end":
+        store.healParty();
+        store.setFlag("miniboss3Done", true);
+        bus.emit("toast", { text: "The blossom shrine is quiet. Prakriti is waiting by the pond.", tone: "good" });
+        this.leaveThenRefresh("npc_miniboss3");
         break;
 
       case "start_miniboss2": fx.startBattle("boss_warden", true); break;
@@ -592,10 +619,10 @@ export class StoryController {
         store.setFlag("guardianDone", true);
         store.setFlag("templeOpened", true);
         store.addItem("lore_book");
-        bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "Temple of Echoes" });
+        bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "The Mountain Path" });
         adv("flames");
         fx.delay(2400, () =>
-          bus.emit("cinematic", { kind: "mission-start", title: "NEW MISSION", subtitle: "Restore the Sacred Lantern" })
+          bus.emit("cinematic", { kind: "mission-start", title: "NEW MISSION", subtitle: "The Three Flames" })
         );
         this.leaveThenRefresh("npc_guardian");
         break;
@@ -609,10 +636,10 @@ export class StoryController {
         gong();
         fx.flash(600, [242, 223, 166]);
         fx.cinematic?.("lantern-lit");
-        bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "Restore the Sacred Lantern" });
+        bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "The Three Flames" });
         adv("pass");
         fx.delay(2400, () =>
-          bus.emit("cinematic", { kind: "mission-start", title: "FINAL MISSION", subtitle: "Defeat Arshiya" })
+          bus.emit("cinematic", { kind: "mission-start", title: "NEW MISSION", subtitle: "Arshiya" })
         );
         fx.refresh();
         break;
@@ -629,7 +656,7 @@ export class StoryController {
         store.setFlag("bossDefeated", true);
         store.advanceQuest("main", "finale");
         store.healParty();
-        bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "Defeat Arshiya" });
+        bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "Arshiya" });
         fx.delay(2600, () => useGameStore.getState().openDialogue("finale"));
         this.leaveThenRefresh("npc_boss");
         break;

@@ -39,7 +39,7 @@ export const STEP_TARGET: Record<string, Resolver> = {
     }
     return { map: "bamboo", kind: "npc_miniboss1" };
   },
-  prakriti: () => ({ map: "garden", kind: "npc_prakriti_duel" }),
+  prakriti: (s) => (s.flags.miniboss3Done ? { map: "garden", kind: "npc_prakriti_duel" } : { map: "garden", kind: "npc_miniboss3" }),
   temple: (s) => {
     if (s.map === "mountain" && !s.flags.miniboss2Done) return { map: "mountain", kind: "npc_miniboss2" };
     if (!s.flags.templeOpened) {
@@ -56,14 +56,21 @@ export const STEP_TARGET: Record<string, Resolver> = {
     const cur = order.includes(s.map) && !has[s.map] ? s.map : order.find((m) => !has[m]);
     if (!cur) return null;
     if (cur === "mountain" && !f.miniboss2Done) return { map: "mountain", kind: "npc_miniboss2" };
+    if (cur === "garden" && !f.miniboss3Done) return { map: "garden", kind: "npc_miniboss3" };
+    if (cur === "cave") {
+      const plates = Object.keys(f.plates).filter((k) => k.startsWith("cave")).length;
+      const statues = Object.keys(f.statues).filter((k) => k.startsWith("cave")).length;
+      if (plates < 2) return statues < 2 ? { map: "cave", tile: "u" } : { map: "cave", tile: "z" };
+    }
     return { map: cur, tile: "!" };
   },
   lantern: () => ({ map: "temple", tile: "&" }),
   pass: () => ({ map: "academy", kind: "npc_gatekeeper" }),
   boss: () => ({ map: "academy", kind: "npc_boss" }),
   finale: () => null,
-  find_abhi: () => ({ map: "f1205", kind: "npc_abhimanyu_home" }),
+  find_abhi: () => ({ map: "f1205", kind: "npc_faizal" }),
   f1205: (s) => {
+    if (!s.flags.metAbhiHome) return { map: "f1205", kind: "npc_abhimanyu_home" };
     const next = FLATMATES.find(([flag]) => !s.flags[flag]);
     return next ? { map: "f1205", kind: next[1] } : { map: "f1205", kind: "npc_abhimanyu_home" };
   },

@@ -188,7 +188,7 @@ export class WorldScene extends Phaser.Scene {
       if (!pos) continue;
       if (shouldSkipEntity(idef.kind, idef.partyId, store.flags)) continue;
 
-      const spriteKey = idef.sprite ? `ch_${idef.sprite}` : "";
+      const spriteKey = idef.sprite ? (idef.sprite.startsWith("enemy:") ? `en_${idef.sprite.slice(6)}` : `ch_${idef.sprite}`) : "";
       let sprite: Phaser.GameObjects.Sprite;
       if (spriteKey && this.textures.exists(spriteKey)) {
         sprite = this.add.sprite(pos.x * TILE + TILE / 2, pos.y * TILE + TILE / 2 - 2, spriteKey, 0);

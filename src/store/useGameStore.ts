@@ -51,6 +51,7 @@ export type Flags = {
   trialDone: boolean;
   miniboss1Done: boolean;
   miniboss2Done: boolean;
+  miniboss3Done: boolean;
   templeOpened: boolean;
   guardianDone: boolean;
   gateOpen: boolean;
@@ -61,6 +62,7 @@ export type Flags = {
   // final chapter
   finaleDone: boolean;
   f1205Arrived: boolean;
+  metAbhiHome: boolean;
   metFaizal: boolean;
   metGarv: boolean;
   metHakim: boolean;
@@ -87,10 +89,10 @@ export const INITIAL_FLAGS: Flags = {
   seenTemple: false, seenGarden: false, seenCave: false, villageTalks: 0,
   villageSupplies: false, musicianMet: false, guitarPerformed: false, elderBriefed: false,
   barrierBroken: false, scrollFound: false, scrollDelivered: false, trialStarted: false,
-  trialDone: false, miniboss1Done: false, miniboss2Done: false, templeOpened: false,
+  trialDone: false, miniboss1Done: false, miniboss2Done: false, miniboss3Done: false, templeOpened: false,
   guardianDone: false, gateOpen: false, flameMountain: false, flameGarden: false,
   flameCave: false, lanternRestored: false,
-  finaleDone: false, f1205Arrived: false, metFaizal: false, metGarv: false, metHakim: false,
+  finaleDone: false, f1205Arrived: false, metAbhiHome: false, metFaizal: false, metGarv: false, metHakim: false,
   metDev: false, eveningDone: false, hugDone: false, seenRoad: false, seenF1205: false,
   plates: {}, statues: {}, digs: {}, chests: {}, lore: {}, hidden: {}, npcSpoken: {},
   tutorialSeen: {},

@@ -799,6 +799,45 @@ export const TRACKS: Record<string, Track> = {
     perc: { dagu: "1.11..1.", bangzi: ".1.1.1.1", luo: "1......." },
   },
 
+  bgm_sentinel: {
+    // Bamboo Sentinel: deep dagu, bangzi clicks, a stalking pipa line.
+    root: 50, mode: "yu", bpm: 138, beats: 8, lead: "pipa", counter: "dizi", pad: "sheng",
+    sad: 0.85, chant: [1, 1, 4, 5], gain: 0.74,
+    phrases: [
+      P(n(1, 1), n(3, 1), n(1, 1), n(4, 1), n(3, 2), r(2)),
+      P(n(5, 1, "trem"), n(4, 1), n(3, 1), n(1, 1), n(6, 4, "bend")),
+      P(n(1, 0.5), n(1, 0.5), n(3, 1), n(5, 2), n(4, 2), n(3, 2)),
+      P(n(8, 2, "gliss"), n(6, 2), n(5, 4, "trem")),
+    ],
+    perc: { dagu: "1..1.1..", bangzi: "..1.1.1.", muyu: "1.1.1.1.", luo: "1......." },
+  },
+
+  bgm_blossom: {
+    // Blossom Warden: elegant and dangerous — erhu over guzheng, drums under petals.
+    root: 55, mode: "shang", bpm: 126, beats: 8, lead: "erhu", counter: "guzheng", pad: "sheng",
+    sad: 0.7, chant: [1, 6, 5, 4], gain: 0.74,
+    phrases: [
+      P(n(5, 2, "bend"), n(6, 1), n(8, 1), n(6, 2), n(5, 2)),
+      P(n(3, 1, "grace"), n(5, 1), n(6, 2), n(8, 4, "trem")),
+      P(n(10, 2, "gliss"), n(8, 2), n(6, 1), n(5, 1), n(3, 2)),
+      P(n(1, 2), n(3, 2), n(5, 4, "bend")),
+    ],
+    perc: { dagu: "1...1.1.", bangzi: ".1.1.1.1", luo: "....1...", muyu: "1.1.1.1." },
+  },
+
+  bgm_warden: {
+    // Mountain Warden: wind and stone — dizi cries over heavy dagu and gong.
+    root: 48, mode: "zhi", bpm: 132, beats: 8, lead: "dizi", counter: "pipa", pad: "sheng",
+    sad: 0.9, chant: [1, 1, 5, 1], gain: 0.76, wind: true,
+    phrases: [
+      P(n(1, 1), n(5, 1), n(1, 1), n(5, 1), n(8, 2, "bend"), n(6, 2)),
+      P(n(5, 2), n(4, 1), n(3, 1), n(1, 4, "trem")),
+      P(n(3, 1), n(5, 1), n(6, 1), n(8, 1), n(10, 2, "gliss"), n(8, 2)),
+      P(n(6, 2), n(5, 2), n(1, 4)),
+    ],
+    perc: { dagu: "1.1.1.11", luo: "1...1...", bangzi: "...1...1" },
+  },
+
   bgm_boss: {
     // Heaviest cue: gong, full drums, three intensity phases (see setIntensity).
     root: 48, mode: "yu", bpm: 162, beats: 8, lead: "pipa", counter: "erhu", pad: "sheng",

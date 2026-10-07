@@ -14,7 +14,7 @@ import { tileAt, mapWidth, mapHeight, BARRIER_FLAG, type MapDef, type MapId } fr
 import { isHidden } from "../game/story";
 import type { Flags } from "../store/useGameStore";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { C, G, mat, hash01, disposeObject, waterMaterial } from "./materials";
+import { C, G, mat, glow, hash01, disposeObject, waterMaterial } from "./materials";
 import { prop, type PropDef } from "./props";
 
 export type Theme = {
@@ -243,6 +243,9 @@ function propsFor(def: MapDef, ch: string, x: number, y: number, flags: Flags): 
     case "x": return ["weights"];
     case "7": return ["table"];
     case "a": return ["plant"];
+    case "6": return hash01(x, y, 9) < 0.5 ? ["clutterBags"] : ["clutterBooks"];
+    case "8": return ["chair"];
+    case "9": return ["snackTable"];
     default: return [];
   }
 }
@@ -380,6 +383,18 @@ export function buildMap(def: MapDef, flags: Flags, quality: { shadows: boolean 
     base.rotation.x = -Math.PI / 2;
     base.position.set(W / 2, -0.2, -H / 2);
     group.add(base);
+    if (def.theme === "flat") {
+      // a real ceiling: the flat is seen from inside, in first person
+      const ceil = new THREE.Mesh(G.plane(W, H), mat("#e6dccb"));
+      ceil.rotation.x = Math.PI / 2;
+      ceil.position.set(W / 2, 1.92, -H / 2);
+      group.add(ceil);
+      for (let i = 0; i < 6; i++) {
+        const lamp = new THREE.Mesh(G.cyl(0.18, 0.18, 0.05, 10), glow("#fff1d0", 0.95));
+        lamp.position.set(3 + (i % 3) * 6.5, 1.88, -(i < 3 ? 3 : 11.5));
+        group.add(lamp);
+      }
+    }
   }
 
   // --- entrances: a gate on every portal that leads somewhere worth announcing

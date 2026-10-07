@@ -59,7 +59,7 @@ export type MapDef = {
 // targets whatever is past it, and the object becomes impossible to use.
 export const SOLID = new Set(["#","t","K","c","j","H","L","m","%","^","u","q","=","$","&","*","B","b","s","D","T","w","o","_","!","y",
   // F-1205 furniture: sofa, guitar stand, poster, window, counter, fridge, weights, table, plant
-  "S","l","@","0","[","]","x","7","a"]);
+  "S","l","@","0","[","]","x","7","a","6","8","9"]);
 /** Tiles you can stand on but that trigger something under-foot. */
 export const WALKABLE_SPECIAL = new Set(["z", "p", "~", "h", "y", "+", "I", "i", "!"]);
 
@@ -400,7 +400,7 @@ export const MAPS: Record<MapId, MapDef> = {
       "q.......,,.........q",
       "q..ooo..,,.........q",
       "q..ooo..,,....!....q",
-      "q.......,,.........q",
+      "q.......,,....X....q",
       ",,,,,,,,,,,,,,,,,,.q",
       ",.......,,.........q",
       "q...P...,,.........q",
@@ -427,6 +427,7 @@ export const MAPS: Record<MapId, MapDef> = {
     ],
     interacts: {
       P: { kind: "npc_prakriti_duel", sprite: "prakriti", name: "Prakriti" },
+      X: { kind: "npc_miniboss3", sprite: "enemy:moth", name: "Blossom Warden" },
     },
   },
 
@@ -440,14 +441,14 @@ export const MAPS: Record<MapId, MapDef> = {
       "cnnnnnnnnnnnnnnnnnnc",
       "cnnccnnnnnnnnnnccnnc",
       "cnnccnnnnnnnnnnccnnc",
-      "cnnnnnnnnnnnnnnnnnnc",
+      "cnnnnunnnnnnnnunnnnc",
       "cnnnnnnnnnnnnnnnnn*c",
       "nnnnnnnnnnnnnnnnnnnc",
       "nnnnnnnnnnnnnnnnnnnc",
       "cnnnnnnnnnnnnnnnnnnc",
       "cnnccnnnnn!nnnnccnnc",
       "cnnccnnnnnnnnnnccnnc",
-      "cnnnnnnnnnnnnnnnnnnc",
+      "cnnnnznnnnnnnnznnnnc",
       "c*nnnnnnnnnnnnnnnnnc",
       "cnnnnnnnnnnnnnnnnnnc",
       "cccccccccccccccccccc",
@@ -512,7 +513,7 @@ export const MAPS: Record<MapId, MapDef> = {
     ],
     portals: [
       { x: 0, y: 5, to: "town", tx: 1, ty: 10, dir: "right" },
-      { x: 11, y: 13, to: "f1205", tx: 6, ty: 9, dir: "up" },
+      { x: 11, y: 13, to: "f1205", tx: 1, ty: 8, dir: "right" },
     ],
     interacts: {},
   },
@@ -520,22 +521,28 @@ export const MAPS: Record<MapId, MapDef> = {
   f1205: {
     id: "f1205", name: "F-1205", indoor: true, theme: "flat", bgm: "bgm_f1205",
     cinematic: { title: "F-1205", subtitle: "Abhimanyu's place. Shoes optional.", flag: "seenF1205" },
+    // Living room (top-left) | kitchen (top-right); hallway across the middle with
+    // the front door on the left wall; Abhimanyu's room (bottom-left) and Garv &
+    // Dev's room (bottom-right). Explored in first person.
     rows: [
-      "##############",
-      "#0...@...0...#",
-      "#..SQS...l...#",
-      "#..........7.#",
-      "#.....N......#",
-      "#]..[[...A...#",
-      "#.Z.......x..#",
-      "#.......V....#",
-      "#..r....a....#",
-      "#......B.....#",
-      "######dd######",
+      "####################",
+      "#0..@...0#..]..[[.0#",
+      "#..SQS...#.........#",
+      "#.9......d....7.8..#",
+      "#.l......#...Z.....#",
+      "#..T..a..#..6......#",
+      "####d#########d#####",
+      "#.......6..........#",
+      "d..r...............#",
+      "####d######d########",
+      "#......8.#.........#",
+      "#.b...D..#..b...x..#",
+      "#...A..6.#...N..V..#",
+      "#....a...#....B.6..#",
+      "####################",
     ],
     portals: [
-      { x: 6, y: 10, to: "road", tx: 11, ty: 12, dir: "up" },
-      { x: 7, y: 10, to: "road", tx: 11, ty: 12, dir: "up" },
+      { x: 0, y: 8, to: "road", tx: 11, ty: 12, dir: "up" },
     ],
     interacts: {
       A: { kind: "npc_abhimanyu_home", sprite: "abhimanyu", name: "Abhimanyu" },
