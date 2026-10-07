@@ -35,8 +35,12 @@ import { makeEnemyRig } from "./EnemyRig";
 import type { BaseRig } from "./BaseRig";
 import { CameraRig, type Keyframe } from "./CameraRig";
 import { AmbientParticles, Burst } from "./Particles";
-import { G, glow, mat, disposeObject } from "./materials";
+import { PawTrail } from "./PawTrail";
+import { G, glow, mat, disposeObject, skyMaterial } from "./materials";
 import { input, isTouchDevice } from "../input/InputManager";
+import { currentStepId } from "../store/useGameStore";
+import { targetFor, routeBetween } from "../lib/targets";
+import { MAP_PLACE } from "../lib/guidance";
 
 type Entity = {
   kind: string;
@@ -103,6 +107,8 @@ export class World3D {
 
   private mapDef!: MapDef;
   private built: BuiltMap | null = null;
+  private sky: THREE.Mesh | null = null;
+  private water: THREE.Mesh | null = null;
   private hemi = new THREE.HemisphereLight("#ffffff", "#444444", 1);
   private sun = new THREE.DirectionalLight("#ffffff", 1);
   private ambient = new THREE.AmbientLight("#ffffff", 0.2);
@@ -139,6 +145,16 @@ export class World3D {
   /** The NPC the player last spoke to — hidden while their own battle rig stands in. */
   private lastTalked: Entity | null = null;
   private hiddenForBattle: Entity | null = null;
+  /** Objective beacon: over the thing to reach, or over the exit that leads to it. */
+  private beacon: THREE.Group | null = null;
+  private beaconDirty = true;
+  private vel = new THREE.Vector3();
+  private stuckT = 0;
+  private stuckShown = false;
+  private lastStuckPos = new THREE.Vector3();
+  private pawTrail: PawTrail | null = null;
+  private lockedBefore = new Map<MapId, string>();
+  private promptSeenAt = 0;
   private quality: { shadows: boolean; mobile: boolean; particles: number };
   private timers: number[] = [];
   private hugDone = false;
@@ -157,7 +173,7 @@ export class World3D {
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.12;
     this.renderer.domElement.style.display = "block";
     this.renderer.domElement.style.width = "100%";
     this.renderer.domElement.style.height = "100%";
@@ -205,12 +221,14 @@ export class World3D {
     this.busUnsubs.push(bus.on("battle:fx", (p: any) => this.battleFx(p)));
     this.busUnsubs.push(bus.on("world:reload", () => this.loadMap(useGameStore.getState().map, true)));
     this.busUnsubs.push(bus.on("mimo:ping", () => this.mimoSniff()));
+    this.busUnsubs.push(bus.on("unstuck", () => this.resetPosition()));
     this.unsubStore = useGameStore.subscribe((s, prev) => {
       input.overlayOpen = !!s.overlay;
       if (s.settings !== prev.settings) {
         input.lookSens = s.settings.lookSens ?? 1;
         input.invertY = !!s.settings.invertY;
       }
+      if (s.quests !== prev.quests || s.flags !== prev.flags || s.party !== prev.party) this.beaconDirty = true;
     });
     input.overlayOpen = !!useGameStore.getState().overlay;
 
@@ -283,6 +301,10 @@ export class World3D {
     this.highlightDiscs = [];
     if (this.pingMarker) disposeObject(this.pingMarker);
     this.pingMarker = null;
+    if (this.beacon) disposeObject(this.beacon);
+    this.beacon = null;
+    this.pawTrail?.dispose();
+    this.pawTrail = null;
     this.trail = [];
   }
 
@@ -303,6 +325,16 @@ export class World3D {
     this.scene.add(this.built.group);
     const th = this.built.theme;
     this.scene.background = new THREE.Color(th.sky);
+    if (!th.indoor) {
+      const sky = new THREE.Mesh(new THREE.SphereGeometry(70, 24, 12), skyMaterial(th.skyTop ?? th.sky, th.fog));
+      sky.name = "sky";
+      sky.frustumCulled = false;
+      this.built.group.add(sky);
+      this.sky = sky;
+    } else {
+      this.sky = null;
+    }
+    this.water = this.built.group.getObjectByName("water") as THREE.Mesh | null;
     this.scene.fog = new THREE.Fog(th.fog, th.fogNear, th.fogFar);
     this.hemi.color.set(th.hemiSky);
     this.hemi.groundColor.set(th.hemiGround);
@@ -329,6 +361,16 @@ export class World3D {
       this.scene.add(this.particles.points);
     }
     this.buildHighlights();
+    this.pawTrail = new PawTrail();
+    this.scene.add(this.pawTrail.mesh);
+
+    // a gate that was closed last time we stood here has just opened
+    const lockedNow = this.built.gates.filter((g) => g.locked).map((g) => g.to).sort().join(",");
+    const lockedThen = this.lockedBefore.get(id);
+    const opened = sameMap && lockedThen !== undefined && lockedThen !== lockedNow
+      ? this.built.gates.find((g) => !g.locked && lockedThen.split(",").includes(g.to)) ?? null
+      : null;
+    this.lockedBefore.set(id, lockedNow);
 
     // --- entities from markers
     for (const [marker, idef] of Object.entries(def.interacts)) {
@@ -417,8 +459,156 @@ export class World3D {
     if (cine && !(store.flags as any)[cine.flag]) {
       store.setFlag(cine.flag as keyof Flags, true as never);
       this.arrivalCinematic(cine.title, cine.subtitle, def.id);
+    } else if (opened) {
+      this.delay(600, () => this.gateOpensCinematic(opened));
     }
+    this.beaconDirty = true;
+    this.vel.set(0, 0, 0);
+    this.stuckT = 0;
     store.save();
+  }
+
+  // ================================================================ guidance
+
+  /** A gold column + floating diamond over the current objective (or the exit toward it). */
+  private updateBeacon() {
+    this.beaconDirty = false;
+    if (this.beacon) {
+      disposeObject(this.beacon);
+      this.beacon = null;
+    }
+    const s = useGameStore.getState();
+    const main = s.quests.find((q) => q.id === "main");
+    if (!main || main.done) return;
+    const target = targetFor(currentStepId(s), s);
+    if (!target) return;
+    let pos: THREE.Vector3 | null = null;
+    let exit = false;
+    if (target.map === this.mapDef.id) {
+      if ("kind" in target) {
+        const e = this.entities.find((x) => x.kind === target.kind);
+        if (e) pos = new THREE.Vector3(e.x + 0.5, 0, Z(e.y));
+      } else {
+        pos = this.nearestTile(target.tile);
+      }
+    } else {
+      const route = routeBetween(this.mapDef.id, target.map);
+      const next = route[1];
+      const gate = this.built?.gates.find((g) => g.to === next);
+      if (gate) {
+        pos = new THREE.Vector3(gate.x, 0, gate.z);
+        exit = true;
+      }
+    }
+    if (!pos) return;
+    const g = new THREE.Group();
+    const color = exit ? "#9fe3ff" : "#f2dfa6";
+    const column = new THREE.Mesh(G.cyl(0.14, 0.22, 3.2, 10), glow(color, 0.16));
+    column.position.y = 1.6;
+    const ring = new THREE.Mesh(G.cyl(0.6, 0.6, 0.03, 20), glow(color, 0.35));
+    ring.position.y = 0.03;
+    const gem = new THREE.Mesh(G.ico(0.17, 0), glow(color, 0.95));
+    gem.position.y = exit ? 3.0 : 2.4;
+    gem.name = "gem";
+    g.add(column, ring, gem);
+    g.position.copy(pos);
+    this.scene.add(g);
+    this.beacon = g;
+  }
+
+  /** Nearest cell of a tile char that is still "to do" (unlit statue, unheld plate, uncollected item). */
+  private nearestTile(ch: string) {
+    const def = this.mapDef;
+    const flags = useGameStore.getState().flags;
+    let best: THREE.Vector3 | null = null;
+    let bestD = Infinity;
+    for (let y = 0; y < mapHeight(def); y++) {
+      for (let x = 0; x < mapWidth(def); x++) {
+        if (tileAt(def, x, y) !== ch) continue;
+        const key = `${def.id}_${x}_${y}`;
+        if (ch === "u" && flags.statues[key]) continue;
+        if (ch === "z" && flags.plates[key]) continue;
+        if (isHidden(def, ch, x, y, flags)) continue;
+        if (ch === "=" && !cellBlocked(def, x, y, flags)) continue;
+        if (ch === "d" && !def.portals.some((p) => p.x === x && p.y === y)) continue;
+        const d = Math.hypot(x + 0.5 - this.playerPos.x, Z(y) - this.playerPos.z);
+        if (d < bestD) {
+          bestD = d;
+          best = new THREE.Vector3(x + 0.5, 0, Z(y));
+        }
+      }
+    }
+    return best;
+  }
+
+  private gateOpensCinematic(gate: { to: MapId; x: number; z: number }) {
+    if (this.cam.cinematicActive || this.mode !== "explore") return;
+    const from = this.cam.camera.position.clone();
+    const look = new THREE.Vector3(gate.x, 1.4, gate.z);
+    const toPlayer = this.playerPos.clone().sub(look).setY(0);
+    const dist = toPlayer.length();
+    toPlayer.normalize();
+    const pos = look.clone().addScaledVector(toPlayer, Math.min(5, Math.max(3, dist * 0.6)));
+    pos.y = 2.6;
+    this.inputLocked = true;
+    gong();
+    bus.emit("toast", { text: `The way to ${MAP_PLACE[gate.to]} is open.`, tone: "good" });
+    this.flourish(Math.floor(gate.x), Math.floor(-gate.z));
+    this.cam.playCinematic({
+      frames: [
+        { pos, look, dur: 1.0, hold: 1.4 },
+        { pos: from, look: this.playerPos.clone().setY(1), dur: 0.9 },
+      ],
+      onDone: () => { this.inputLocked = false; },
+    });
+  }
+
+  // ================================================================ recovery
+
+  /** Nearest open cell by breadth-first search; never resets any progress. */
+  private resetPosition() {
+    const def = this.mapDef;
+    const start = { x: Math.floor(this.playerPos.x), y: ROW(this.playerPos.z) };
+    const seen = new Set<string>();
+    const queue = [start];
+    let found: { x: number; y: number } | null = null;
+    while (queue.length && !found) {
+      const c = queue.shift()!;
+      const k = `${c.x},${c.y}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      if (c.x >= 0 && c.y >= 0 && c.x < mapWidth(def) && c.y < mapHeight(def)) {
+        const open = !this.blockedCell(c.x, c.y) && !def.portals.some((p) => p.x === c.x && p.y === c.y) && this.circleFree(c.x + 0.5, Z(c.y));
+        if (open && !(c.x === start.x && c.y === start.y)) { found = c; break; }
+      }
+      if (seen.size > 400) break;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) queue.push({ x: c.x + dx, y: c.y + dy });
+    }
+    if (!found) {
+      const s = useGameStore.getState();
+      found = { x: s.playerX, y: s.playerY };
+    }
+    this.playerPos.set(found.x + 0.5, 0, Z(found.y));
+    this.lastCell = { ...found };
+    this.vel.set(0, 0, 0);
+    this.stuckT = 0;
+    this.stuckShown = false;
+    bus.emit("stuck", false);
+    bus.emit("fade", { flash: true, ms: 260, color: "rgba(242,223,166,0.5)" });
+    bus.emit("toast", { text: "Back on solid ground.", tone: "info" });
+    if (this.companion) this.companion.group.position.copy(this.playerPos).add(new THREE.Vector3(-Math.sin(this.heading), 0, -Math.cos(this.heading)));
+    this.trail = [this.playerPos.clone()];
+    this.cam.snapBehind(this.playerPos, this.heading);
+  }
+
+  // ================================================================ teaching
+
+  /** One-time, device-specific hints. Seen state lives in the save. */
+  private tip(key: string, text: { keyboard: string; gamepad: string; touch: string }) {
+    const s = useGameStore.getState();
+    if (s.hasRecord("tutorialSeen", key)) return;
+    s.markRecord("tutorialSeen", key);
+    bus.emit("toast", { text: text[input.device] ?? text.keyboard, tone: "info" });
   }
 
   refresh() {
@@ -536,9 +726,10 @@ export class World3D {
       if (st.zoom) this.cam.zoom(st.zoom);
     }
 
-    // --- movement
+    // --- movement: input → target velocity, eased so starts and stops feel weighty but never laggy
     let speed01 = 0;
     let moving = false;
+    const want = new THREE.Vector3();
     if (!locked) {
       const fwd = this.cam.groundForward(new THREE.Vector3());
       const right = this.cam.groundRight(new THREE.Vector3());
@@ -552,17 +743,42 @@ export class World3D {
       }
       if (this.dashT > 0) {
         this.dashT -= dt;
-        this.moveBy(this.dashDir, DASH * dt);
-        moving = true;
-        speed01 = 1;
-      } else if (len > 0.08) {
-        dir.normalize();
-        const speed = WALK * Math.min(1, len) * (st.held.has("dodge") ? 1.45 : 1);
-        this.moveBy(dir, speed * dt);
+        want.copy(this.dashDir).multiplyScalar(DASH);
+      } else if (len > 0.06) {
+        const k = Math.min(1, len);
+        want.copy(dir).normalize().multiplyScalar(WALK * k * (st.held.has("dodge") ? 1.45 : 1));
+      }
+    }
+    const accel = want.lengthSq() > this.vel.lengthSq() ? 16 : 24;
+    this.vel.lerp(want, Math.min(1, dt * accel));
+    if (this.vel.length() < 0.04) this.vel.set(0, 0, 0);
+    const spd = this.vel.length();
+    if (spd > 0) {
+      const dir = this.vel.clone().normalize();
+      this.moveBy(dir, spd * dt);
+      moving = true;
+      speed01 = Math.min(1.2, spd / WALK);
+      if (spd > 0.5 && this.dashT <= 0) {
         this.heading = Math.atan2(dir.x, dir.z);
         this.player.setHeading(this.heading);
-        moving = true;
-        speed01 = Math.min(1, len) * (st.held.has("dodge") ? 1.2 : 1);
+      }
+    }
+    if (!locked) {
+      // stuck watch: pushing hard but going nowhere
+      if (want.length() > 1.5) {
+        this.stuckT += dt;
+        if (this.stuckT > 0.5) {
+          if (this.lastStuckPos.distanceTo(this.playerPos) > 0.12) { this.stuckT = 0; this.lastStuckPos.copy(this.playerPos); }
+          else if (this.stuckT > 3.5 && !this.stuckShown) { this.stuckShown = true; bus.emit("stuck", true); }
+        }
+      } else {
+        this.stuckT = 0;
+        this.lastStuckPos.copy(this.playerPos);
+      }
+      if (st.pressed.has("unstuck") && this.stuckShown) this.resetPosition();
+      if (!Number.isFinite(this.playerPos.x) || !Number.isFinite(this.playerPos.z) ||
+          this.playerPos.x < -1 || this.playerPos.z > 1 || this.playerPos.x > mapWidth(this.mapDef) + 1 || this.playerPos.z < -mapHeight(this.mapDef) - 1) {
+        this.resetPosition();
       }
 
       if (st.pressed.has("interact")) this.tryInteract();
@@ -598,6 +814,20 @@ export class World3D {
 
     // --- companion + entities
     this.updateCompanion(dt, moving);
+    if (this.pawTrail && this.companion && this.companionId === "mimo") {
+      const c = this.companion;
+      this.pawTrail.track(c.group.position, c.heading, c.group.position.distanceTo(this.pawLast) > 0.01, dt);
+      this.pawLast.copy(c.group.position);
+    }
+    if (this.beaconDirty && this.mode === "explore") this.updateBeacon();
+    if (this.beacon) {
+      const gem = this.beacon.getObjectByName("gem");
+      if (gem) {
+        gem.rotation.y += dt * 1.4;
+        gem.position.y += Math.sin(this.timer.getElapsed() * 2.2) * 0.004;
+      }
+      this.beacon.visible = this.mode === "explore";
+    }
     for (const e of this.entities) {
       if (e.rig) {
         const d = e.rig.group.position.distanceTo(this.playerPos);
@@ -609,6 +839,8 @@ export class World3D {
     if (this.battle) this.battle.enemy.update(dt);
 
     // --- ambience
+    if (this.sky) this.sky.position.set(this.cam.camera.position.x, -8, this.cam.camera.position.z);
+    if (this.water) ((this.water.material as THREE.ShaderMaterial).uniforms.uTime.value as number) = this.timer.getElapsed();
     this.particles?.update(dt);
     this.bursts = this.bursts.filter((b) => b.update(dt));
     const now = this.timer.getElapsed();
@@ -641,10 +873,26 @@ export class World3D {
     if (label !== this.lastPrompt) {
       this.lastPrompt = label;
       bus.emit("prompt", label);
+      if (label && this.promptSeenAt === 0) {
+        this.promptSeenAt = 1;
+        this.tip("interact", {
+          keyboard: "Press E to talk or use what's in front of you.",
+          gamepad: "Press A to talk or use what's in front of you.",
+          touch: "Tap the big red button to talk or use what's in front of you.",
+        });
+      }
+    }
+    if (!locked && store.flags.introDone) {
+      this.tip("move", {
+        keyboard: "Move with WASD. Hold a mouse button and drag to look around. The gold beacon marks your objective.",
+        gamepad: "Left stick moves, right stick looks around. The gold beacon marks your objective.",
+        touch: "Drag on the left half to walk, on the right half to look around. The gold beacon marks your objective.",
+      });
     }
     if (this.warnCooldown > 0) this.warnCooldown -= dt;
   }
   private stepAccum = 0;
+  private pawLast = new THREE.Vector3();
 
   private moveBy(dir: THREE.Vector3, dist: number) {
     const nx = this.playerPos.x + dir.x * dist;
@@ -722,6 +970,13 @@ export class World3D {
   private updateCompanion(dt: number, playerMoving: boolean) {
     const c = this.companion;
     if (!c) return;
+    if (this.companionId === "mimo") {
+      this.tip("sniff", {
+        keyboard: "Mimo is with you. Press F and he'll sniff out hidden things nearby.",
+        gamepad: "Mimo is with you. Press RB and he'll sniff out hidden things nearby.",
+        touch: "Mimo is with you. Tap the paw button and he'll sniff out hidden things nearby.",
+      });
+    }
     if (this.mode === "battle") {
       c.setMoving(0);
       c.update(dt);
@@ -1002,6 +1257,11 @@ export class World3D {
     this.cam.playCinematic({ frames, onDone: () => { if (this.battle) this.cam.hold = { pos: view.pos, look: view.look }; } });
     this.delay(boss ? 1700 : 320, () => {
       useGameStore.getState().setOverlay({ kind: "battle", enemyId, boss });
+      this.tip("battle", {
+        keyboard: "Battle: FIGHT picks a move, ITEM heals, SWAP changes who stands in front. Arrows choose, Enter confirms.",
+        gamepad: "Battle: FIGHT picks a move, ITEM heals, SWAP changes who stands in front. D-pad chooses, A confirms, B backs out.",
+        touch: "Battle: FIGHT picks a move, ITEM heals, SWAP changes who stands in front. Tap a button to choose.",
+      });
     });
   }
 
@@ -1198,6 +1458,35 @@ export class World3D {
         const b = new Burst(payload.x + 0.5, 0.2, Z(payload.y), "#8b7152", 30, 1.0, 1.6);
         this.bursts.push(b);
         this.scene.add(b.points);
+        break;
+      }
+      case "villain-leaves": {
+        const e = this.entities.find((x) => x.kind === payload?.kind);
+        if (!e || !e.rig) break;
+        // a bow, then they turn and walk out of the scene; the rebuilt map never spawns them again
+        const away = e.object.position.clone().sub(this.playerPos).setY(0);
+        if (away.length() < 0.01) away.set(0, 0, 1);
+        away.normalize();
+        e.rig.play("wave", 0.9);
+        const rig = e.rig;
+        const obj = e.object;
+        this.entities = this.entities.filter((x) => x !== e); // no longer blocks or talks
+        this.delay(900, () => {
+          rig.setHeading(Math.atan2(away.x, away.z));
+          let t = 0;
+          const walk = () => {
+            if (!this.running) return;
+            t += 1 / 60;
+            obj.position.addScaledVector(away, 2.2 / 60);
+            rig.setMoving(1);
+            rig.update(1 / 60);
+            const k = Math.max(0, 1 - t / 1.1);
+            obj.scale.setScalar(k);
+            if (t < 1.1) requestAnimationFrame(walk);
+            else { rig.dispose(); disposeObject(obj); }
+          };
+          walk();
+        });
         break;
       }
       case "evening-gather": this.eveningGather(); break;

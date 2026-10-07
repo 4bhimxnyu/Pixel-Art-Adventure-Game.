@@ -1,7 +1,11 @@
 // ---------------------------------------------------------------------------
-// Mimo — a Shih Tzu. Fluffy white body with tan patches on the ears and back,
-// a curled tail that wags, dark round eyes and a little black nose. Walks,
-// sits when bored, sniffs, barks, digs, jumps, bites (battle), and wags.
+// Mimo — a male Shih Tzu. Small and very fluffy: a long coat that hangs like
+// a skirt under the body (the legs barely show), a round face with a short,
+// flat muzzle and a slight underbite, big round dark eyes, long floppy
+// fur-covered ears, a plumed tail curled over the back, and a topknot tied
+// with a blue band. White coat with gold-tan on the ears, saddle and around
+// the eyes; a blue collar with a gold tag. Walks, sits when bored, sniffs,
+// barks, digs, jumps, bites (battle), and wags.
 // ---------------------------------------------------------------------------
 
 import * as THREE from "three";
@@ -26,74 +30,107 @@ export class DogRig extends BaseRig {
   }
 
   private build(tint: "white" | "dusty") {
-    const fur = mat(tint === "white" ? "#f4f2ea" : "#d9d4c6");
-    const furShade = mat(tint === "white" ? "#e3dfd2" : "#c3bdae");
+    const fur = mat(tint === "white" ? "#f6f3ea" : "#d9d4c6");
+    const furShade = mat(tint === "white" ? "#e6e1d2" : "#c3bdae");
     const tan = mat("#c9a06a");
+    const tanDark = mat("#b08650");
     const dark = glow("#141014");
+    const blue = mat("#2f6bd6");
 
-    // body: a fluffy ellipsoid (own joint: it breathes by scaling, so it stays unbaked)
+    // --- body: a fluffy ellipsoid (own joint: it breathes by scaling, so it stays unbaked)
     const bodyJoint = this.joint(0, 0, 0);
-    this.bodyMesh = this.mesh(G.sphere(0.26, 12), fur, 0, 0.34, -0.02);
+    this.bodyMesh = this.mesh(G.sphere(0.25, 12), fur, 0, 0.36, -0.02);
     this.bodyMesh.scale.set(0.95, 0.78, 1.3);
     bodyJoint.add(this.bodyMesh);
-    const saddle = this.mesh(G.sphere(0.2, 10), tan, 0, 0.46, -0.08);
-    saddle.scale.set(0.9, 0.45, 1.05);
-    this.body.add(saddle);
-    const chest = this.mesh(G.sphere(0.2, 10), furShade, 0, 0.26, 0.2);
-    chest.scale.set(0.9, 0.7, 0.8);
-    this.body.add(chest);
 
-    // legs: short fluffy stubs
-    const legPos: [number, number][] = [[-0.12, 0.2], [0.12, 0.2], [-0.12, -0.2], [0.12, -0.2]];
+    // overlapping fur: chest ruff, rump, and the long coat "skirt" that hides the legs
+    const ruff = this.mesh(G.sphere(0.2, 10), fur, 0, 0.3, 0.2);
+    ruff.scale.set(1.0, 0.8, 0.8);
+    this.body.add(ruff);
+    const rump = this.mesh(G.sphere(0.2, 10), fur, 0, 0.32, -0.24);
+    rump.scale.set(0.95, 0.75, 0.8);
+    this.body.add(rump);
+    const skirt = this.mesh(G.sphere(0.26, 12), furShade, 0, 0.2, -0.02);
+    skirt.scale.set(0.98, 0.5, 1.28);
+    this.body.add(skirt);
+    // gold-tan saddle on the back
+    const saddle = this.mesh(G.sphere(0.2, 10), tan, 0, 0.47, -0.06);
+    saddle.scale.set(0.85, 0.4, 1.0);
+    this.body.add(saddle);
+    const saddle2 = this.mesh(G.sphere(0.12, 8), tanDark, 0.08, 0.5, -0.18);
+    saddle2.scale.set(0.9, 0.35, 0.9);
+    this.body.add(saddle2);
+
+    // --- legs: short stubs, mostly hidden by the coat
+    const legPos: [number, number][] = [[-0.11, 0.18], [0.11, 0.18], [-0.11, -0.2], [0.11, -0.2]];
     for (const [x, z] of legPos) {
-      const j = this.joint(x, 0.22, z);
-      j.add(this.mesh(G.cyl(0.06, 0.075, 0.22, 7), fur, 0, -0.11, 0));
-      j.add(this.sphere(0.07, furShade, 0, -0.21, 0.01, 6));
+      const j = this.joint(x, 0.2, z);
+      j.add(this.mesh(G.cyl(0.055, 0.07, 0.2, 7), fur, 0, -0.1, 0));
+      j.add(this.sphere(0.065, furShade, 0, -0.19, 0.01, 6));
       this.legs.push(j);
     }
 
-    // head
+    // --- head: round, with a flat face
     this.head = this.joint(0, 0.46, 0.3);
-    const skull = this.mesh(G.sphere(0.19, 12), fur, 0, 0.05, 0.02);
-    skull.scale.set(1.05, 0.95, 1);
+    const skull = this.mesh(G.sphere(0.2, 12), fur, 0, 0.05, 0.0);
+    skull.scale.set(1.08, 0.98, 0.95);
     this.head.add(skull);
-    // muzzle (fluffy)
-    const muzzle = this.mesh(G.sphere(0.12, 10), furShade, 0, -0.03, 0.17);
-    muzzle.scale.set(1.1, 0.8, 0.9);
-    this.head.add(muzzle);
-    // nose + mouth
-    this.head.add(this.sphere(0.035, dark, 0, 0.01, 0.28, 6));
-    this.jaw = this.box(0.08, 0.02, 0.06, mat("#a8586a"), 0, -0.07, 0.24);
-    this.head.add(this.jaw);
-    // eyes
+    // fluffy cheeks / beard either side of the muzzle
     for (const s of [-1, 1]) {
-      const eye = this.sphere(0.03, dark, s * 0.075, 0.08, 0.16, 6);
+      const cheek = this.mesh(G.sphere(0.1, 8), fur, s * 0.12, -0.04, 0.12);
+      cheek.scale.set(1, 0.9, 0.9);
+      this.head.add(cheek);
+      // tan patch around each eye
+      const patch = this.mesh(G.sphere(0.065, 8), tan, s * 0.085, 0.07, 0.14);
+      patch.scale.set(1.1, 1, 0.6);
+      this.head.add(patch);
+    }
+    // short flat muzzle, nose high and black, mouth with a slight underbite
+    const muzzle = this.mesh(G.sphere(0.085, 10), furShade, 0, -0.03, 0.17);
+    muzzle.scale.set(1.15, 0.75, 0.7);
+    this.head.add(muzzle);
+    this.head.add(this.sphere(0.034, dark, 0, 0.02, 0.22, 7));
+    this.jaw = this.box(0.085, 0.025, 0.05, mat("#a8586a"), 0, -0.075, 0.2);
+    this.head.add(this.jaw);
+    this.head.add(this.box(0.06, 0.012, 0.02, mat("#f2f2ee"), 0, -0.06, 0.225)); // the underbite shows a little tooth line
+    // big round eyes with a highlight
+    for (const s of [-1, 1]) {
+      const eye = this.sphere(0.038, dark, s * 0.08, 0.07, 0.165, 8);
       eye.castShadow = false;
       this.head.add(eye);
-      const hi = this.sphere(0.01, glow("#ffffff"), s * 0.075 + 0.012, 0.09, 0.185, 4);
+      const hi = this.sphere(0.012, glow("#ffffff"), s * 0.08 + 0.014, 0.085, 0.198, 4);
       hi.castShadow = false;
       this.head.add(hi);
     }
-    // topknot (shih tzu fringe tied up)
-    this.head.add(this.sphere(0.07, tan, 0, 0.22, -0.02, 7));
-    this.head.add(this.box(0.06, 0.02, 0.02, mat("#b3252f"), 0, 0.26, 0.0));
-    // ears: long and droopy, tan
-    this.earL = this.joint(-0.17, 0.12, 0.0, this.head);
-    this.earR = this.joint(0.17, 0.12, 0.0, this.head);
-    const earGeo = G.box(0.07, 0.22, 0.09);
-    const eL = this.mesh(earGeo, tan, 0, -0.1, 0);
-    const eR = this.mesh(earGeo, tan, 0, -0.1, 0);
-    this.earL.add(eL);
-    this.earR.add(eR);
-    this.earL.rotation.z = 0.25;
-    this.earR.rotation.z = -0.25;
+    // topknot: fur gathered up and tied with a blue band
+    this.head.add(this.sphere(0.075, tan, 0, 0.22, -0.01, 8));
+    this.head.add(this.sphere(0.05, fur, 0.03, 0.27, 0.02, 7));
+    this.head.add(this.mesh(G.cyl(0.045, 0.045, 0.03, 8), blue, 0, 0.2, 0.0));
+    // ears: long, droopy, covered in tan fur
+    this.earL = this.joint(-0.17, 0.1, -0.02, this.head);
+    this.earR = this.joint(0.17, 0.1, -0.02, this.head);
+    for (const [ear, s] of [[this.earL, -1], [this.earR, 1]] as const) {
+      const e = this.mesh(G.sphere(0.07, 8), tan, s * 0.02, -0.12, 0);
+      e.scale.set(0.8, 1.9, 1.0);
+      ear.add(e);
+      const tip = this.mesh(G.sphere(0.055, 7), tanDark, s * 0.03, -0.24, 0.01);
+      tip.scale.set(0.8, 1.2, 0.9);
+      ear.add(tip);
+      ear.rotation.z = s * -0.18;
+    }
+    // collar with a gold tag
+    const collar = this.mesh(G.cyl(0.13, 0.13, 0.035, 12), blue, 0, 0.42, 0.22);
+    collar.rotation.x = 0.35;
+    this.body.add(collar);
+    this.body.add(this.box(0.04, 0.045, 0.012, mat("#d9b45b"), 0, 0.35, 0.33));
 
-    // tail: curled over the back
-    this.tail = this.joint(0, 0.5, -0.32);
-    const t1 = this.mesh(G.sphere(0.075, 7), fur, 0, 0.06, -0.03);
-    const t2 = this.mesh(G.sphere(0.065, 7), tan, 0, 0.14, 0.03);
-    const t3 = this.mesh(G.sphere(0.05, 7), fur, 0, 0.17, 0.1);
-    this.tail.add(t1, t2, t3);
+    // --- tail: a plume curled up over the back
+    this.tail = this.joint(0, 0.5, -0.3);
+    this.tail.add(this.sphere(0.07, fur, 0, 0.06, -0.04, 7));
+    this.tail.add(this.sphere(0.075, fur, 0, 0.15, 0.0, 7));
+    this.tail.add(this.sphere(0.07, tan, 0, 0.2, 0.08, 7));
+    this.tail.add(this.sphere(0.055, fur, 0, 0.19, 0.16, 7));
+
     this.bake();
   }
 
@@ -107,10 +144,10 @@ export class DogRig extends BaseRig {
     this.head.rotation.set(0, 0, 0);
     this.head.position.set(0, 0.46, 0.3);
     this.tail.rotation.set(0, 0, 0);
-    this.jaw.position.y = -0.07;
+    this.jaw.position.y = -0.075;
     this.legs.forEach((l) => l.rotation.set(0, 0, 0));
-    this.earL.rotation.set(0, 0, 0.25);
-    this.earR.rotation.set(0, 0, -0.25);
+    this.earL.rotation.set(0, 0, 0.18);
+    this.earR.rotation.set(0, 0, -0.18);
 
     if (this.ko) {
       this.body.rotation.z = 1.4;
@@ -158,30 +195,28 @@ export class DogRig extends BaseRig {
     const ph = Math.min(1, a.t / a.dur);
     switch (a.name) {
       case "attack": {
-        // lunge + bite
         this.body.position.z = ease.bump(ph) * 0.8;
         this.body.position.y += ease.bump(ph) * 0.15;
         this.head.rotation.x = -0.3 + ease.bump(ph) * 0.5;
-        this.jaw.position.y = -0.07 - ease.bump(Math.min(1, ph * 2)) * 0.05;
+        this.jaw.position.y = -0.075 - ease.bump(Math.min(1, ph * 2)) * 0.05;
         break;
       }
       case "hit": {
         const k = ease.bump(ph);
         this.body.position.z = -0.25 * k;
         this.body.rotation.x = 0.3 * k;
-        this.earL.rotation.z = 0.9 * k + 0.25;
-        this.earR.rotation.z = -0.9 * k - 0.25;
+        this.earL.rotation.z = 0.9 * k + 0.18;
+        this.earR.rotation.z = -0.9 * k - 0.18;
         break;
       }
       case "bark": {
         const k = Math.sin(ph * Math.PI * 4);
         this.head.rotation.x = -0.35 * Math.abs(k);
-        this.jaw.position.y = -0.07 - Math.abs(k) * 0.05;
+        this.jaw.position.y = -0.075 - Math.abs(k) * 0.05;
         this.body.position.y += Math.abs(k) * 0.03;
         break;
       }
       case "sniff": {
-        // nose to the ground, sweeping side to side
         this.head.rotation.x = 0.75;
         this.head.position.y = 0.3;
         this.head.rotation.y = Math.sin(ph * Math.PI * 6) * 0.35;
@@ -207,7 +242,6 @@ export class DogRig extends BaseRig {
         break;
       }
       case "wave": {
-        // a tilt of the head and one raised paw
         this.head.rotation.z = 0.3;
         this.legs[1].rotation.x = -1.2;
         break;

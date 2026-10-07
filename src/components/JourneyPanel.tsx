@@ -117,9 +117,15 @@ export default function JourneyPanel() {
                       FINALE
                     </span>
                   )}
-                  {mission.category === "completed" && (
-                    <span className="ml-auto text-[12px] font-semibold text-[#7ddca4]">Complete</span>
-                  )}
+                  <span
+                    className="ml-auto rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-wider"
+                    style={{
+                      color: mission.state === "COMPLETED" ? "#7ddca4" : mission.state === "ACTIVE" ? "#f2dfa6" : "var(--ink-4)",
+                      borderColor: mission.state === "COMPLETED" ? "rgba(125,220,164,.5)" : mission.state === "ACTIVE" ? "rgba(217,180,91,.5)" : "rgba(255,255,255,.12)",
+                    }}
+                  >
+                    {mission.state}
+                  </span>
                 </div>
                 <p className="mt-3 text-[13px] leading-relaxed text-[var(--ink-2)]">{mission.blurb}</p>
 

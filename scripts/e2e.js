@@ -151,6 +151,7 @@ async function run() {
   await walkTo(5, 7); await walkTo(5, 8, { untilMap: "house" });
   await until(() => S().map === "house", 3000, "entered house");
   expect(S().quests[0].step >= 1, "leaving the bedroom advanced the objective");
+  expectBeacon("house");
   await sleep(400);
   await walkTo(5, 5); placeAt(5, 5, "up"); await interact(); // Mum
   expect(S().flags.metMom, "met Mum");
@@ -198,6 +199,7 @@ async function run() {
   // --- Mission: Lantern Village
   await walkTo(8, 1); await walkTo(8, 0, { untilMap: "village" });
   await until(() => S().map === "village", 3000, "entered village");
+  expectBeacon("village");
   await until(() => S().overlay?.kind === "dialogue", 6000, "village arrival dialogue");
   await dialogueThrough();
   await walkTo(8, 8); placeAt(8, 8, "up"); await interact(); // Elder at (8,7)
@@ -230,6 +232,8 @@ async function run() {
   await walkTo(5, 8); placeAt(5, 8, "up"); await interact(); // sentinel X at (5,7)
   await fight();
   expect(S().flags.trialDone, "trial done");
+  await expectGone("npc_miniboss1", "Bamboo Sentinel");
+  expectBeacon("after trial");
   await sleep(500);
   // --- Prakriti
   await walkTo(18, 7); await walkTo(19, 7, { untilMap: "garden" });
@@ -238,6 +242,9 @@ async function run() {
   await walkTo(4, 9); placeAt(4, 9, "up"); await interact(); // Prakriti P at (4,8)
   await fight();
   expect(S().flags.prakritiDone, "Prakriti defeated");
+  await expectGone("npc_prakriti_duel", "Prakriti");
+  placeAt(4, 9, "up"); W().tryInteract(); await sleep(400);
+  expect(S().overlay?.kind !== "battle" && S().overlay?.kind !== "dialogue", "Prakriti's duel cannot restart");
   await sleep(500);
   await walkTo(14, 5); placeAt(14, 5, "up"); await interact(false); // garden flame at (14,4)
   expect(S().flags.flameGarden, "garden flame");
@@ -249,6 +256,7 @@ async function run() {
   await walkTo(6, 8); placeAt(6, 8, "up"); await interact(); // warden X at (6,7)
   await fight();
   expect(S().flags.miniboss2Done, "warden defeated");
+  await expectGone("npc_miniboss2", "Mountain Warden");
   await sleep(500);
   await walkTo(14, 10); placeAt(14, 10, "up"); await interact(false); // mountain flame at (14,9)
   expect(S().flags.flameMountain, "mountain flame");
@@ -262,6 +270,7 @@ async function run() {
   await walkTo(10, 13); placeAt(10, 13, "up"); await interact(); // guardian G at (10,12)
   await fight();
   expect(S().flags.guardianDone, "guardian defeated");
+  await expectGone("npc_guardian", "Temple Guardian");
   await sleep(500);
   // --- Cave flame
   await walkTo(9, 13); await walkTo(9, 14, { untilMap: "mountain" });
@@ -291,6 +300,7 @@ async function run() {
   await walkTo(9, 6); await walkTo(9, 3); placeAt(9, 3, "up"); await interact(); // Arshiya Y at (9,2)
   await fight();
   expect(S().flags.bossDefeated, "Arshiya defeated");
+  expect(!W().entities.some((e) => e.kind === "npc_boss"), "Arshiya has left the Academy");
   await until(() => S().overlay?.kind === "dialogue", 8000, "finale dialogue");
   await dialogueThrough();
   expect(S().flags.finaleDone, "finale → mission 26");
@@ -322,6 +332,19 @@ async function run() {
   expect(S().screen === "end", "the game ends with THE END");
   say(`DONE — ${fails.length} failures`);
   return { log, fails };
+}
+
+/** The villain we just beat must be gone from the world and never fight again. */
+async function expectGone(kind, label) {
+  await sleep(2200); // leave animation + rebuild
+  expect(!W().entities.some((e) => e.kind === kind), `${label} has left the scene`);
+}
+
+/** The objective beacon must exist whenever the main quest is unfinished. */
+function expectBeacon(label) {
+  const q = S().quests.find((x) => x.id === "main");
+  if (q.done) return;
+  expect(!!W().beacon, `beacon shown: ${label}`);
 }
 
 async function dialogueThroughIfAny() {

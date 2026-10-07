@@ -10,6 +10,7 @@
 
 import * as THREE from "three";
 import { C, G, mat, glow } from "./materials";
+import { pawGeometry, pawPrintColor } from "./paws";
 
 export type Part = {
   geo: THREE.BufferGeometry;
@@ -160,10 +161,11 @@ const defs: Record<string, () => PropDef> = {
   water: () => ({
     parts: [P(G.box(1, 0.08, 1), mat(C.water2, { opacity: 0.85 }), 0, -0.06, 0, { shadow: false })],
   }),
-  pond: () => ({
+  pondLily: () => ({
+    jitter: 0.25, spin: true,
     parts: [
-      P(G.box(1, 0.08, 1), mat(C.water1, { opacity: 0.85 }), 0, -0.06, 0, { shadow: false }),
       P(G.cyl(0.14, 0.14, 0.03, 6), mat(C.leaf2), 0.2, 0.0, -0.15, { shadow: false }),
+      P(G.sphere(0.05, 6), mat(C.petal2), 0.2, 0.05, -0.15, { shadow: false }),
     ],
   }),
   bridge: () => ({
@@ -182,10 +184,130 @@ const defs: Record<string, () => PropDef> = {
     ],
   }),
   pawPrints: () => ({
+    // a small dog's trot: left/right alternating, heading "up" the map (-z)
     parts: [
-      ...[[-0.2, -0.3], [0.15, -0.05], [-0.15, 0.2], [0.2, 0.4]].map(([x, z]) =>
-        P(G.cyl(0.07, 0.07, 0.02, 6), mat("#2a1a1a"), x, 0.012, z, { shadow: false })
+      ...[[-0.08, 0.32, 0.1], [0.08, 0.1, -0.12], [-0.07, -0.12, 0.08], [0.09, -0.34, -0.06]].map(([x, z, r]) =>
+        P(pawGeometry(), mat(pawPrintColor), x, 0.012, z, { ry: Math.PI + r, shadow: false })
       ),
+    ],
+  }),
+
+  // ------------------------------------------------------------ gates
+  // All gates span local x (about 2.2 units) and are walked through along z.
+  gatePaifang: () => ({
+    parts: [
+      P(G.box(0.26, 2.7, 0.26), mat(C.red), -1.0, 1.35, 0),
+      P(G.box(0.26, 2.7, 0.26), mat(C.red), 1.0, 1.35, 0),
+      P(G.box(0.5, 0.2, 0.5), mat(C.stone3), -1.0, 0.1, 0),
+      P(G.box(0.5, 0.2, 0.5), mat(C.stone3), 1.0, 0.1, 0),
+      P(G.box(2.6, 0.2, 0.3), mat(C.red), 0, 2.55, 0),
+      P(G.box(2.9, 0.16, 0.7), mat(C.roofDark), 0, 2.95, 0),
+      P(G.box(2.5, 0.22, 0.9), mat(C.roof), 0, 3.15, 0),
+      P(G.box(1.2, 0.14, 0.8), mat(C.roof), 0, 3.5, 0),
+      P(G.box(2.6, 0.06, 0.32), mat(C.gold), 0, 2.68, 0, { shadow: false }),
+      P(G.box(0.9, 0.34, 0.06), mat(C.gold), 0, 2.2, 0.14, { shadow: false }),
+      P(G.box(0.22, 0.3, 0.22), glow("#ff6a3c", 0.95), -0.75, 2.1, 0, { shadow: false }),
+      P(G.box(0.22, 0.3, 0.22), glow("#ff6a3c", 0.95), 0.75, 2.1, 0, { shadow: false }),
+    ],
+  }),
+  gateBamboo: () => ({
+    parts: [
+      ...[-1.05, -0.9, 0.9, 1.05].map((x) => P(G.cyl(0.07, 0.08, 3.0, 6), mat(C.bamboo1), x, 1.5, x < 0 ? 0.08 : -0.08)),
+      P(G.cyl(0.06, 0.06, 2.6, 6), mat(C.bamboo2), 0, 2.7, 0, { rz: Math.PI / 2 }),
+      P(G.cyl(0.05, 0.05, 2.4, 6), mat(C.bambooDark), 0, 2.35, 0, { rz: Math.PI / 2 }),
+      P(G.box(0.6, 0.03, 0.14), mat(C.bamboo2), -0.9, 2.95, 0.1, { ry: 0.4, rz: 0.35, shadow: false }),
+      P(G.box(0.6, 0.03, 0.14), mat(C.bamboo2), 0.9, 2.95, -0.1, { ry: -0.4, rz: -0.35, shadow: false }),
+      P(G.box(0.6, 0.3, 0.05), mat(C.wood2), 0, 2.05, 0),
+      P(G.box(0.16, 0.22, 0.16), glow("#ffd27a", 0.9), -0.98, 2.0, 0.2, { shadow: false }),
+      P(G.box(0.16, 0.22, 0.16), glow("#ffd27a", 0.9), 0.98, 2.0, -0.2, { shadow: false }),
+    ],
+  }),
+  gateMoon: () => ({
+    parts: [
+      P(new THREE.TorusGeometry(1.12, 0.16, 8, 28), mat(C.plaster), 0, 1.12, 0, { shadow: true }),
+      P(G.box(0.9, 2.2, 0.4), mat(C.plaster), -1.6, 1.1, 0),
+      P(G.box(0.9, 2.2, 0.4), mat(C.plaster), 1.6, 1.1, 0),
+      P(G.box(1.0, 0.16, 0.6), mat(C.roofDark), -1.6, 2.28, 0),
+      P(G.box(1.0, 0.16, 0.6), mat(C.roofDark), 1.6, 2.28, 0),
+      P(G.box(0.4, 0.1, 0.3), mat(C.roof), -1.6, 2.4, 0),
+      P(G.box(0.4, 0.1, 0.3), mat(C.roof), 1.6, 2.4, 0),
+      P(G.sphere(0.12, 8), glow("#ffb4c8", 0.9), -1.3, 1.9, 0.26, { shadow: false }),
+      P(G.sphere(0.12, 8), glow("#ffb4c8", 0.9), 1.3, 1.9, 0.26, { shadow: false }),
+    ],
+  }),
+  gateStone: () => ({
+    parts: [
+      P(G.hex(0.3, 2.4), mat(C.stone1), -1.0, 1.2, 0),
+      P(G.hex(0.3, 2.4), mat(C.stone1), 1.0, 1.2, 0),
+      P(G.ico(0.32, 0), mat(C.stone2), -1.0, 2.5, 0, { sy: 0.7 }),
+      P(G.ico(0.32, 0), mat(C.stone2), 1.0, 2.5, 0, { sy: 0.7 }),
+      P(G.box(2.5, 0.22, 0.4), mat(C.stone3), 0, 2.72, 0),
+      ...[-0.75, -0.25, 0.25, 0.75].map((x, i) =>
+        P(G.box(0.3, 0.42, 0.02), mat(i % 2 ? C.red : C.brightgold), x, 2.4, 0.02, { rz: 0.08 * (i % 2 ? 1 : -1), shadow: false })
+      ),
+      P(G.ico(0.3, 0), mat(C.stone1), -1.45, 0.25, 0.3, { sy: 0.8 }),
+      P(G.ico(0.26, 0), mat(C.stone2), 1.5, 0.22, -0.2, { sy: 0.8 }),
+    ],
+  }),
+  gateTemple: () => ({
+    parts: [
+      P(G.box(0.7, 3.0, 0.7), mat("#4a1c1c"), -1.35, 1.5, 0),
+      P(G.box(0.7, 3.0, 0.7), mat("#4a1c1c"), 1.35, 1.5, 0),
+      P(G.box(3.6, 0.3, 0.9), mat(C.roofDark), 0, 3.15, 0),
+      P(G.box(3.2, 0.3, 1.1), mat(C.roof), 0, 3.42, 0),
+      P(G.box(1.6, 0.2, 0.9), mat(C.roof), 0, 3.7, 0),
+      P(G.box(3.6, 0.08, 0.9), mat(C.gold), 0, 3.32, 0, { shadow: false }),
+      P(G.box(2.1, 0.5, 0.2), mat(C.gold), 0, 2.65, 0),
+      // the great doors stand open
+      P(G.box(0.9, 2.5, 0.12), mat("#6a1818"), -1.25, 1.25, 0.55, { ry: 0.9 }),
+      P(G.box(0.9, 2.5, 0.12), mat("#6a1818"), 1.25, 1.25, 0.55, { ry: -0.9 }),
+      P(G.cyl(0.07, 0.07, 0.03, 8), mat(C.gold), -1.05, 1.3, 0.72, { rx: Math.PI / 2, shadow: false }),
+      P(G.cyl(0.07, 0.07, 0.03, 8), mat(C.gold), 1.05, 1.3, 0.72, { rx: Math.PI / 2, shadow: false }),
+      P(G.box(0.24, 0.34, 0.24), glow("#ff8a3c", 0.95), -0.7, 2.3, 0.1, { shadow: false }),
+      P(G.box(0.24, 0.34, 0.24), glow("#ff8a3c", 0.95), 0.7, 2.3, 0.1, { shadow: false }),
+    ],
+  }),
+  gateCave: () => ({
+    parts: [
+      P(G.ico(0.9, 0), mat(C.cave2), -1.25, 0.8, 0, { sy: 1.6 }),
+      P(G.ico(0.9, 0), mat(C.cave2), 1.25, 0.8, 0, { sy: 1.6 }),
+      P(G.ico(0.8, 0), mat(C.cave3), -0.7, 2.3, 0.1, { sy: 0.9 }),
+      P(G.ico(0.8, 0), mat(C.cave3), 0.7, 2.3, -0.1, { sy: 0.9 }),
+      P(G.ico(0.6, 0), mat(C.cave2), 0, 2.75, 0, { sy: 0.8 }),
+      P(G.cone(0.1, 0.45, 5), glow("#8e7cff"), -0.95, 0.4, 0.5, { shadow: false }),
+      P(G.cone(0.08, 0.35, 5), glow("#c4b8ff"), 1.05, 0.3, 0.45, { rz: -0.3, shadow: false }),
+    ],
+  }),
+  gateArch: () => ({
+    parts: [
+      P(G.cyl(0.09, 0.1, 2.3, 7), mat(C.wood1), -1.0, 1.15, 0),
+      P(G.cyl(0.09, 0.1, 2.3, 7), mat(C.wood1), 1.0, 1.15, 0),
+      P(G.box(2.5, 0.14, 0.16), mat(C.wood2), 0, 2.35, 0),
+      P(G.box(0.8, 0.28, 0.05), mat(C.wood2), 0, 2.0, 0),
+      P(G.box(0.5, 0.04, 0.06), mat(C.brightgold), 0, 2.03, 0.03, { shadow: false }),
+      P(G.box(0.18, 0.24, 0.18), glow("#ffb347", 0.9), -0.85, 2.0, 0, { shadow: false }),
+      P(G.box(0.18, 0.24, 0.18), glow("#ffb347", 0.9), 0.85, 2.0, 0, { shadow: false }),
+    ],
+  }),
+  gatePlaque: () => ({
+    parts: [
+      P(G.box(1.6, 0.08, 0.7), mat("#6b5a4a"), 0, 1.95, 0.25),
+      P(G.box(0.7, 0.26, 0.04), mat(C.gold), 0, 2.2, 0.55, { shadow: false }),
+      P(G.box(0.5, 0.1, 0.05), mat("#2a1a1a"), 0, 2.2, 0.57, { shadow: false }),
+      P(G.box(0.18, 0.24, 0.18), glow("#ffd27a", 0.9), -0.7, 1.75, 0.5, { shadow: false }),
+      P(G.box(0.18, 0.24, 0.18), glow("#ffd27a", 0.9), 0.7, 1.75, 0.5, { shadow: false }),
+    ],
+  }),
+  /** Laid over a gate while the way is still closed. */
+  gateBars: () => ({
+    parts: [
+      P(G.box(2.1, 0.1, 0.1), mat(C.wood1), 0, 0.55, 0),
+      P(G.box(2.1, 0.1, 0.1), mat(C.wood1), 0, 1.05, 0),
+      P(G.box(2.1, 0.1, 0.1), mat(C.wood1), 0, 1.55, 0),
+      P(G.box(0.1, 1.5, 0.1), mat(C.wood1), -0.5, 1.0, 0),
+      P(G.box(0.1, 1.5, 0.1), mat(C.wood1), 0.5, 1.0, 0),
+      P(G.box(0.34, 0.5, 0.03), mat(C.crimson), 0, 1.05, 0.07, { rz: 0.12, shadow: false }),
+      P(G.box(0.2, 0.28, 0.02), mat(C.brightgold), 0, 1.05, 0.09, { rz: 0.12, shadow: false }),
     ],
   }),
 
@@ -203,13 +325,44 @@ const defs: Record<string, () => PropDef> = {
       P(G.box(1.04, 0.16, 1.04), mat(C.stone2), 0, 1.45, 0),
     ],
   }),
-  house: () => ({
+  // Houses are built per cell so a 4x2 block of 'H' reads as ONE building:
+  // the north half carries a roof sloping north, the south half one sloping
+  // south, meeting at a shared gold ridge; single-row blocks get a gable.
+  houseN: () => houseHalf(1),
+  houseS: () => houseHalf(-1),
+  houseSingle: () => ({
     parts: [
-      P(G.box(1, 1.6, 1), mat(C.plaster), 0, 0.8, 0),
-      P(G.box(1.1, 0.25, 1.1), mat(C.roofDark), 0, 1.7, 0),
-      P(G.cone(0.85, 0.7, 4), mat(C.roof), 0, 2.15, 0, { ry: Math.PI / 4 }),
-      P(G.box(0.06, 1.6, 0.06), mat(C.wood1), -0.48, 0.8, -0.49),
-      P(G.box(0.06, 1.6, 0.06), mat(C.wood1), 0.48, 0.8, -0.49),
+      ...houseWalls(),
+      P(G.box(1.1, 0.12, 1.3), mat(C.roofDark), 0, 1.86, 0),
+      P(G.box(1.12, 0.1, 0.72), mat(C.roof), 0, 2.08, 0.34, { rx: 0.55 }),
+      P(G.box(1.12, 0.1, 0.72), mat(C.roof), 0, 2.08, -0.34, { rx: -0.55 }),
+      P(G.box(1.14, 0.08, 0.1), mat(C.gold), 0, 2.38, 0, { shadow: false }),
+    ],
+  }),
+  tuft: () => ({
+    copies: 2, jitter: 0.4, spin: true, scale: [0.6, 1.1],
+    parts: [
+      P(G.cone(0.05, 0.3, 4), mat(C.grass2), 0, 0.15, 0, { rz: 0.2, shadow: false }),
+      P(G.cone(0.05, 0.26, 4), mat(C.grass3), 0.06, 0.13, 0.04, { rz: -0.25, shadow: false }),
+      P(G.cone(0.045, 0.24, 4), mat(C.leaf2), -0.05, 0.12, -0.03, { rz: 0.1, shadow: false }),
+    ],
+  }),
+  pebble: () => ({
+    spin: true, jitter: 0.35, scale: [0.6, 1.2],
+    parts: [
+      P(G.ico(0.1, 0), mat(C.stone2), 0, 0.05, 0, { sy: 0.6 }),
+      P(G.ico(0.06, 0), mat(C.stone1), 0.12, 0.03, 0.08, { sy: 0.6 }),
+    ],
+  }),
+  tree2: () => ({
+    spin: true, scale: [0.9, 1.25], jitter: 0.12,
+    parts: [
+      P(G.cyl(0.08, 0.15, 1.3, 6), mat("#5a3d2c"), 0, 0.65, 0),
+      P(G.cyl(0.05, 0.07, 0.6, 5), mat("#5a3d2c"), 0.3, 1.3, 0.1, { rz: -0.7 }),
+      P(G.ico(0.48, 0), mat(C.leafDark), 0, 1.55, 0),
+      P(G.ico(0.42, 0), mat(C.leaf1), 0.45, 1.75, 0.15),
+      P(G.ico(0.36, 0), mat(C.leaf2), -0.3, 1.95, -0.2),
+      P(G.ico(0.3, 0), mat(C.leaf2), 0.1, 2.2, 0.05),
     ],
   }),
   flatBlock: () => ({
@@ -552,6 +705,36 @@ const defs: Record<string, () => PropDef> = {
     ],
   }),
 };
+
+function houseWalls(): Part[] {
+  return [
+    P(G.box(1, 1.8, 1), mat(C.plaster), 0, 0.9, 0),
+    P(G.box(1.02, 0.14, 1.02), mat(C.wood1), 0, 0.07, 0),
+    P(G.box(1.02, 0.1, 1.02), mat(C.wood1), 0, 1.75, 0),
+    P(G.box(0.08, 1.8, 0.08), mat(C.wood1), -0.47, 0.9, -0.47),
+    P(G.box(0.08, 1.8, 0.08), mat(C.wood1), 0.47, 0.9, -0.47),
+    P(G.box(0.08, 1.8, 0.08), mat(C.wood1), -0.47, 0.9, 0.47),
+    P(G.box(0.08, 1.8, 0.08), mat(C.wood1), 0.47, 0.9, 0.47),
+    // a lattice window on the south face
+    P(G.box(0.44, 0.44, 0.04), mat(C.wood2), 0, 1.1, -0.5, { shadow: false }),
+    P(G.box(0.36, 0.36, 0.03), glow("#ffd9a8", 0.85), 0, 1.1, -0.515, { shadow: false }),
+    P(G.box(0.04, 0.36, 0.04), mat(C.wood1), 0, 1.1, -0.52, { shadow: false }),
+    P(G.box(0.36, 0.04, 0.04), mat(C.wood1), 0, 1.1, -0.52, { shadow: false }),
+  ];
+}
+
+/** dir = +1: the north half (roof slopes up toward -z, the ridge on the south edge). */
+function houseHalf(dir: 1 | -1): PropDef {
+  return {
+    parts: [
+      ...houseWalls(),
+      P(G.box(1.1, 0.12, 1.2), mat(C.roofDark), 0, 1.86, dir * 0.08),
+      P(G.box(1.12, 0.1, 1.25), mat(C.roof), 0, 2.2, dir * 0.12, { rx: dir * 0.5 }),
+      P(G.box(1.14, 0.1, 0.14), mat(C.gold), 0, 2.46, -dir * 0.5, { shadow: false }),
+      P(G.box(1.14, 0.08, 0.2), mat(C.roofDark), 0, 1.95, dir * 0.62, { shadow: false }),
+    ],
+  };
+}
 
 const cache = new Map<string, PropDef>();
 export function prop(key: string): PropDef | null {

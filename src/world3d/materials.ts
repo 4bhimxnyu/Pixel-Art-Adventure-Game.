@@ -133,9 +133,88 @@ export function disposeObject(root: THREE.Object3D) {
   root.traverse((o) => {
     const m = o as THREE.Mesh;
     if ((m as any).isInstancedMesh) (m as THREE.InstancedMesh).dispose();
-    // Geometries and materials are shared caches; never dispose them here.
+    // per-map resources carry a name; shared caches never do
+    if (m.isMesh && (m.name === "water" || m.name === "sky")) {
+      m.geometry.dispose();
+      (m.material as THREE.Material).dispose();
+    }
   });
   root.removeFromParent();
 }
 
 export const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
+
+/** Animated stylised water: gentle swell, drifting highlight lines, fog-aware. */
+export function waterMaterial(deep: string, shallow: string) {
+  const uniforms = THREE.UniformsUtils.merge([
+    THREE.UniformsLib.fog,
+    {
+      uTime: { value: 0 },
+      uDeep: { value: new THREE.Color(deep) },
+      uShallow: { value: new THREE.Color(shallow) },
+    },
+  ]);
+  const m = new THREE.ShaderMaterial({
+    uniforms,
+    transparent: true,
+    fog: true,
+    vertexShader: `
+      #include <fog_pars_vertex>
+      uniform float uTime;
+      varying vec2 vXZ;
+      varying float vWave;
+      void main() {
+        vec3 p = position;
+        float w = sin(p.x * 2.1 + uTime * 1.1) * 0.5 + cos(p.z * 1.7 - uTime * 0.9) * 0.5;
+        p.y += w * 0.035;
+        vWave = w;
+        vXZ = p.xz;
+        vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+        gl_Position = projectionMatrix * mvPosition;
+        #include <fog_vertex>
+      }
+    `,
+    fragmentShader: `
+      #include <fog_pars_fragment>
+      uniform float uTime;
+      uniform vec3 uDeep;
+      uniform vec3 uShallow;
+      varying vec2 vXZ;
+      varying float vWave;
+      void main() {
+        float k = vWave * 0.5 + 0.5;
+        vec3 col = mix(uDeep, uShallow, k * 0.7);
+        float line = sin((vXZ.x + vXZ.y * 0.6) * 5.0 + uTime * 1.6 + sin(vXZ.y * 3.0 + uTime) * 0.8);
+        float hi = smoothstep(0.82, 0.97, line);
+        col += vec3(0.55, 0.65, 0.7) * hi * 0.55;
+        gl_FragColor = vec4(col, 0.88);
+        #include <fog_fragment>
+      }
+    `,
+  });
+  return m;
+}
+
+/** A gradient sky dome: zenith colour fading to the horizon (fog) colour. */
+export function skyMaterial(top: string, horizon: string) {
+  return new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    depthWrite: false,
+    uniforms: { uTop: { value: new THREE.Color(top) }, uHorizon: { value: new THREE.Color(horizon) } },
+    vertexShader: `
+      varying float vH;
+      void main() {
+        vH = normalize(position).y;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uTop; uniform vec3 uHorizon;
+      varying float vH;
+      void main() {
+        float k = smoothstep(-0.05, 0.55, vH);
+        gl_FragColor = vec4(mix(uHorizon, uTop, k), 1.0);
+      }
+    `,
+  });
+}

@@ -14,6 +14,8 @@ export type BusEvent =
   | "fade"
   | "mimo:ping"
   | "hint:next"
+  | "stuck"
+  | "unstuck"
   | "tutorial";
 
 type Handler = (payload?: any) => void;

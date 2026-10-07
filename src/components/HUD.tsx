@@ -4,6 +4,8 @@ import MissionTracker from "./MissionTracker";
 import { HpBar } from "./pixel/decor";
 import { CharacterPortrait } from "./pixel/Portrait";
 import { useDevice, glyph } from "../input/useDevice";
+import { useEffect, useState } from "react";
+import { bus } from "../game/bus";
 
 export default function HUD() {
   const map = useGameStore((s) => s.map);
@@ -11,6 +13,8 @@ export default function HUD() {
   const device = useDevice();
   const k = device.kind;
   const hasMimo = party.some((p) => p.id === "mimo");
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => bus.on("stuck", (v: boolean) => setStuck(!!v)), []);
 
   return (
     <div className="hud pointer-events-none absolute inset-0 z-20 flex flex-col justify-between p-4">
@@ -46,6 +50,21 @@ export default function HUD() {
 
         <MissionTracker />
       </div>
+
+      {stuck && (
+        <div className="pointer-events-auto absolute left-1/2 top-[30%] -translate-x-1/2 sb-pop">
+          <button
+            onClick={() => bus.emit("unstuck")}
+            className="btn btn-primary flex items-center gap-3 px-5 py-3 text-[13px]"
+            style={{ fontFamily: "var(--font-body)", letterSpacing: "0.02em" }}
+          >
+            <span>Having trouble? Reset position</span>
+            <kbd className="rounded border border-[rgba(242,223,166,.4)] bg-black/30 px-1.5 py-0.5 text-[10px]">
+              {k === "gamepad" ? "Select" : k === "touch" ? "tap" : "R"}
+            </kbd>
+          </button>
+        </div>
+      )}
 
       {k !== "touch" && (
         <div className="hud-keys flex items-end justify-between">

@@ -5,6 +5,7 @@ import { questSfx } from "../lib/questSfx";
 import { PetalRain, Lantern } from "./pixel/decor";
 import { CharacterPortrait } from "./pixel/Portrait";
 import SettingsPanel from "./SettingsPanel";
+import { useDevice } from "../input/useDevice";
 
 export default function TitleScreen() {
   const hasSave = useGameStore((s) => s.hasSave);
@@ -13,6 +14,7 @@ export default function TitleScreen() {
   const [idx, setIdx] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [armed, setArmed] = useState(false);
+  const device = useDevice();
 
   const options = [
     { label: hasSave ? "Continue" : "New Game", hint: hasSave ? "Pick up where you left off" : "Begin the birthday", action: () => (hasSave ? load() : newGame()) },
@@ -100,10 +102,16 @@ export default function TitleScreen() {
         </nav>
 
         <p className="mt-12 text-[11px] tracking-wide text-[var(--ink-4)]">
-          WASD / Arrows to move · E to interact · Q for missions · H for a hint
+          {device.kind === "gamepad"
+            ? "Left stick moves · right stick looks · A interacts · Y missions"
+            : device.kind === "touch"
+            ? "Drag left to walk · drag right to look · the red button interacts"
+            : "WASD to move · drag the mouse to look · E to interact · Q for missions"}
         </p>
         {!armed && (
-          <p className="sb-blink mt-4 text-[11px] font-semibold tracking-[.3em] text-[#d9b45b]">PRESS ANY KEY</p>
+          <p className="sb-blink mt-4 text-[11px] font-semibold tracking-[.3em] text-[#d9b45b]">
+            {device.kind === "touch" ? "TAP TO BEGIN" : "PRESS ANY KEY"}
+          </p>
         )}
       </div>
 

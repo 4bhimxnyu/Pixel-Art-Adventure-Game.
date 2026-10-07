@@ -7,7 +7,7 @@
 // them, so every existing panel works on every device with no changes.
 // ---------------------------------------------------------------------------
 
-export type Action = "interact" | "cancel" | "menu" | "items" | "quests" | "hint" | "sniff" | "dodge" | "save" | "map";
+export type Action = "interact" | "cancel" | "menu" | "items" | "quests" | "hint" | "sniff" | "dodge" | "save" | "map" | "unstuck";
 
 export type InputState = {
   /** Movement on the ground: x = right, y = forward, length ≤ 1. */
@@ -32,7 +32,7 @@ type Listener = (d: DeviceKind) => void;
 const KEY_ACTION: Record<string, Action> = {
   e: "interact", E: "interact", z: "interact", Z: "interact", Enter: "interact", " ": "interact",
   x: "cancel", X: "cancel",
-  f: "sniff", F: "sniff", Shift: "dodge", F5: "save", m: "map", M: "map",
+  f: "sniff", F: "sniff", Shift: "dodge", F5: "save", m: "map", M: "map", r: "unstuck", R: "unstuck",
 };
 
 /** Standard gamepad mapping: button index → synthetic key when a menu is up. */
@@ -47,9 +47,17 @@ const PAD_MENU_KEY: Record<number, string> = {
 };
 
 const PAD_WORLD_ACTION: Record<number, Action> = {
-  0: "interact", 1: "dodge", 2: "items", 3: "quests", 9: "menu", 8: "map",
+  0: "interact", 1: "dodge", 2: "items", 3: "quests", 9: "menu", 8: "unstuck",
   4: "hint", 5: "sniff", 13: "sniff",
 };
+
+/** Radial dead zone with re-scaling, so small tilts walk slowly and the rim is full speed. */
+function stick(x: number, y: number, dead = 0.16): [number, number] {
+  const len = Math.hypot(x, y);
+  if (len < dead) return [0, 0];
+  const k = Math.min(1, (len - dead) / (1 - dead)) / len;
+  return [x * k, y * k];
+}
 
 class InputManager {
   readonly state: InputState = {
@@ -215,8 +223,8 @@ class InputManager {
 
     // mouse look (hold button and drag)
     if (this.mouseDelta.x || this.mouseDelta.y) {
-      s.look.x += this.mouseDelta.x * 0.0038 * this.lookSens;
-      s.look.y += this.mouseDelta.y * 0.0028 * this.lookSens * (this.invertY ? -1 : 1);
+      s.look.x += this.mouseDelta.x * 0.0042 * this.lookSens;
+      s.look.y += this.mouseDelta.y * 0.0030 * this.lookSens * (this.invertY ? -1 : 1);
       s.lookActive = true;
       this.mouseDelta.x = 0;
       this.mouseDelta.y = 0;
@@ -230,11 +238,11 @@ class InputManager {
     const pads = navigator.getGamepads?.() ?? [];
     const pad = Array.from(pads).find((p) => !!p) ?? null;
     if (pad) {
-      const dz = (v: number) => (Math.abs(v) < 0.18 ? 0 : v);
-      const ax = dz(pad.axes[0] ?? 0);
-      const ay = dz(pad.axes[1] ?? 0);
-      const rx = dz(pad.axes[2] ?? 0);
-      const ry = dz(pad.axes[3] ?? 0);
+      const [ax, ay] = stick(pad.axes[0] ?? 0, pad.axes[1] ?? 0);
+      const [rx0, ry0] = stick(pad.axes[2] ?? 0, pad.axes[3] ?? 0, 0.2);
+      // a gentle response curve: precise near the centre, quick at the rim
+      const rx = Math.sign(rx0) * rx0 * rx0;
+      const ry = Math.sign(ry0) * ry0 * ry0;
       if (ax || ay || rx || ry) this.setDevice("gamepad");
       mx += ax;
       my -= ay;
@@ -243,8 +251,8 @@ class InputManager {
       if (pad.buttons[12]?.pressed) my += 1;
       if (pad.buttons[13]?.pressed) my -= 1;
       if (rx || ry) {
-        s.look.x += rx * 2.6 * dt * this.lookSens;
-        s.look.y += ry * 1.8 * dt * this.lookSens * (this.invertY ? -1 : 1);
+        s.look.x += rx * 3.0 * dt * this.lookSens;
+        s.look.y += ry * 2.0 * dt * this.lookSens * (this.invertY ? -1 : 1);
         s.lookActive = true;
       }
       if (pad.buttons[6]?.pressed) s.zoom -= 2 * dt;

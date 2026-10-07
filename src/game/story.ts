@@ -61,6 +61,7 @@ export function shouldSkipEntity(kind: string, partyId: string | undefined, flag
     case "mimo_here": return flags.mimoRecognized;
     case "ribbon_spot": return flags.ribbonFound;
     case "npc_prakriti": return flags.prakritiDone;
+    case "npc_prakriti_duel": return flags.prakritiDone;
     case "npc_miniboss1": return flags.miniboss1Done;
     case "npc_miniboss2": return flags.miniboss2Done;
     case "npc_guardian": return flags.guardianDone;
@@ -130,6 +131,20 @@ export class StoryController {
 
   say(text: string) {
     useGameStore.getState().openLines([{ who: "Palakshi", portrait: "palakshi", text }]);
+  }
+
+  /**
+   * A defeated villain walks off before the world is rebuilt without them.
+   * Their completion flag is already set, so the rebuilt map never spawns
+   * them again and the battle can never re-trigger.
+   */
+  leaveThenRefresh(kind: string) {
+    if (this.fx.cinematic) {
+      this.fx.cinematic("villain-leaves", { kind });
+      this.fx.delay(1700, () => this.fx.refresh());
+    } else {
+      this.fx.refresh();
+    }
   }
 
   // ------------------------------------------------------------ interaction
@@ -549,7 +564,7 @@ export class StoryController {
         store.addItem("trial_talisman");
         bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "Bamboo Forest Trial" });
         adv("prakriti");
-        fx.refresh();
+        this.leaveThenRefresh("npc_miniboss1");
         break;
 
       case "start_prakriti": fx.startBattle("prakriti_boss", true); break;
@@ -560,7 +575,7 @@ export class StoryController {
         bus.emit("toast", { text: "Received the Fashion Pass.", tone: "good" });
         bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "Rival: Prakriti" });
         adv("temple");
-        fx.refresh();
+        this.leaveThenRefresh("npc_prakriti_duel");
         break;
 
       case "start_miniboss2": fx.startBattle("boss_warden", true); break;
@@ -568,7 +583,7 @@ export class StoryController {
         store.healParty();
         store.setFlag("miniboss2Done", true);
         bus.emit("toast", { text: "The Mountain Shrine is open.", tone: "good" });
-        fx.refresh();
+        this.leaveThenRefresh("npc_miniboss2");
         break;
 
       case "start_guardian": fx.startBattle("boss_guardian", true); break;
@@ -582,7 +597,7 @@ export class StoryController {
         fx.delay(2400, () =>
           bus.emit("cinematic", { kind: "mission-start", title: "NEW MISSION", subtitle: "Restore the Sacred Lantern" })
         );
-        fx.refresh();
+        this.leaveThenRefresh("npc_guardian");
         break;
 
       case "lantern_restored":
@@ -616,7 +631,7 @@ export class StoryController {
         store.healParty();
         bus.emit("cinematic", { kind: "mission-complete", title: "MISSION COMPLETE", subtitle: "Defeat Arshiya" });
         fx.delay(2600, () => useGameStore.getState().openDialogue("finale"));
-        fx.refresh();
+        this.leaveThenRefresh("npc_boss");
         break;
 
       case "credits":

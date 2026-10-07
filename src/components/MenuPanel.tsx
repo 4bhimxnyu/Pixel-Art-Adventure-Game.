@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { questSfx } from "../lib/questSfx";
 import { ScrollPanel, HpBar } from "./pixel/decor";
 import { CharacterPortrait } from "./pixel/Portrait";
+import { useDevice, glyph } from "../input/useDevice";
 
 export default function MenuPanel() {
   const setOverlay = useGameStore((s) => s.setOverlay);
@@ -9,8 +11,29 @@ export default function MenuPanel() {
   const reset = useGameStore((s) => s.reset);
   const party = useGameStore((s) => s.party);
   const lastAutosave = useGameStore((s) => s.lastAutosave);
+  const device = useDevice();
+  const [cursor, setCursor] = useState(4);
 
   const go = (fn: () => void) => { questSfx.confirm(); fn(); };
+
+  const items: { label: string; hint?: string; primary?: boolean; run: () => void }[] = [
+    { label: "Missions", hint: glyph("quests", device.kind), run: () => setOverlay({ kind: "quests" }) },
+    { label: "Items", hint: glyph("items", device.kind), run: () => setOverlay({ kind: "inventory" }) },
+    { label: "Settings", run: () => setOverlay({ kind: "settings" }) },
+    { label: "Save game", hint: device.kind === "keyboard" ? "F5" : undefined, run: () => { save(); setOverlay(null); } },
+    { label: "Resume", hint: glyph("cancel", device.kind), primary: true, run: () => setOverlay(null) },
+  ];
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (["ArrowDown", "s", "S"].includes(e.key)) { e.preventDefault(); setCursor((c) => (c + 1) % items.length); questSfx.select(); }
+      else if (["ArrowUp", "w", "W"].includes(e.key)) { e.preventDefault(); setCursor((c) => (c - 1 + items.length) % items.length); questSfx.select(); }
+      else if (["Enter", " ", "e", "E"].includes(e.key)) { e.preventDefault(); go(items[cursor].run); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cursor]);
 
   return (
     <div className="panel-shell absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm">
@@ -31,11 +54,10 @@ export default function MenuPanel() {
           </div>
 
           <div className="flex flex-col gap-2.5">
-            <Btn label="Missions" hint="Q" onClick={() => go(() => setOverlay({ kind: "quests" }))} />
-            <Btn label="Items" hint="I" onClick={() => go(() => setOverlay({ kind: "inventory" }))} />
-            <Btn label="Settings" onClick={() => go(() => setOverlay({ kind: "settings" }))} />
-            <Btn label="Save game" hint="F5" onClick={() => go(() => { save(); setOverlay(null); })} />
-            <Btn label="Resume" hint="Esc" primary onClick={() => go(() => setOverlay(null))} />
+            {items.map((it, i) => (
+              <Btn key={it.label} label={it.label} hint={it.hint} primary={it.primary} selected={i === cursor}
+                   onHover={() => setCursor(i)} onClick={() => go(it.run)} />
+            ))}
 
             <div className="mt-2 flex items-center justify-between border-t border-[rgba(217,180,91,.15)] pt-3">
               <button
@@ -76,12 +98,13 @@ export default function MenuPanel() {
 }
 
 function Btn({
-  label, hint, onClick, primary,
+  label, hint, onClick, primary, selected, onHover,
 }: {
-  label: string; hint?: string; onClick: () => void; primary?: boolean;
+  label: string; hint?: string; onClick: () => void; primary?: boolean; selected?: boolean; onHover?: () => void;
 }) {
   return (
-    <button onClick={onClick} className={`btn ${primary ? "btn-primary" : ""} flex items-center justify-between px-5 py-3 text-[14px]`}>
+    <button onClick={onClick} onMouseEnter={onHover}
+            className={`btn ${primary ? "btn-primary" : ""} ${selected ? "btn-selected" : ""} flex items-center justify-between px-5 py-3 text-[14px]`}>
       <span>{label}</span>
       {hint && (
         <kbd className="rounded border border-[rgba(217,180,91,.25)] bg-black/40 px-1.5 py-0.5 text-[10px] font-normal tracking-normal text-[var(--ink-3)]"

@@ -25,11 +25,11 @@ const UP = new THREE.Vector3(0, 1, 0);
 export class CameraRig {
   readonly camera: THREE.PerspectiveCamera;
   yaw = Math.PI; // behind the player, looking +z → camera at -z... we look along +z by default
-  pitch = 0.46;
-  distance = 5.4;
-  targetDistance = 5.4;
+  pitch = 0.4;
+  distance = 5.0;
+  targetDistance = 5.0;
   /** Height of the look-at point above the target's feet. */
-  lookHeight = 1.0;
+  lookHeight = 1.15;
   private pos = new THREE.Vector3();
   private look = new THREE.Vector3();
   private autoAlign = 0;

@@ -154,8 +154,13 @@ export const MAIN_MISSIONS: MissionDef[] = [
 
 export type MissionCategory = "completed" | "main" | "discovered" | "side";
 
+/** Explicit progression state. Derived from the saved quest step, so it survives
+ *  map changes, refreshes, loads and input changes by construction. */
+export type MissionState = "LOCKED" | "AVAILABLE" | "ACTIVE" | "COMPLETED";
+
 export type Mission = MissionDef & {
   category: MissionCategory;
+  state: MissionState;
   objectives: { stepId: string; label: string; done: boolean; active: boolean }[];
   guide: Guide | null;
   progress: number;
@@ -181,9 +186,13 @@ export function buildMissions(state: GameState): Mission[] {
     const allDone = objectives.every((o) => o.done);
     const category: MissionCategory = allDone ? "completed" : started ? "main" : "discovered";
     const done = objectives.filter((o) => o.done).length;
+    const idx = MAIN_MISSIONS.indexOf(def);
+    const prevDone = idx === 0 || MAIN_MISSIONS[idx - 1].steps.every((sid) => main.done || reached(sid));
+    const state: MissionState = allDone ? "COMPLETED" : started ? "ACTIVE" : prevDone ? "AVAILABLE" : "LOCKED";
     return {
       ...def,
       category,
+      state,
       objectives,
       guide: guideFor(objectives.find((o) => o.active)?.stepId ?? def.steps[0]),
       progress: done / objectives.length,
@@ -213,6 +222,7 @@ export function buildMissions(state: GameState): Mission[] {
       cast: q.id === "prakriti" ? ["palakshi", "prakriti"] : ["palakshi"],
       rewards: q.id === "prakriti" ? [{ kind: "item", label: "Jade Charm" }] : [{ kind: "item", label: "Assorted treasures" }],
       category: q.done ? "completed" : "side",
+      state: q.done ? "COMPLETED" : "ACTIVE",
       objectives,
       guide: guideFor(objectives.find((o) => o.active)?.stepId ?? q.steps[0].id),
       progress: objectives.filter((o) => o.done).length / objectives.length,

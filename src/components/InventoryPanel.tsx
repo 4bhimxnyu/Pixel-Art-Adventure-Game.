@@ -14,27 +14,32 @@ export default function InventoryPanel() {
   const setOverlay = useGameStore((s) => s.setOverlay);
 
   const [cursor, setCursor] = useState(0);
+  const [who, setWho] = useState(0);
 
   const usable = inventory.filter((i) => ITEMS[i.id].heal);
   const keyItems = inventory.filter((i) => !ITEMS[i.id].heal);
   const list = [...usable, ...keyItems];
   const sel = list[cursor];
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!list.length) return;
-      if (["ArrowDown", "s", "S"].includes(e.key)) { setCursor((c) => (c + 1) % list.length); sfx("menu"); }
-      else if (["ArrowUp", "w", "W"].includes(e.key)) { setCursor((c) => (c - 1 + list.length) % list.length); sfx("menu"); }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [list.length]);
-
   const apply = (idx: number) => {
     if (!sel) return;
     if (useItem(sel.id, idx)) { questSfx.objective(); setCursor(0); }
     else questSfx.denied();
   };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!list.length) return;
+      if (["ArrowDown", "s", "S"].includes(e.key)) { e.preventDefault(); setCursor((c) => (c + 1) % list.length); sfx("menu"); }
+      else if (["ArrowUp", "w", "W"].includes(e.key)) { e.preventDefault(); setCursor((c) => (c - 1 + list.length) % list.length); sfx("menu"); }
+      else if (["ArrowRight", "d", "D"].includes(e.key)) { e.preventDefault(); setWho((w) => (w + 1) % party.length); sfx("menu"); }
+      else if (["ArrowLeft", "a", "A"].includes(e.key)) { e.preventDefault(); setWho((w) => (w - 1 + party.length) % party.length); sfx("menu"); }
+      else if (["Enter", " ", "e", "E"].includes(e.key)) { e.preventDefault(); apply(who); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list.length, party.length, who, sel?.id]);
 
   return (
     <div className="panel-shell absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm">
@@ -74,8 +79,8 @@ export default function InventoryPanel() {
                     <div className="eyebrow mb-2.5">Use on</div>
                     <div className="flex flex-col gap-2">
                       {party.map((p, idx) => (
-                        <button key={p.id} onClick={() => apply(idx)}
-                                className="btn flex items-center gap-2.5 px-3 py-2 text-left">
+                        <button key={p.id} onClick={() => apply(idx)} onMouseEnter={() => setWho(idx)}
+                                className={`btn flex items-center gap-2.5 px-3 py-2 text-left ${idx === who ? "btn-selected" : ""}`}>
                           <div className="overflow-hidden rounded-md" style={{ border: "1px solid rgba(217,180,91,.3)" }}>
                             <CharacterPortrait id={p.portrait} size={26} />
                           </div>
