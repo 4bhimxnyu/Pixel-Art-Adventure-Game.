@@ -14,7 +14,11 @@
 // ---------------------------------------------------------------------------
 
 export type HairStyle =
-  | "long" | "ponytail" | "braid" | "bun" | "headdress" | "short" | "spiky" | "curly" | "crop" | "bald" | "grey";
+  | "long" | "ponytail" | "braid" | "bun" | "headdress" | "short" | "spiky" | "curly" | "crop" | "bald" | "grey"
+  /** Shoulder-length, straight, with a fringe (Palakshi). */
+  | "bob"
+  /** Medium-length, messy, fringe over the forehead (Abhimanyu). */
+  | "messy";
 
 export type Outfit = "robe" | "dress" | "tee" | "jacket" | "tank" | "cardigan" | "vest" | "hoodie";
 
@@ -55,6 +59,12 @@ export type CharSpec = {
   eyes?: "almond" | "round";
   beard?: string;
   glasses?: boolean;
+  /** Large, thick-rimmed frames instead of small round ones. */
+  glassesBig?: boolean;
+  /** Wide, loose trouser legs. */
+  looseLegs?: boolean;
+  /** Checked trousers: `bottom` is the base, this is the check colour. */
+  bottomCheck?: string;
   /** Only Abhimanyu may carry an instrument. */
   props?: ("bass" | "ipad" | "staff" | "fan")[];
   /** Idle behaviour. */
@@ -66,19 +76,23 @@ export type CharSpec = {
 
 export const CHARACTERS: Record<string, CharSpec> = {
   // ------------------------------------------------------------ protagonist
+  // Reference: shoulder-length dark hair, large black glasses, black top under a
+  // black cardigan, loose green-and-white checked trousers.
   palakshi: {
-    id: "palakshi", skin: "#e8b48c", hair: "#150d12", hairHi: "#2a1a24", hairStyle: "ponytail",
-    top: "#181220", topAlt: "#241c2e", bottom: "#120d16", trim: "#d9b45b",
-    outfit: "dress", sleeves: "wide", sleeveScale: 1.1, skirt: 1.0, necklace: true, female: true,
-    build: "slim", shoulders: 0.95, legs: 1.05, eyes: "almond", ornament: "#d9b45b", accent: "#f2dfa6",
+    id: "palakshi", skin: "#e8b48c", hair: "#120c10", hairHi: "#2a1a24", hairStyle: "bob",
+    top: "#121014", topAlt: "#1e1b22", bottom: "#eef0e6", bottomCheck: "#3f8a4e", trim: "#1e1b22",
+    outfit: "cardigan", sleeves: "long", female: true, looseLegs: true,
+    build: "slim", shoulders: 0.95, legs: 1.05, eyes: "almond", glasses: true, glassesBig: true,
   },
 
   // ---------------------------------------------------------------- party
+  // Reference: slim and lean, dark messy medium-length hair with a fringe, light
+  // blue denim jacket over a black tee, loose black jeans, dark shoes, white bass.
   abhimanyu: {
-    id: "abhimanyu", skin: "#d9a074", hair: "#1d1414", hairStyle: "spiky",
-    top: "#f2ebdc", topAlt: "#2b3a52", bottom: "#2a3f66", trim: "#3b4e6b",
-    outfit: "jacket", sleeves: "long",
-    build: "average", eyes: "almond", props: ["bass"], idle: "strum",
+    id: "abhimanyu", skin: "#d9a074", hair: "#16100f", hairHi: "#2a1e1a", hairStyle: "messy",
+    top: "#141416", topAlt: "#8db0d6", bottom: "#1b1b20", trim: "#6f93bd",
+    outfit: "jacket", sleeves: "long", looseLegs: true,
+    build: "slim", shoulders: 1.0, legs: 1.06, height: 1.04, eyes: "almond", props: ["bass"], idle: "strum",
   },
 
   // ------------------------------------------------------------ rivals
