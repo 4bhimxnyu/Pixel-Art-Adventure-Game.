@@ -450,6 +450,8 @@ export class World3D {
       this.scene.add(rig.group);
     }
     this.trail = [this.playerPos.clone()];
+    this.barked.clear();
+    this.perfT = -3; // a fresh map builds and warms caches: don't judge the frame rate yet
 
     // --- camera
     this.cam.firstPerson = def.id === "f1205";
@@ -598,6 +600,9 @@ export class World3D {
   /** Mimo nudges: while you stand still he looks toward the objective now and then. */
   private mimoNudgeT = 0;
   private idleT = 0;
+  /** Cells Mimo has already barked at on this map (once per visit, so he is a hint, not a nag). */
+  private barked = new Set<string>();
+  private barkT = 0;
   private mimoGuidance(dt: number, moving: boolean) {
     if (!this.companion || this.companionId !== "mimo" || this.mode !== "explore") return;
     this.idleT = moving ? 0 : this.idleT + dt;
@@ -618,6 +623,44 @@ export class World3D {
       this.idleT = 0;
       bus.emit("stuck", true);
     }
+    // passive nose: walking past something hidden makes Mimo bark toward it
+    this.barkT += dt;
+    if (this.barkT > 0.4) {
+      this.barkT = 0;
+      if (this.inputLocked || useGameStore.getState().overlay || this.companion.currentAction) return;
+      const near = this.nearestHidden();
+      if (near && near.d < 2.6) {
+        const k = `${near.x},${near.y}`;
+        if (!this.barked.has(k)) {
+          this.barked.add(k);
+          this.companion.faceToward(near.x + 0.5, Z(near.y));
+          this.companion.play("bark", 1.0);
+          sfx("bark");
+          this.tip("mimo-bark", {
+            keyboard: "Mimo barks at something nearby. Press F and he'll sniff it out.",
+            gamepad: "Mimo barks at something nearby. Press RB and he'll sniff it out.",
+            touch: "Mimo barks at something nearby. Tap the paw button and he'll sniff it out.",
+          });
+        }
+      }
+    }
+  }
+
+  /** The closest hidden or uncollected thing on this map (buried items, chests, clues). */
+  private nearestHidden() {
+    const def = this.mapDef;
+    const flags = useGameStore.getState().flags;
+    let best: { x: number; y: number; d: number } | null = null;
+    for (let y = 0; y < mapHeight(def); y++) {
+      for (let x = 0; x < mapWidth(def); x++) {
+        const ch = tileAt(def, x, y);
+        if (!"h~*$y".includes(ch)) continue;
+        if (isHidden(def, ch, x, y, flags)) continue;
+        const d = Math.hypot(x + 0.5 - this.playerPos.x, Z(y) - this.playerPos.z);
+        if (!best || d < best.d) best = { x, y, d };
+      }
+    }
+    return best;
   }
 
   // ================================================================ recovery
@@ -801,11 +844,42 @@ export class World3D {
 
   // ================================================================= loop
 
+  // ------------------------------------------------------------ adaptive quality
+  /** Frame-rate watch: if a region runs slowly the renderer steps down (resolution, then shadows). */
+  private fpsEma = 60;
+  private perfT = -3;
+  private perfTier = 2;
+  private watchPerformance(dt: number) {
+    this.fpsEma += (1 / Math.max(dt, 1 / 240) - this.fpsEma) * 0.04;
+    this.perfT += dt;
+    if (this.perfT < 5 || this.perfTier === 0) return;
+    if (this.fpsEma >= 42) return;
+    this.perfT = 0;
+    this.perfTier--;
+    if (this.perfTier === 1) {
+      this.renderer.setPixelRatio(1);
+      this.sun.shadow.mapSize.set(1024, 1024);
+      this.sun.shadow.map?.dispose();
+      this.sun.shadow.map = null;
+    } else {
+      this.quality.shadows = false;
+      this.renderer.shadowMap.enabled = false;
+      this.sun.castShadow = false;
+      this.scene.traverse((o) => {
+        const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+        if (!m) return;
+        for (const mm of Array.isArray(m) ? m : [m]) mm.needsUpdate = true;
+      });
+    }
+    this.fpsEma = 60;
+  }
+
   private loop = () => {
     if (!this.running) return;
     this.raf = requestAnimationFrame(this.loop);
     this.timer.update();
     const dt = Math.min(0.05, this.timer.getDelta());
+    this.watchPerformance(dt);
     this.update(dt);
     this.renderer.render(this.scene, this.cam.camera);
   };
@@ -1148,7 +1222,6 @@ export class World3D {
 
   /** Mimo's nose: points at the nearest hidden thing on this map. */
   private mimoSniff() {
-    const store = useGameStore.getState();
     if (this.mode !== "explore" || this.inputLocked) return;
     if (this.companionId !== "mimo" || !this.companion) {
       bus.emit("toast", { text: "You'd need a nose for that. Find Mimo first.", tone: "info" });
@@ -1158,18 +1231,7 @@ export class World3D {
     if (c.currentAction) return;
     c.play("sniff", 1.3);
     sfx("menu");
-    const def = this.mapDef;
-    const flags = store.flags;
-    let best: { x: number; y: number; d: number } | null = null;
-    for (let y = 0; y < mapHeight(def); y++) {
-      for (let x = 0; x < mapWidth(def); x++) {
-        const ch = tileAt(def, x, y);
-        if (!"h~*$y".includes(ch)) continue;
-        if (isHidden(def, ch, x, y, flags)) continue;
-        const d = Math.hypot(x + 0.5 - this.playerPos.x, Z(y) - this.playerPos.z);
-        if (!best || d < best.d) best = { x, y, d };
-      }
-    }
+    const best = this.nearestHidden();
     this.delay(1300, () => {
       if (!best) {
         bus.emit("toast", { text: "Mimo sniffs around. Nothing buried here.", tone: "info" });

@@ -1276,7 +1276,7 @@ export function currentBgm() {
 
 // --------------------------------------------------------------------------- sfx
 
-export type SfxName = "step" | "menu" | "confirm" | "cancel" | "hit" | "heal" | "win" | "pickup" | "open" | "error";
+export type SfxName = "step" | "menu" | "confirm" | "cancel" | "hit" | "heal" | "win" | "pickup" | "open" | "error" | "bark";
 
 export function sfx(name: SfxName) {
   initAudio();
@@ -1304,6 +1304,10 @@ export function sfx(name: SfxName) {
     case "cancel":  beep(420, 0.09, "square", 0.1, 240); break;
     case "open":    beep(320, 0.12, "triangle", 0.11, 640); break;
     case "error":   beep(160, 0.16, "sawtooth", 0.1, 110); break;
+    case "bark": // two short yaps
+      beep(480, 0.09, "square", 0.1, 230);
+      window.setTimeout(() => beepLater(560, 0.08, 0.1), 130);
+      break;
     case "hit": {
       const nz = noise();
       const bp = c.createBiquadFilter();
