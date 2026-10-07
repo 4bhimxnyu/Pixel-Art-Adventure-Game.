@@ -82,7 +82,7 @@ export const STEP_GUIDE: Record<string, Guide> = {
     hints: [
       "Someone in town saw a small white dog run past.",
       "A kid near the town square is bursting to tell you something.",
-      "Talk to the kid standing by the eastern path out of Sparkle Town.",
+      "Follow the main road east past the well; the kid is standing where the road leaves Sparkle Town.",
     ],
     chain: ["Sparkle Town", "Kid witness"],
   },
@@ -93,9 +93,9 @@ export const STEP_GUIDE: Record<string, Guide> = {
     hints: [
       "Mimo never goes anywhere without that red ball.",
       "Take the eastern road out of Sparkle Town and search the roadside.",
-      "On Route 1, face the red ball beside the path and press E.",
+      "On Route 1 follow the lantern road; the red ball lies in the grass south-east, past the pond.",
     ],
-    chain: ["Sparkle Town", "Route 1", "Red ball"],
+    chain: ["Sparkle Town", "East road", "Route 1", "Red ball"],
   },
   clue_paws: {
     objective: "Follow the paw prints",
@@ -103,8 +103,8 @@ export const STEP_GUIDE: Record<string, Guide> = {
     region: "home",
     hints: [
       "Small prints lead away from where the ball fell.",
-      "They head north, towards the treeline.",
-      "Step on the paw-print tiles on Route 1, then take the north exit into the woods.",
+      "They head north along the lantern road, towards the treeline.",
+      "Step on the paw-print tiles on Route 1, then take the north gate between the lanterns into the woods.",
     ],
     chain: ["Route 1", "Paw prints", "Whispering Woods"],
   },
@@ -114,10 +114,10 @@ export const STEP_GUIDE: Record<string, Guide> = {
     region: "home",
     hints: [
       "Something is hiding in the woods, and it's frightened.",
-      "A bush deep in the woods keeps shaking.",
-      "In the Whispering Woods, face the rustling bush and press E. She won't know you at first.",
+      "A bush in the clearing at the heart of the woods keeps shaking.",
+      "Follow the woodland path north to the lantern clearing, face the rustling bush and press E. He won't know you at first.",
     ],
-    chain: ["Route 1", "Whispering Woods", "Rustling bush"],
+    chain: ["Route 1", "Whispering Woods", "Lantern clearing", "Rustling bush"],
   },
   village: {
     objective: "Help Lantern Village and speak to Elder Shu",
@@ -126,20 +126,20 @@ export const STEP_GUIDE: Record<string, Guide> = {
     hints: [
       "The festival was cancelled. Nobody in town knows why.",
       "The village north of the woods has the answer — and an Elder.",
-      "Go north from the Whispering Woods to Lantern Village, talk to villagers, then to Elder Shu by the great lantern.",
+      "Go north from the Whispering Woods to Lantern Village. Talk to the villagers around the plaza, then to Elder Shu in the middle of the plaza by the great lantern.",
     ],
-    chain: ["Whispering Woods", "Lantern Village", "Elder Shu"],
+    chain: ["Whispering Woods", "Lantern Village", "Plaza", "Elder Shu"],
   },
   scroll: {
     objective: "Recover the Lost Scroll from the bamboo shrine",
     place: "Bamboo Forest",
     region: "bamboo",
     hints: [
-      "The travelling musician by the village stalls knows what sound can break.",
-      "Take the bamboo gate north of the village and follow the path to the standing wall.",
-      "Learn Sound Barrier from the musician, then use it on the bamboo wall; the scroll waits on the pedestal beyond.",
+      "The travelling musician on the west side of the village plaza knows what sound can break.",
+      "Take the bamboo gate north of the village, cross the stream and follow the stone lanterns up the path to the standing wall.",
+      "Learn Sound Barrier from the musician, then use it on the bamboo wall at the top of the lantern path; the scroll waits on the pedestal beyond.",
     ],
-    chain: ["Musician", "Bamboo gate", "Bamboo wall", "Lost Scroll"],
+    chain: ["Musician", "Bamboo gate", "Lantern path", "Bamboo wall", "Lost Scroll"],
   },
   trial: {
     objective: "Pass the Bamboo Forest Trial",
@@ -147,8 +147,8 @@ export const STEP_GUIDE: Record<string, Guide> = {
     region: "bamboo",
     hints: [
       "The shrine will not open for someone who hasn't earned it.",
-      "Stone plates and statues. Wake the statues, then stand the plates.",
-      "Touch both statues in the Bamboo Forest, step on both plates, then defeat the Bamboo Sentinel.",
+      "Two statues and two plates, one pair on each side of the lantern path. Wake the statues, then stand the plates.",
+      "Touch both statues in the Bamboo Forest, step on both plates, then defeat the Bamboo Sentinel waiting west of the lantern path.",
     ],
     chain: ["Bamboo Forest", "Statues", "Plates", "Bamboo Sentinel"],
   },
@@ -158,21 +158,21 @@ export const STEP_GUIDE: Record<string, Guide> = {
     region: "garden",
     hints: [
       "Something with wings has nested at the garden's shrine. Prakriti won't duel with it screaming overhead.",
-      "The moon gate east of the bamboo leads into the garden; the shrine is up by the brazier.",
-      "Defeat the Blossom Warden at the brazier, then duel Prakriti by the pond. She fights in two phases.",
+      "The moon gate on the east edge of the bamboo leads into the garden; the shrine is in the north-east corner by the brazier.",
+      "Defeat the Blossom Warden at the north-east brazier, then duel Prakriti on the west bank of the pond. She fights in two phases.",
     ],
-    chain: ["Moon gate", "Blossom Warden", "Prakriti"],
+    chain: ["Moon gate", "Pond", "Blossom shrine", "Blossom Warden", "Prakriti"],
   },
   temple: {
     objective: "Climb the mountain and wake the Temple of Echoes",
     place: "Mountain Trail",
     region: "mountain",
     hints: [
-      "The stone pass north of the garden climbs into the mountains. Mind the Warden on the trail.",
+      "The stone pass north of the garden climbs into the mountains. Follow the gravel trail and mind the Warden at its foot.",
       "Past the trail, the temple doors stand open. Four statues, four plates, and a Guardian who wants to see the last one.",
       "Touch the four statues, step on the four plates, then speak to the Temple Guardian and win.",
     ],
-    chain: ["Stone pass", "Mountain Trail", "Temple doors", "Temple Guardian"],
+    chain: ["Stone pass", "Gravel trail", "Temple doors", "Courtyard", "Temple Guardian"],
   },
   flames: {
     objective: "Gather the three Sacred Flames",
@@ -180,10 +180,10 @@ export const STEP_GUIDE: Record<string, Guide> = {
     region: "mountain",
     hints: [
       "Stone, petals, echoes: the light was split in three.",
-      "One brazier on the Mountain Trail, one at the garden's shrine, one deep in the Ancient Cave past the mountain's east gate.",
-      "The cave's brazier is sealed: touch its two echo statues, hold its two plates, then take the flame. Mimo can sniff out what's hidden down there.",
+      "One brazier on the east ledge of the Mountain Trail, one at the garden's north-east shrine, one deep in the Ancient Cave past the mountain's east gate.",
+      "The cave's brazier in the far east chamber is sealed: touch its two echo statues, hold its two plates, then take the flame. Mimo can sniff out what's hidden down there.",
     ],
-    chain: ["Mountain Trail", "Cherry Blossom Garden", "Ancient Cave"],
+    chain: ["Mountain ledge", "Blossom shrine", "East gate", "Cave chambers"],
   },
   lantern: {
     objective: "Restore the Sacred Lantern",
@@ -191,7 +191,7 @@ export const STEP_GUIDE: Record<string, Guide> = {
     region: "temple",
     hints: [
       "You carry all three flames. They belong together.",
-      "The Sacred Lantern stands at the heart of the temple.",
+      "The Sacred Lantern stands in the temple courtyard, just inside the doors.",
       "Return to the Temple of Echoes and interact with the Sacred Lantern.",
     ],
     chain: ["Ancient Cave", "Temple of Echoes", "Sacred Lantern"],
@@ -203,9 +203,9 @@ export const STEP_GUIDE: Record<string, Guide> = {
     hints: [
       "The gate wants a pass, and only one person had one.",
       "Prakriti's Fashion Pass opens the Academy gate.",
-      "With the Fashion Pass in hand, talk to the gatekeeper at the Style Academy.",
+      "Take the south road out of Sparkle Town, walk the banner avenue, and show the Fashion Pass to the gatekeeper at the Academy wall.",
     ],
-    chain: ["Temple of Echoes", "Style Academy", "Gatekeeper"],
+    chain: ["Sparkle Town", "South road", "Banner avenue", "Gatekeeper"],
   },
   boss: {
     objective: "Defeat Arshiya",
@@ -236,7 +236,7 @@ export const STEP_GUIDE: Record<string, Guide> = {
     hints: [
       "Abhimanyu went home. He said the boys would be waiting.",
       "West road out of Sparkle Town, past the river.",
-      "Leave Sparkle Town by the west path, cross the bridge on the West Road, and enter the door of the flats.",
+      "Leave Sparkle Town by the west path, cross the bridge on the West Road, and enter the door of the flats at the end of the road.",
     ],
     chain: ["Sparkle Town", "The West Road", "F-1205"],
   },
@@ -282,7 +282,7 @@ export const SIDE_GUIDE: Record<string, Guide> = {
     region: "home",
     hints: [
       "Prakriti is in the woods, and she's lost something.",
-      "She'll ask before she'll thank you.",
+      "She's sulking in the north-west corner of the woods. She'll ask before she'll thank you.",
       "Talk to Prakriti in the Whispering Woods to take the ribbon request.",
     ],
     chain: ["Whispering Woods", "Prakriti"],
@@ -293,7 +293,7 @@ export const SIDE_GUIDE: Record<string, Guide> = {
     region: "home",
     hints: [
       "Teal silk against green leaves.",
-      "It blew into the undergrowth on the far side of the woods.",
+      "It blew into the undergrowth in the far north-east of the woods.",
       "Search the marked spot in the north-east of the Whispering Woods.",
     ],
     chain: ["Whispering Woods", "Ribbon"],
@@ -312,11 +312,11 @@ export const SIDE_GUIDE: Record<string, Guide> = {
   h1: { objective: "Find the treasure at home", place: "Palakshi's Bedroom", region: "home",
         hints: ["Something of yours is behind something of yours.", "Your own room hides one.", "Search behind the bookshelf in your bedroom."], chain: ["Bedroom"] },
   h2: { objective: "Find the treasure in Sparkle Town", place: "Sparkle Town", region: "home",
-        hints: ["Gold, small, easily dropped.", "Near the town's edge.", "Search the corner past the last house in Sparkle Town."], chain: ["Sparkle Town"] },
+        hints: ["Gold, small, easily dropped.", "Near the town's edge.", "Search the south-west corner past the last house in Sparkle Town."], chain: ["Sparkle Town"] },
   h3: { objective: "Find the treasure in the woods", place: "Whispering Woods", region: "home",
-        hints: ["The woods feed those who look.", "Berries grow where the light gets in.", "Search the clearing on the west side of the Whispering Woods."], chain: ["Whispering Woods"] },
+        hints: ["The woods feed those who look.", "Berries grow where the light gets in.", "Search the clearing on the east side of the Whispering Woods."], chain: ["Whispering Woods"] },
   h4: { objective: "Find the treasure at the Academy", place: "Style Academy", region: "academy",
-        hints: ["Even Arshiya drops things.", "Behind the Academy hedge.", "Search the far corner of the Style Academy grounds."], chain: ["Style Academy"] },
+        hints: ["Even Arshiya drops things.", "Behind the Academy hall.", "Search the north-east corner of the Style Academy grounds, behind the hall."], chain: ["Style Academy"] },
 };
 
 export function guideFor(stepId: string): Guide | null {
