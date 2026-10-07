@@ -769,7 +769,7 @@ export class World3D {
         this.stuckT += dt;
         if (this.stuckT > 0.5) {
           if (this.lastStuckPos.distanceTo(this.playerPos) > 0.12) { this.stuckT = 0; this.lastStuckPos.copy(this.playerPos); }
-          else if (this.stuckT > 3.5 && !this.stuckShown) { this.stuckShown = true; bus.emit("stuck", true); }
+          else if (this.stuckT > 5 && !this.stuckShown) { this.stuckShown = true; bus.emit("stuck", true); }
         }
       } else {
         this.stuckT = 0;

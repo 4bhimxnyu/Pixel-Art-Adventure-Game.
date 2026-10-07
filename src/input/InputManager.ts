@@ -302,7 +302,12 @@ class InputManager {
       }
     }
 
-    // touch
+    // touch (never while a panel owns the screen)
+    if (this.overlayOpen) {
+      this.touch.move.x = 0;
+      this.touch.move.y = 0;
+      this.touch.lookActive = false;
+    }
     if (this.touch.active) {
       mx += this.touch.move.x;
       my += this.touch.move.y;

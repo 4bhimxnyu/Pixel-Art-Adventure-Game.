@@ -24,6 +24,21 @@ export default function TouchControls() {
 
   useEffect(() => bus.on("prompt", (l: string) => setPrompt(l || "")), []);
 
+  // A panel, dialogue or battle opening unmounts the touch surface, so a finger
+  // that is still down never sends its pointerup. Drop the stick and the look
+  // drag the moment that happens, or Palakshi would keep walking afterwards.
+  useEffect(() => {
+    if (!overlay) return;
+    stickId.current = null;
+    lookId.current = null;
+    setStick(null);
+    input.touch.move.x = 0;
+    input.touch.move.y = 0;
+    input.touch.look.x = 0;
+    input.touch.look.y = 0;
+    input.touch.lookActive = false;
+  }, [overlay]);
+
   useEffect(() => {
     input.touch.active = true;
     return () => {
@@ -40,7 +55,7 @@ export default function TouchControls() {
     const r = el.getBoundingClientRect();
     const x = e.clientX - r.left;
     const y = e.clientY - r.top;
-    el.setPointerCapture(e.pointerId);
+    try { el.setPointerCapture(e.pointerId); } catch { /* synthetic events have no capture */ }
     if (x < r.width * 0.5 && stickId.current === null) {
       stickId.current = e.pointerId;
       setStick({ ox: x, oy: y, x, y });
