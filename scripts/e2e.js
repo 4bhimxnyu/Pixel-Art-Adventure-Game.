@@ -37,6 +37,7 @@ async function walkTo(x, y, opts = {}) {
     if (ov === "battle") { say("  (wild encounter on " + S().map + ")"); await fight(); continue; }
     if (ov === "dialogue") { if (opts.stopOnOverlay) return true; await dialogueThrough(); continue; }
     if (ov) { await sleep(60); continue; }
+    if (w.inputLocked || w.cam.cinematicActive) { await sleep(60); continue; }
     const p = w.playerPos;
     const dx = target.x - p.x;
     const dz = target.z - p.z;
@@ -134,9 +135,44 @@ async function fight() {
   await dialogueThroughIfAny();
 }
 
+
+/** Static reachability audit: every portal, NPC and interactable on every map must be walkable to. */
+async function audit() {
+  const maps = await import("/src/game/maps.ts");
+  const story = await import("/src/game/story.ts");
+  const store = await import("/src/store/useGameStore.ts");
+  const flags = JSON.parse(JSON.stringify(store.INITIAL_FLAGS));
+  for (const k of Object.keys(flags)) if (typeof flags[k] === "boolean") flags[k] = true;
+  const key = (x, y) => x + "," + y;
+  for (const def of Object.values(maps.MAPS)) {
+    const W = maps.mapWidth(def), H = maps.mapHeight(def);
+    const markers = Object.keys(def.interacts).map((m) => { for (let y = 0; y < H; y++) { const x = def.rows[y].indexOf(m); if (x >= 0) return { m, x, y }; } return null; }).filter(Boolean);
+    const solid = (x, y) => story.cellBlocked(def, x, y, flags) || markers.some((c) => c.x === x && c.y === y);
+    if (!def.portals.length) continue;
+    const seen = new Set([key(def.portals[0].x, def.portals[0].y)]);
+    const q = [def.portals[0]];
+    while (q.length) {
+      const c = q.shift();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = c.x + dx, ny = c.y + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H || seen.has(key(nx, ny)) || solid(nx, ny)) continue;
+        seen.add(key(nx, ny)); q.push({ x: nx, y: ny });
+      }
+    }
+    const near = (x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => seen.has(key(x + dx, y + dy)));
+    for (const p of def.portals) expect(seen.has(key(p.x, p.y)), `${def.id}: portal to ${p.to} reachable`);
+    for (const c of markers) expect(near(c.x, c.y), `${def.id}: ${def.interacts[c.m].kind} reachable`);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const ch = maps.tileAt(def, x, y);
+      if ("$&!*~hyz".includes(ch)) expect((story.UNDERFOOT.includes(ch) && seen.has(key(x, y))) || near(x, y), `${def.id}: '${ch}' at ${x},${y} reachable`);
+    }
+  }
+}
+
 async function run() {
   log.length = 0;
   fails.length = 0;
+  await audit();
   localStorage.removeItem("palakshi_save_v1");
   const store = window.__game.store;
   store.getState().setScreen("title");
@@ -316,7 +352,7 @@ async function run() {
   await walkTo(0, 10, { untilMap: "road" });
   await until(() => S().map === "road", 3000, "entered the west road");
   await sleep(3000);
-  await walkTo(11, 6); await walkTo(11, 9); await walkTo(11, 12); await walkTo(11, 13, { untilMap: "f1205" });
+  await walkTo(11, 6); await walkTo(11, 9); await walkTo(11, 11); await walkTo(11, 12, { untilMap: "f1205" });
   await until(() => S().map === "f1205", 3000, "entered F-1205");
   await sleep(3000);
   expect(W().cam.firstPerson === true, "F-1205 is first-person");

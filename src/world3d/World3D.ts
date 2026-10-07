@@ -848,6 +848,10 @@ export class World3D {
     }
 
     // --- cell change → portals, clues, encounters
+    // (a cell reached while input was locked, e.g. during a cinematic, is
+    // re-evaluated the moment control returns, so a portal is never skipped)
+    if (this.wasLocked && !locked) this.lastCell = { x: -1, y: -1 };
+    this.wasLocked = locked;
     const cx = Math.floor(this.playerPos.x);
     const cy = ROW(this.playerPos.z);
     if (cx !== this.lastCell.x || cy !== this.lastCell.y) {
@@ -944,6 +948,7 @@ export class World3D {
     if (!locked) this.ambientChatter();
   }
   private stepAccum = 0;
+  private wasLocked = false;
   private pawLast = new THREE.Vector3();
 
   private moveBy(dir: THREE.Vector3, dist: number) {
