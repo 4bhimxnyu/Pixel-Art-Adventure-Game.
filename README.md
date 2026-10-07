@@ -5,9 +5,30 @@ for **Palakshi**. Single player, keyboard + mouse, gamepad or touch, no backend,
 to LocalStorage. The world is a stylised low-poly 3D third-person adventure rendered
 with Three.js; the original pixel-art renderer is still in the box as "Classic 2D".
 
-Explore 14 regions, talk and interact, advance the mission chain, fight turn-based
+Explore 14 regions, talk and interact, advance nine chapters, fight turn-based
 battles, gather the three Sacred Flames, beat the final boss, get the birthday ending,
 then walk the West Road to F-1205 for the final chapter and one goodbye, for now.
+
+## Chapters
+
+| # | Chapter | Where | Beats |
+|---|---------|-------|-------|
+| 1 | Find Mimo | Bedroom, home, Sparkle Town, Route 1, Whispering Woods | Mum, Abhimanyu joins, the witness, the red ball, paw prints, the rustling bush, Mimo |
+| 2 | Lantern Village | Lantern Village | Elder Shu, the musician, supplies |
+| 3 | The Bamboo Forest | Bamboo Forest | the barrier, the scroll, the trial (two statues, two plates), **Bamboo Sentinel** |
+| 4 | The Hidden Garden | Cherry Blossom Garden | **Blossom Warden**, Prakriti's duel, the garden flame |
+| 5 | The Mountain Path | Mountain Trail, Temple of Echoes | **Mountain Warden**, the mountain flame, four statues and plates, the Temple Guardian |
+| 6 | The Three Flames | Ancient Cave, Temple | the echo-stone puzzle, the cave flame, the Sacred Lantern |
+| 7 | Arshiya | Academy | the gatekeeper, **Arshiya** (three phases) |
+| 8 | The West Road | Sparkle Town, West Road | the finale, Faizal at the door |
+| 9 | F-1205 | the flat, first person | Abhimanyu, Garv, Hakim, Faizal, Dev, the evening, the goodbye, THE END |
+
+Mission states (LOCKED / AVAILABLE / ACTIVE / COMPLETED) are derived from the quest
+step in `lib/missionMeta.ts` and shown in the Journey panel. Every region beyond the
+first is behind a gate that opens with a short camera shot when its chapter unlocks.
+Defeated villains walk off and never respawn. Riddhi, Palakshi's chaotic best friend,
+is optional: she hangs around town, the village plaza and the garden with new banter
+each time.
 
 ```bash
 npm install
@@ -77,6 +98,16 @@ martial dagu, Arshiya her full drums and gong across three intensity phases.
 0.18s early and would otherwise produce negative `setValueAtTime` times at startup.
 Do not remove `at()`.
 
+## The game's soundtrack
+
+`public/audio/` ships four tracks: `game 1.mp3`, `game 2.mp3`, `game 3.mp3` and
+`ending.mp4`. When they are present the music manager in `sound.ts` plays the three
+game tracks in rotation through the whole adventure (one player, persistent across
+regions and battles, crossfading from one track to the next, never two at once) and
+reserves `ending` for THE END and the credits (`bgm_end` / `bgm_credits`). Autoplay
+restrictions are handled by resuming on the first click, key or touch. If the files
+are missing the procedural score below takes over, exactly as before.
+
 ## Custom music
 
 `public/audio/README.md` has the details. In short: drop a file into
@@ -131,8 +162,9 @@ src/
   lib/
     missionMeta.ts   REGIONS, MAIN_MISSIONS, buildMissions(), activeMission()
     guidance.ts      STEP_GUIDE: objective, place, 3-step hint ladder, route chain
+    targets.ts       STEP_TARGET: where the beacon points for each step, route between regions
   store/             all game state + actions + save/load
-public/audio/        optional user-supplied music (empty by default)
+public/audio/        the soundtrack (game 1-3 + ending) and optional per-cue overrides
 public/models/       optional GLB overrides: <characterId>.glb replaces a procedural rig
 scripts/e2e.js       scripted start-to-THE-END playthrough against the real engine (dev server)
 ```
@@ -148,9 +180,19 @@ over walls (rooms read like dollhouses) rather than pulling in, holds a side-on 
 battles, and plays keyframed cinematics for arrivals, discoveries, boss intros, the
 F-1205 evening and the final hug.
 
-Characters are procedural rigs built from their `characters.ts` spec: Palakshi's long
-black hair and gold pin, Abhimanyu's white guitar, Hakim's iPad, Dev's build, Garv's
-grey temples, with procedural walk, idle, attack, hit, cheer and hug. Drop
+Regions are 30-34 tiles across with winding paths and a landmark each (the town well
+and square, the lantern road and pond on Route 1, the forest's lantern clearing, the
+village plaza and stream, the garden pond and moon gate, the mountain's east ledge,
+the temple courtyard, the cave's chain of chambers, the Academy's banner avenue).
+Lantern posts line the way to each destination and the objective hints name them.
+
+Characters are procedural rigs built from their `characters.ts` spec, from written
+references: Palakshi (shoulder-length dark hair, large black glasses, black top and
+cardigan, loose green-and-white checkered trousers), Abhimanyu (messy fringe, light
+denim jacket, black tee and jeans, and the only instrument in the game, his white
+bass), Mimo (a fluffy male Shih Tzu who leaves paw prints), Riddhi (messy bun, hoops,
+mustard hoodie, phone), Prakriti, heavy-set Arshiya, and the flatmates Faizal, Garv,
+Hakim and Dev, with procedural walk, idle, attack, hit, cheer and hug. Drop
 `public/models/<id>.glb` (with optional `idle` / `walk` clips) to replace any rig.
 
 One active instance per character is guaranteed structurally: `World3D` is a
@@ -159,15 +201,27 @@ and NPC markers are skipped for party members.
 
 Performance: toon materials, instancing, one shadow-casting light (shadows off and
 pixel ratio capped on phones), four pooled point lights, a few hundred particles, no
-post-processing, full disposal on region change.
+post-processing, full disposal on region change. A region costs roughly 170-350 draw
+calls and 85-130k triangles. The engine also watches its own frame rate: if a region
+averages under ~42 fps for five seconds it drops to pixel ratio 1 with a smaller
+shadow map, and if that is still not enough it switches shadows off.
+
+Getting around: the gold beacon marks the objective (or the gate toward it), the
+tracker hints name landmarks, Mimo looks toward the goal when you stand still and
+barks when you walk past something hidden (press F / RB / the paw button and he
+sniffs it out), and after a long idle or pushing against a wall a "Need help?" panel
+offers Show direction, Show objective and Reset position (never touches progress).
 
 ## Final chapter: F-1205
 
-After Arshiya and the celebration, Mission 26 opens the West Road out of Sparkle Town.
-Missions 26-28 (`storyFinal.ts`): find Abhimanyu and Faizal, meet Garv, Hakim and Dev
-at the flat, the last evening together, and the goodbye. The hug plays as a camera
-pull-back, fades to black, shows THE END, rolls the credits and returns to the title.
-Nothing loops back into the world.
+After Arshiya and the celebration, chapter 8 opens the West Road out of Sparkle Town.
+Chapter 9 (`storyFinal.ts`) is played in first person: Faizal holds the door, you meet
+Abhimanyu in his room and then Garv, Hakim, Faizal and Dev one by one with their own
+exact exchanges, the flat rearranges itself once everyone has been met, the evening
+plays as a slow camera orbit that ends with the conversation, and the goodbye leads to
+the hug. The hug plays as a camera pull-back, fades to black, shows THE END, rolls the
+credits with the ending track and returns to the title. Nothing loops back into the
+world.
 
 ## Testing the whole game
 
@@ -179,6 +233,11 @@ await import("/scripts/e2e.js?x=" + Date.now()); await window.__e2e.run();
 
 It plays from New Game to THE END through the real engine (movement, portals,
 encounters, dialogues, every battle, the final chapter) and returns `{ log, fails }`.
+It finds everything from map data (marker letters, tile characters, portals), so a map
+redesign needs no script changes; it starts with a reachability audit of every portal
+and NPC on every map. Two things it learned the hard way: never edit `src/` while it
+runs (Vite reloads the page), and every synthetic key press must also be released, or
+the input layer keeps "walking" the player after a battle.
 
 ## Interface
 
@@ -223,8 +282,9 @@ the bus with the last line's `onEnd` string, and `WorldScene.handleDialogueEnd`
 switches on it. This decoupling fixes an old race between the React overlay closing
 and Phaser reacting — keep it.
 
-**Adding a quest step** means adding a `STEP_GUIDE` entry in `lib/guidance.ts`, or
-the tracker has no objective and no hints to show.
+**Adding a quest step** means adding a `STEP_GUIDE` entry in `lib/guidance.ts` and a
+`STEP_TARGET` entry in `lib/targets.ts`, or the tracker has no hints and the beacon
+has nowhere to point. Steps are only ever appended: saves store the step index.
 
 **Duplicate-sprite protections** in `loadMap()`: the previous player, follower and
 entities are destroyed and their tweens killed *first*; bus listeners are removed on
