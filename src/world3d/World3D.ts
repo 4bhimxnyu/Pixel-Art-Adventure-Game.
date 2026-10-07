@@ -1288,8 +1288,9 @@ export class World3D {
       }
       if (clear) return { pos, look };
     }
-    // walls on both sides: look down from above the near side
-    const pos = make(1, Math.min(dist, 3.2), 4.2);
+    // walls on both sides: look down from above the near side (further out on portrait phones)
+    const portrait = aspect < 1 ? Math.min(1.8, 0.85 / aspect) : 1;
+    const pos = make(1, Math.min(dist, 3.2 * portrait), 4.2 + (portrait - 1) * 2.0);
     return { pos, look };
   }
 
