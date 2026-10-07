@@ -3,3 +3,5 @@ dist/
 .playwright-mcp/
 *.local
 .DS_Store
+
+.vercel
