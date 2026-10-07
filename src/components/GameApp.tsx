@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { bus } from "../game/bus";
-import { initAudio, playBgm, setVolumes, stopBgm, loadAudioManifest } from "../game/sound";
+import { initAudio, playBgm, setVolumes, stopBgm, loadAudioManifest, currentBgm } from "../game/sound";
 import { questSfx } from "../lib/questSfx";
 import { useDevice } from "../input/useDevice";
 
@@ -25,7 +25,7 @@ import { ThemeKeyframes } from "./pixel/decor";
 
 // Dev-only handle so the game can be driven and inspected from the console.
 if (import.meta.env.DEV) {
-  (window as any).__game = { store: useGameStore, bus };
+  (window as any).__game = { store: useGameStore, bus, currentBgm };
 }
 
 /** Either renderer, behind one tiny interface. */

@@ -1191,6 +1191,9 @@ export function playBgm(key: string, fadeSec = 1.2) {
       endingActive = false;
       fadeOut(0.8);
     }
+    // The procedural score may already be playing (title music starts before
+    // the files are probed): never let both run at once.
+    if (current) fadeOutProcedural(fadeSec);
     if (!playlistActive || !currentFile) startPlaylist(fadeSec);
     return;
   }
@@ -1240,6 +1243,10 @@ export function setIntensity(v: number) {
 
 export function fadeOut(sec = 1.2) {
   stopFileTrack(sec);
+  fadeOutProcedural(sec);
+}
+
+function fadeOutProcedural(sec: number) {
   if (!current || !ctx) return;
   const old = current;
   current = null;
