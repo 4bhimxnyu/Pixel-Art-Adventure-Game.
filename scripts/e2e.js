@@ -33,6 +33,7 @@ async function walkTo(x, y, opts = {}) {
   const target = { x: x + 0.5, z: -(y + 0.5) };
   const t0 = performance.now();
   while (performance.now() - t0 < 20000) {
+    if (opts.untilMap && S().map === opts.untilMap) return true;
     const ov = S().overlay?.kind;
     if (ov === "battle") { say("  (wild encounter on " + S().map + ")"); await fight(); continue; }
     if (ov === "dialogue") { if (opts.stopOnOverlay) return true; await dialogueThrough(); continue; }
@@ -82,7 +83,10 @@ async function interact(expectDialogue = true) {
 }
 
 function key(k) {
+  // press AND release: a key left "held" would make the input layer walk the
+  // player on its own (ArrowDown = backwards) after the battle ends
   window.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true }));
+  window.setTimeout(() => window.dispatchEvent(new KeyboardEvent("keyup", { key: k, bubbles: true, cancelable: true })), 40);
 }
 
 /**
@@ -196,6 +200,13 @@ async function portalTo(mapId, to) {
 /** Walk through the gate to another map. */
 async function go(to) {
   const from = S().map;
+  const d0 = await def(from);
+  if (!d0.portals.some((q) => q.to === to)) {
+    const pp = W().playerPos;
+    fails.push(`go(${to}): no portal from ${from} (player at ${pp.x.toFixed(2)},${pp.z.toFixed(2)})`);
+    say(`FAIL go(${to}) from ${from}; recent: ${trace.slice(-6).join(" | ")}`);
+    return;
+  }
   const p = await portalTo(from, to);
   const d = await def(from);
   const W0 = d.rows[0].length, H0 = d.rows.length;
@@ -238,9 +249,26 @@ async function standOn(ch, nth = 0) {
   W().tryInteract(); await sleep(250); await dialogueThroughIfAny();
 }
 
+const trace = [];
+let traceOff = null;
+function startTrace() {
+  traceOff?.();
+  trace.length = 0;
+  const t0 = performance.now();
+  traceOff = window.__game.store.subscribe((n, o) => {
+    try {
+      const t = Math.round(performance.now() - t0);
+      if (n.map !== o.map) { const p = W()?.playerPos; trace.push(`${t}ms map ${o.map}->${n.map} @${p ? p.x.toFixed(1) + "," + p.z.toFixed(1) : "?"}`); }
+      const ok = o.overlay?.kind ?? null, nk = n.overlay?.kind ?? null;
+      if (ok !== nk) trace.push(`${t}ms overlay ${ok}->${nk}${nk === "dialogue" ? ":" + (n.overlay.id ?? "") : ""}`);
+    } catch { /* noop */ }
+  });
+}
+
 async function run() {
   log.length = 0;
   fails.length = 0;
+  startTrace();
   await audit();
   localStorage.removeItem("palakshi_save_v1");
   const store = window.__game.store;
@@ -267,9 +295,9 @@ async function run() {
   await talk("W");
   expect(S().flags.clueWitnessHeard, "witness heard");
   await go("route1");
-  await useTile("y");
+  await useTile("y", 0, true);
   expect(S().flags.clueToyFound, "toy found");
-  { const paws = await tileCells("route1", "p"); await walkTo(paws[0].x, paws[0].y, { stopOnOverlay: true }); await dialogueThroughIfAny(); }
+  { const paws = await tileCells("route1", "p"); const last = paws[paws.length - 1]; await walkTo(last.x, last.y, { stopOnOverlay: true }); await dialogueThroughIfAny(); }
   expect(S().flags.cluePawsSeen, "paw prints seen");
   await go("forest");
   await talk("C"); // the rustling bush
@@ -289,8 +317,8 @@ async function run() {
   // --- Chapter 2: Lantern Village
   await go("village");
   expectBeacon("village");
-  await until(() => S().overlay?.kind === "dialogue", 9000, "village arrival dialogue");
-  await dialogueThrough();
+  if (!(await until(() => S().overlay?.kind === "dialogue", 9000, "village arrival dialogue"))) say(`  trace: ${trace.slice(-8).join(" | ")} lock=${W().inputLocked} cin=${W().cam.cinematicActive} seenVillage=${S().flags.seenVillage}`);
+  else await dialogueThrough();
   await talk("E");
   expect(S().flags.elderBriefed, "elder briefed");
   await talk("N");
@@ -418,8 +446,21 @@ async function run() {
   return { log, fails };
 }
 
+/** The villain we just beat must be gone from the world and never fight again. */
+async function expectGone(kind, label) {
+  await sleep(2200); // leave animation + rebuild
+  expect(!W().entities.some((e) => e.kind === kind), `${label} has left the scene`);
+}
+
+/** The objective beacon must exist whenever the main quest is unfinished. */
+function expectBeacon(label) {
+  const q = S().quests.find((x) => x.id === "main");
+  if (q.done) return;
+  expect(!!W().beacon, `beacon shown: ${label}`);
+}
+
 async function dialogueThroughIfAny() {
   if (S().overlay?.kind === "dialogue") await dialogueThrough();
 }
 
-window.__e2e = { run, walkTo, placeAt, interact, fight, dialogueThrough, go, talk, useTile, standOn, cellOf, log, fails };
+window.__e2e = { run, walkTo, placeAt, interact, fight, dialogueThrough, go, talk, useTile, standOn, cellOf, log, fails, trace };
