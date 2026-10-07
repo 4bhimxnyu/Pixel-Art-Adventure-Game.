@@ -695,7 +695,7 @@ export class World3D {
     const cx = Math.floor(x);
     const cz = ROW(z);
     if (cx < 0 || cz < 0 || cx >= mapWidth(def) || cz >= mapHeight(def)) {
-      return this.built?.theme.indoor ? 1.9 : 2.2;
+      return this.built?.theme.indoor ? 1.9 : 2.9;
     }
     const ch = tileAt(def, cx, cz);
     if (!cellBlocked(def, cx, cz, useGameStore.getState().flags)) return 0;

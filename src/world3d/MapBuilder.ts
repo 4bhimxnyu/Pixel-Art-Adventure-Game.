@@ -364,8 +364,9 @@ export function buildMap(def: MapDef, flags: Flags, quality: { shadows: boolean 
     group.add(base);
     if (theme.border) {
       for (let ring = 1; ring <= 4; ring++) {
-        const key = ring >= 2 && theme.border2 ? theme.border2 : theme.border;
-        const density = ring === 4 ? 0.35 : 0.8;
+        // the ring touching the map is low shrubs so the camera never sits inside a canopy
+        const key = ring === 1 ? (theme.border === "boulder" ? "pebble" : "bush") : ring >= 3 && theme.border2 ? theme.border2 : theme.border;
+        const density = ring === 4 ? 0.35 : ring === 1 ? 0.5 : 0.8;
         for (let x = -ring; x < W + ring; x++) {
           for (const z of [-ring, H - 1 + ring]) if (hash01(x, z, 31) < density) place(key, x, z, 41);
         }
