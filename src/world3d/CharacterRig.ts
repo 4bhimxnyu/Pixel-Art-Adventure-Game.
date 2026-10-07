@@ -99,13 +99,10 @@ export class CharacterRig extends BaseRig {
     const hipsJ = this.joint(0, hipY, 0);
     const legL = this.joint(-waistW * 0.28, 0, 0, hipsJ);
     const legR = this.joint(waistW * 0.28, 0, 0, hipsJ);
-    const legW = Math.max(0.13, waistW * 0.42) * (s.looseLegs ? 1.22 : 1);
+    const legW = Math.max(0.13, waistW * 0.42);
     const skirted = s.outfit === "robe" || s.outfit === "dress";
     for (const leg of [legL, legR]) {
-      // loose trousers: a slight flare toward the hem
       leg.add(this.box(legW, legLen, legW * 1.1, bottom, 0, -legLen / 2, 0));
-      if (s.looseLegs) leg.add(this.box(legW * 1.12, legLen * 0.32, legW * 1.22, bottom, 0, -legLen * 0.8, 0));
-      if (s.bottomCheck) this.addChecks(leg, legW * (s.looseLegs ? 1.12 : 1), legLen, legW * 1.1 * (s.looseLegs ? 1.1 : 1), mat(s.bottomCheck));
       leg.add(this.box(legW + 0.02, 0.08, legW * 1.1 + 0.07, mat(skirted ? C.charcoal : "#2a2222"), 0, -legLen + 0.04, 0.03));
     }
 
@@ -131,23 +128,6 @@ export class CharacterRig extends BaseRig {
     this.p = { hips: hipsJ, torso, head, armL, armR, legL, legR, handL, handR, cape: this.capeJoint ?? undefined };
     this.buildProps(torso, handR, handL);
     this.bake();
-  }
-
-  /** Gingham check on a trouser leg: small squares on all four faces, baked with the leg. */
-  private addChecks(leg: THREE.Group, w: number, len: number, d: number, check: THREE.Material) {
-    const cols = 3, rows = 7;
-    const sw = w / cols, sh = (len * 0.92) / rows;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        if ((r + c) % 2) continue;
-        const x = -w / 2 + sw * (c + 0.5), y = -len * 0.04 - sh * (r + 0.5);
-        leg.add(this.box(sw * 0.92, sh * 0.92, 0.006, check, x, y, d / 2 + 0.004));
-        leg.add(this.box(sw * 0.92, sh * 0.92, 0.006, check, x, y, -d / 2 - 0.004));
-        const z = -d / 2 + (d / cols) * (c + 0.5);
-        leg.add(this.box(0.006, sh * 0.92, (d / cols) * 0.92, check, w / 2 + 0.004, y, z));
-        leg.add(this.box(0.006, sh * 0.92, (d / cols) * 0.92, check, -w / 2 - 0.004, y, z));
-      }
-    }
   }
 
   private buildTorso(torso: THREE.Group, top: THREE.Material, topAlt: THREE.Material, bottom: THREE.Material, trim: THREE.Material, skin: THREE.Material, belly: number) {
@@ -313,25 +293,7 @@ export class CharacterRig extends BaseRig {
       head.add(this.box(0.04, 0.02, 0.012, mat("#e39cb2"), -headR * 0.55, headR - 0.03, headR - 0.03));
       head.add(this.box(0.04, 0.02, 0.012, mat("#e39cb2"), headR * 0.55, headR - 0.03, headR - 0.03));
     }
-    if (s.glasses && s.glassesBig) {
-      // large black frames: an octagonal rim per lens, thick bridge, arms to the ears
-      const gl = mat("#0e0e10");
-      const lr = 0.076, cy = headR + 0.025, cz = headR + 0.02;
-      for (const side of [-1, 1]) {
-        const cx = side * 0.088;
-        // bold rectangular rims
-        const hw = lr, hh = lr * 0.78, t = 0.02;
-        for (const [w, h, x, y] of [[hw * 2 + t, t, cx, cy + hh], [hw * 2 + t, t * 1.2, cx, cy - hh], [t, hh * 2, cx - hw, cy], [t, hh * 2, cx + hw, cy]] as const) {
-          const seg = this.box(w, h, 0.018, gl, x, y, cz);
-          seg.castShadow = false;
-          head.add(seg);
-        }
-        const arm = this.box(0.016, 0.016, headR * 0.95, gl, side * (0.088 + lr), cy + 0.01, cz - headR * 0.48);
-        arm.castShadow = false;
-        head.add(arm);
-      }
-      head.add(this.box(0.04, 0.02, 0.018, gl, 0, cy + 0.015, cz));
-    } else if (s.glasses) {
+    if (s.glasses) {
       const gl = mat("#2a2a30");
       head.add(this.box(0.2, 0.012, 0.012, gl, 0, headR + 0.02, headR + 0.01));
       head.add(this.mesh(G.cyl(0.045, 0.045, 0.012, 8), gl, -0.075, headR + 0.02, headR + 0.012)).rotation.x = Math.PI / 2;
@@ -355,34 +317,6 @@ export class CharacterRig extends BaseRig {
     const orn = mat(s.ornament ?? s.trim);
 
     switch (style) {
-      case "bob": {
-        // straight, shoulder-length: full sides and back that stop at the shoulders
-        cap.scale.set(1.08, 0.95, 0.98);
-        head.add(this.box(r * 2.05, 0.44, 0.12, hair, 0, r - 0.1, -r + 0.04));
-        for (const side of [-1, 1]) {
-          head.add(this.box(0.1, 0.42, r * 1.55, hair, side * (r + 0.02), r - 0.09, -0.04));
-          head.add(this.box(0.08, 0.1, 0.12, hair, side * (r - 0.02), r - 0.27, 0.06)); // ends tuck forward
-        }
-        head.add(this.box(r * 1.55, 0.09, 0.08, hair, 0, r + 0.14, r - 0.035)); // straight fringe
-        break;
-      }
-      case "messy": {
-        // medium length, tousled, fringe falling over the forehead
-        cap.scale.set(1.08, 0.98, 0.98);
-        const hi = mat(s.hairHi ?? s.hair);
-        const locks: [number, number, number, number, number][] = [
-          [-0.1, 0.175, 0.14, 0.35, 0.35], [0.0, 0.185, 0.15, -0.1, 0.4], [0.1, 0.175, 0.14, -0.4, 0.35], [0.17, 0.11, 0.08, -0.6, 0.1],
-          [-0.17, 0.11, 0.08, 0.6, 0.1], [0, 0.22, 0.0, 0.1, -0.3], [-0.12, 0.2, -0.08, 0.5, -0.4], [0.12, 0.2, -0.08, -0.5, -0.4],
-        ];
-        locks.forEach(([x, y, z, rz, rx], i) => {
-          const lock = this.box(0.12, 0.05, 0.14, i % 3 === 0 ? hi : hair, x, r + y, z);
-          lock.rotation.set(rx, 0, rz);
-          head.add(lock);
-        });
-        head.add(this.box(r * 1.9, 0.26, 0.1, hair, 0, r - 0.01, -r + 0.03)); // covers the nape
-        for (const side of [-1, 1]) head.add(this.box(0.07, 0.2, r * 1.2, hair, side * (r + 0.01), r - 0.0, -0.05));
-        break;
-      }
       case "crop":
         cap.scale.set(1.0, 0.72, 1.0);
         cap.position.y = r + 0.06;

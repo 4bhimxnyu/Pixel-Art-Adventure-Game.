@@ -235,7 +235,7 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
     { who: "Bidisha", portrait: "bidisha", text: "Mimo slipped the gate before sunrise. I've looked everywhere in the house." },
     { who: "Bidisha", portrait: "bidisha", text: "Take this. And take a friend — don't go past Route 1 alone.", onEnd: "give_super_potion" },
   ],
-  mom_after: [{ who: "Bidisha", portrait: "bidisha", text: "Bring him home before the lanterns light. That's my only wish." }],
+  mom_after: [{ who: "Bidisha", portrait: "bidisha", text: "Bring her home before the lanterns light. That's my only wish." }],
 
   abhimanyu_meet: [
     { who: "Abhimanyu", portrait: "abhimanyu", text: "Palakshi! Happy birthday — I was going to sing it, but you look busy." },
@@ -250,12 +250,12 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
   townie1: [{ who: "Townsfolk", portrait: "townie", text: "The festival's off. Fifty years running, and off." }],
   townie2: [{ who: "Townsfolk", portrait: "townie", text: "They say the flame in the village lantern just… stopped." }],
   clue_toy: [
-    { who: "Palakshi", portrait: "palakshi", text: "Mimo's red ball. Chewed exactly where he always chews it." },
-    { who: "Abhimanyu", portrait: "abhimanyu", text: "He came this way. Keep going.", onEnd: "clue_toy_found" },
+    { who: "Palakshi", portrait: "palakshi", text: "Mimo's red ball. Chewed exactly where she always chews it." },
+    { who: "Abhimanyu", portrait: "abhimanyu", text: "She came this way. Keep going.", onEnd: "clue_toy_found" },
   ],
   clue_paws: [
     { who: "Palakshi", portrait: "palakshi", text: "Paw prints. Small, hurried, heading into the woods." },
-    { who: "Abhimanyu", portrait: "abhimanyu", text: "He was running from something.", onEnd: "clue_paws_found" },
+    { who: "Abhimanyu", portrait: "abhimanyu", text: "She was running from something.", onEnd: "clue_paws_found" },
   ],
   mimo_bush: [
     { who: "Palakshi", portrait: "palakshi", text: "Something's shaking in there. Mimo…?" },
@@ -418,7 +418,7 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
     { who: "Dev", portrait: "dev", text: "Mimo can stay. Mimo can have my bed.", onEnd: "met_dev" },
   ],
   dev_again: [{ who: "Dev", portrait: "dev", text: "Stretch before you sit down. Trust me on this one." }],
-  dev_late: [{ who: "Dev", portrait: "dev", text: "Next time, bring the dog for a run. He'd keep up." }],
+  dev_late: [{ who: "Dev", portrait: "dev", text: "Next time, bring the dog for a run. She'd keep up." }],
   f1205_evening: [
     { who: "Garv", portrait: "garv", text: "Right. Everyone sit. Hakim — down." },
     { who: "Hakim", portrait: "hakim", text: "I'm down. I'm sitting. I'm listening." },

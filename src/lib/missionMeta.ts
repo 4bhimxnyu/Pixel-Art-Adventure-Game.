@@ -44,7 +44,7 @@ export type MissionDef = {
 export const MAIN_MISSIONS: MissionDef[] = [
   {
     id: "m_mimo", title: "Find Mimo", region: "home", icon: "paw",
-    blurb: "Mimo slipped the gate before sunrise. Follow his trail across town, the road and the woods — and bring him home.",
+    blurb: "Mimo slipped the gate before sunrise. Follow her trail across town, the road and the woods — and bring her home.",
     steps: ["wake", "mom", "abhi", "clue_npc", "clue_toy", "clue_paws", "mimo"],
     cast: ["palakshi", "bidisha", "abhimanyu", "mimo"],
     rewards: [

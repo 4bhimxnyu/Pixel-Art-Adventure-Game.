@@ -115,7 +115,7 @@ export const STEP_GUIDE: Record<string, Guide> = {
     hints: [
       "Something is hiding in the woods, and it's frightened.",
       "A bush deep in the woods keeps shaking.",
-      "In the Whispering Woods, face the rustling bush and press E. He won't know you at first.",
+      "In the Whispering Woods, face the rustling bush and press E. She won't know you at first.",
     ],
     chain: ["Route 1", "Whispering Woods", "Rustling bush"],
   },

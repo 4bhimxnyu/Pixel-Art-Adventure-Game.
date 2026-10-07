@@ -22,15 +22,9 @@ type Spec = {
 
 const SPECS: Record<string, Spec> = {
   palakshi: {
-    // shoulder-length bob with a straight fringe, large black glasses, black cardigan
-    bg: "#241019", hair: "#120c10", hairHi: "#2a1a24", skin: "#e8b48c", shade: "#c1875f",
-    robe: "#121014", robeHi: "#1e1b22", trim: "#1e1b22",
-    extra: [
-      [2, 3, 1, 9, "#120c10"], [13, 3, 1, 9, "#120c10"], [3, 3, 10, 1, "#120c10"],
-      [4, 5, 4, 1, "#0a0a0c"], [4, 8, 4, 1, "#0a0a0c"], [4, 5, 1, 4, "#0a0a0c"], [7, 5, 1, 4, "#0a0a0c"],
-      [8, 5, 4, 1, "#0a0a0c"], [8, 8, 4, 1, "#0a0a0c"], [8, 5, 1, 4, "#0a0a0c"], [11, 5, 1, 4, "#0a0a0c"],
-      [7, 12, 2, 4, "#0a0a0c"],
-    ],
+    bg: "#241019", hair: "#150d12", hairHi: "#2a1a24", skin: "#e8b48c", shade: "#c1875f",
+    robe: "#141018", robeHi: "#241c2a", trim: "#d9b45b", longHair: true,
+    extra: [[6, 1, 4, 1, "#d9b45b"], [5, 2, 1, 1, "#f2dfa6"]],
   },
   mimo: {
     bg: "#1d2418", hair: "#f2f2ee", skin: "#f2f2ee", shade: "#c9a06a",
@@ -42,14 +36,9 @@ const SPECS: Record<string, Spec> = {
     ],
   },
   abhimanyu: {
-    // messy fringe, light blue denim jacket over a black tee, the white bass
-    bg: "#14202e", hair: "#16100f", hairHi: "#2a1e1a", skin: "#d9a074", shade: "#a87a52",
-    robe: "#8db0d6", robeHi: "#a6c4e3", trim: "#6f93bd",
-    extra: [
-      [4, 3, 3, 2, "#16100f"], [8, 3, 3, 1, "#16100f"], [2, 2, 1, 4, "#16100f"], [13, 2, 1, 4, "#16100f"], [6, 0, 4, 1, "#16100f"],
-      [6, 12, 4, 4, "#141416"],
-      [11, 10, 4, 6, "#f2f2ee"], [12, 7, 2, 4, "#d8d4cc"], [12, 12, 2, 1, "#1a0f12"],
-    ],
+    bg: "#14202e", hair: "#1d1414", skin: "#d9a074", shade: "#a87a52",
+    robe: "#2b3a52", robeHi: "#3b4e6b", trim: "#f7e6c8",
+    extra: [[11, 10, 4, 6, "#f2f2ee"], [12, 7, 2, 4, "#d8d4cc"], [12, 12, 2, 1, "#1a0f12"]],
   },
   bidisha: {
     bg: "#2a121a", hair: "#2a1a1a", skin: "#e8b48c", shade: "#c1875f",
