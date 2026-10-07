@@ -127,6 +127,8 @@ export function handleFinalChapterDialogue(
       if (allMet()) {
         bus.emit("cinematic", { kind: "objective", title: "EVERYONE'S HOME", subtitle: "Find Abhimanyu. It's time to sit down together." });
         adv("evening");
+        // the flat rearranges itself: Abhimanyu drifts to the living room, Garv to the kitchen
+        fx.delay(2600, () => fx.refresh());
       }
       return true;
     }
