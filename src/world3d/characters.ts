@@ -14,7 +14,7 @@
 // ---------------------------------------------------------------------------
 
 export type HairStyle =
-  | "long" | "ponytail" | "braid" | "bun" | "headdress" | "short" | "spiky" | "curly" | "crop" | "bald" | "grey";
+  | "long" | "ponytail" | "braid" | "bun" | "headdress" | "short" | "spiky" | "messy" | "shoulder" | "curly" | "crop" | "bald" | "grey";
 
 export type Outfit = "robe" | "dress" | "tee" | "jacket" | "tank" | "cardigan" | "vest" | "hoodie";
 
@@ -54,7 +54,12 @@ export type CharSpec = {
   height?: number;
   eyes?: "almond" | "round";
   beard?: string;
-  glasses?: boolean;
+  /** true = thin round frames; "large" = big black rounded-rectangular frames. */
+  glasses?: boolean | "large";
+  /** Trouser cloth. "checker" = green-and-white checks on loose, flared legs. */
+  bottomPattern?: "checker";
+  /** Trouser width multiplier (loose fits > 1). */
+  legWidth?: number;
   /** Only Abhimanyu may carry an instrument. */
   props?: ("bass" | "ipad" | "staff" | "fan")[];
   /** Idle behaviour. */
@@ -66,19 +71,23 @@ export type CharSpec = {
 
 export const CHARACTERS: Record<string, CharSpec> = {
   // ------------------------------------------------------------ protagonist
+  // Reference: young woman, shoulder-length dark hair, large black glasses,
+  // black top / cardigan, loose green-and-white checkered trousers.
   palakshi: {
-    id: "palakshi", skin: "#e8b48c", hair: "#150d12", hairHi: "#2a1a24", hairStyle: "ponytail",
-    top: "#181220", topAlt: "#241c2e", bottom: "#120d16", trim: "#d9b45b",
-    outfit: "dress", sleeves: "wide", sleeveScale: 1.1, skirt: 1.0, necklace: true, female: true,
-    build: "slim", shoulders: 0.95, legs: 1.05, eyes: "almond", ornament: "#d9b45b", accent: "#f2dfa6",
+    id: "palakshi", skin: "#e8b48c", hair: "#150d12", hairHi: "#2a1a24", hairStyle: "shoulder",
+    top: "#141216", topAlt: "#1c1a1f", bottom: "#3f8a4f", trim: "#2a2a2e",
+    outfit: "cardigan", sleeves: "long", bottomPattern: "checker", legWidth: 1.5, female: true,
+    build: "slim", shoulders: 0.95, legs: 1.05, eyes: "almond", glasses: "large",
   },
 
   // ---------------------------------------------------------------- party
+  // Reference: slim young man, dark medium-length messy hair with a fringe,
+  // light blue denim jacket open over a black T-shirt, loose black jeans.
   abhimanyu: {
-    id: "abhimanyu", skin: "#d9a074", hair: "#1d1414", hairStyle: "spiky",
-    top: "#f2ebdc", topAlt: "#2b3a52", bottom: "#2a3f66", trim: "#3b4e6b",
-    outfit: "jacket", sleeves: "long",
-    build: "average", eyes: "almond", props: ["bass"], idle: "strum",
+    id: "abhimanyu", skin: "#d9a074", hair: "#1d1414", hairStyle: "messy",
+    top: "#17171a", topAlt: "#7fa3cf", bottom: "#1c1c20", trim: "#5f86b5",
+    outfit: "jacket", sleeves: "long", legWidth: 1.15,
+    build: "slim", shoulders: 1.0, eyes: "almond", props: ["bass"], idle: "strum",
   },
 
   // ------------------------------------------------------------ rivals

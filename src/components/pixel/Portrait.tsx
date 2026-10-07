@@ -17,14 +17,24 @@ type Spec = {
   /** extra rects drawn last, in the same 16x16 grid */
   extra?: Rect[];
   longHair?: boolean;
+  /** Hair that stops at the shoulders. */
+  shoulderHair?: boolean;
   wide?: boolean;
 };
 
 const SPECS: Record<string, Spec> = {
   palakshi: {
+    // shoulder-length dark hair, large black glasses, black cardigan over a black top
     bg: "#241019", hair: "#150d12", hairHi: "#2a1a24", skin: "#e8b48c", shade: "#c1875f",
-    robe: "#141018", robeHi: "#241c2a", trim: "#d9b45b", longHair: true,
-    extra: [[6, 1, 4, 1, "#d9b45b"], [5, 2, 1, 1, "#f2dfa6"]],
+    robe: "#141216", robeHi: "#1c1a1f", trim: "#2a2a2e", shoulderHair: true,
+    extra: [
+      // frames
+      [4, 5, 4, 1, "#0e0e12"], [4, 8, 4, 1, "#0e0e12"], [4, 6, 1, 2, "#0e0e12"], [7, 6, 1, 2, "#0e0e12"],
+      [8, 5, 4, 1, "#0e0e12"], [8, 8, 4, 1, "#0e0e12"], [8, 6, 1, 2, "#0e0e12"], [11, 6, 1, 2, "#0e0e12"],
+      [7, 6, 2, 1, "#0e0e12"],
+      // cardigan edge + green/white check hint at the hem
+      [7, 12, 2, 4, "#1c1a1f"], [3, 15, 1, 1, "#3f8a4f"], [5, 15, 1, 1, "#3f8a4f"], [10, 15, 1, 1, "#3f8a4f"], [12, 15, 1, 1, "#3f8a4f"],
+    ],
   },
   mimo: {
     bg: "#1d2418", hair: "#f2f2ee", skin: "#f2f2ee", shade: "#c9a06a",
@@ -36,9 +46,14 @@ const SPECS: Record<string, Spec> = {
     ],
   },
   abhimanyu: {
+    // messy dark fringe, light-blue denim jacket open over a black T-shirt; the white bass
     bg: "#14202e", hair: "#1d1414", skin: "#d9a074", shade: "#a87a52",
-    robe: "#2b3a52", robeHi: "#3b4e6b", trim: "#f7e6c8",
-    extra: [[11, 10, 4, 6, "#f2f2ee"], [12, 7, 2, 4, "#d8d4cc"], [12, 12, 2, 1, "#1a0f12"]],
+    robe: "#7fa3cf", robeHi: "#9bbbe0", trim: "#17171a",
+    extra: [
+      [6, 11, 4, 5, "#17171a"], // black tee inside the open jacket
+      [4, 3, 3, 1, "#1d1414"], [8, 3, 4, 1, "#1d1414"], [5, 4, 1, 1, "#1d1414"], [10, 4, 2, 1, "#1d1414"], // fringe
+      [11, 10, 4, 6, "#f2f2ee"], [12, 7, 2, 4, "#d8d4cc"], [12, 12, 2, 1, "#1a0f12"],
+    ],
   },
   bidisha: {
     bg: "#2a121a", hair: "#2a1a1a", skin: "#e8b48c", shade: "#c1875f",
@@ -150,6 +165,12 @@ function bustRects(spec: Spec): Rect[] {
   if (spec.longHair) {
     r.push([2, 4, 1, 9, hair]);
     r.push([13, 4, 1, 9, hair]);
+  }
+  if (spec.shoulderHair) {
+    r.push([2, 4, 1, 7, hair]);
+    r.push([13, 4, 1, 7, hair]);
+    r.push([3, 10, 1, 1, hair]);
+    r.push([12, 10, 1, 1, hair]);
   }
 
   // face

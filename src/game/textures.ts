@@ -246,6 +246,9 @@ type CharSpec = {
   longHair?: boolean;
   guitar?: boolean;
   heavy?: boolean;
+  /** Trouser colour (default charcoal) and an optional second colour for checks. */
+  legs?: string;
+  legsAlt?: string;
 };
 
 /**
@@ -259,12 +262,18 @@ function paintChar(c: Ctx, ox: number, spec: CharSpec, dir: number, step: number
 
   // legs
   const legY = 12 + bob;
+  const legCol = spec.legs ?? PAL.charcoal;
   if (step === 0) {
-    px(c, X(5), legY, 2, 4 - bob, PAL.charcoal);
-    px(c, X(9), legY, 2, 4 - bob, PAL.charcoal);
+    px(c, X(5), legY, 2, 4 - bob, legCol);
+    px(c, X(9), legY, 2, 4 - bob, legCol);
   } else {
-    px(c, X(4), legY, 3, 3, PAL.charcoal);
-    px(c, X(9), legY, 3, 3, PAL.charcoal);
+    px(c, X(4), legY, 3, 3, legCol);
+    px(c, X(9), legY, 3, 3, legCol);
+  }
+  if (spec.legsAlt) {
+    for (let y = legY; y < 16; y++) {
+      for (const x of [4, 5, 6, 9, 10, 11]) if ((x + y) % 2 === 0) dot(c, X(x), y, spec.legsAlt);
+    }
   }
 
   // robe / body
@@ -322,8 +331,8 @@ function paintChar(c: Ctx, ox: number, spec: CharSpec, dir: number, step: number
 }
 
 const CHARS: Record<string, CharSpec> = {
-  palakshi:  { hair: PAL.hair, hairAlt: PAL.gold, outfit: "#141018", outfitAlt: "#241c2a", trim: PAL.gold, skin: PAL.skin, longHair: true },
-  abhimanyu: { hair: "#1d1414", outfit: "#2b3a52", outfitAlt: "#3b4e6b", trim: PAL.offwhite, skin: "#d9a074", guitar: true },
+  palakshi:  { hair: PAL.hair, outfit: "#141216", outfitAlt: "#1c1a1f", trim: "#2a2a2e", skin: PAL.skin, legs: "#3f8a4f", legsAlt: "#f2efe6" },
+  abhimanyu: { hair: "#1d1414", outfit: "#17171a", outfitAlt: "#7fa3cf", trim: "#5f86b5", skin: "#d9a074", guitar: true, legs: "#1c1c20" },
   bidisha:   { hair: "#2a1a1a", outfit: PAL.burgundy, outfitAlt: PAL.crimson, trim: PAL.gold, skin: PAL.skin, longHair: true },
   prakriti:  { hair: "#191021", outfit: "#1f6b6b", outfitAlt: "#5a3d78", trim: PAL.brightgold, skin: "#e5b291", longHair: true },
   arshiya:   { hair: "#241018", outfit: "#3d0f18", outfitAlt: PAL.burgundy, trim: PAL.brightgold, skin: "#dda57f", longHair: true, heavy: true },

@@ -14,7 +14,7 @@
 import * as THREE from "three";
 import { BaseRig, ease } from "./BaseRig";
 import { charSpec, type CharSpec } from "./characters";
-import { G, mat, glow, C } from "./materials";
+import { G, mat, glow, C, checkerMaterial } from "./materials";
 
 type Parts = {
   hips: THREE.Group;
@@ -99,11 +99,20 @@ export class CharacterRig extends BaseRig {
     const hipsJ = this.joint(0, hipY, 0);
     const legL = this.joint(-waistW * 0.28, 0, 0, hipsJ);
     const legR = this.joint(waistW * 0.28, 0, 0, hipsJ);
-    const legW = Math.max(0.13, waistW * 0.42);
+    const legW = Math.max(0.13, waistW * 0.42) * (s.legWidth ?? 1);
     const skirted = s.outfit === "robe" || s.outfit === "dress";
     for (const leg of [legL, legR]) {
-      leg.add(this.box(legW, legLen, legW * 1.1, bottom, 0, -legLen / 2, 0));
-      leg.add(this.box(legW + 0.02, 0.08, legW * 1.1 + 0.07, mat(skirted ? C.charcoal : "#2a2222"), 0, -legLen + 0.04, 0.03));
+      if (s.bottomPattern === "checker") {
+        // loose trouser leg: a flared tube so the checks wrap around and read at a distance
+        const cloth = checkerMaterial(s.bottom, "#f2efe6");
+        const tube = this.mesh(G.cyl(legW * 0.5, legW * 0.66, legLen - 0.05, 10), cloth, 0, -legLen / 2 + 0.02, 0);
+        tube.scale.z = 0.9;
+        leg.add(tube);
+        leg.add(this.mesh(G.cyl(legW * 0.68, legW * 0.68, 0.035, 10), mat("#f2efe6"), 0, -legLen + 0.07, 0)); // cuff
+      } else {
+        leg.add(this.box(legW, legLen, legW * 1.1, bottom, 0, -legLen / 2, 0));
+      }
+      leg.add(this.box(Math.min(legW, 0.2) + 0.02, 0.08, Math.min(legW, 0.2) * 1.1 + 0.07, mat(skirted ? C.charcoal : "#2a2222"), 0, -legLen + 0.04, 0.03));
     }
 
     // --- torso
@@ -293,7 +302,29 @@ export class CharacterRig extends BaseRig {
       head.add(this.box(0.04, 0.02, 0.012, mat("#e39cb2"), -headR * 0.55, headR - 0.03, headR - 0.03));
       head.add(this.box(0.04, 0.02, 0.012, mat("#e39cb2"), headR * 0.55, headR - 0.03, headR - 0.03));
     }
-    if (s.glasses) {
+    if (s.glasses === "large") {
+      // big black rounded-rectangular frames: a hollow frame per lens, a bridge, temple arms
+      const gl = mat("#0e0e12");
+      const lens = glow("#dfe8f2", 0.22);
+      const lw = 0.12;
+      const lh = 0.095;
+      const t = 0.016;
+      for (const side of [-1, 1]) {
+        const cx = side * headR * 0.4;
+        const cy = headR + 0.02;
+        const z = headR + 0.008;
+        head.add(this.box(lw, t, t, gl, cx, cy + lh / 2, z));
+        head.add(this.box(lw, t, t, gl, cx, cy - lh / 2, z));
+        head.add(this.box(t, lh, t, gl, cx - lw / 2, cy, z));
+        head.add(this.box(t, lh, t, gl, cx + lw / 2, cy, z));
+        const glass = this.box(lw - t, lh - t, 0.006, lens, cx, cy, z - 0.004);
+        glass.castShadow = false;
+        head.add(glass);
+        // temple arm back along the side of the head
+        head.add(this.box(t, t, headR * 1.1, gl, side * (headR * 0.4 + lw / 2), cy, headR * 0.45));
+      }
+      head.add(this.box(0.03, t, t, gl, 0, headR + 0.03, headR + 0.008));
+    } else if (s.glasses) {
       const gl = mat("#2a2a30");
       head.add(this.box(0.2, 0.012, 0.012, gl, 0, headR + 0.02, headR + 0.01));
       head.add(this.mesh(G.cyl(0.045, 0.045, 0.012, 8), gl, -0.075, headR + 0.02, headR + 0.012)).rotation.x = Math.PI / 2;
@@ -324,6 +355,41 @@ export class CharacterRig extends BaseRig {
       case "short":
         fringe();
         break;
+      case "shoulder": {
+        // straight, parted fringe, ends at the shoulders all the way round
+        head.add(this.box(r * 0.9, 0.06, 0.08, hair, -r * 0.32, r + 0.16, r - 0.02));
+        head.add(this.box(r * 0.7, 0.05, 0.08, hair, r * 0.42, r + 0.17, r - 0.02));
+        head.add(this.box(r * 1.9, 0.38, 0.1, hair, 0, r - 0.05, -r + 0.03)); // back
+        head.add(this.box(0.1, 0.36, r * 1.5, hair, -r + 0.01, r - 0.04, -0.02)); // sides
+        head.add(this.box(0.1, 0.36, r * 1.5, hair, r - 0.01, r - 0.04, -0.02));
+        // slightly inward-curled ends
+        head.add(this.box(0.11, 0.05, r * 1.5, hair, -r + 0.03, r - 0.24, -0.02));
+        head.add(this.box(0.11, 0.05, r * 1.5, hair, r - 0.03, r - 0.24, -0.02));
+        break;
+      }
+      case "messy": {
+        // medium length, tousled: a fuller cap, side panels and a tilted fringe over the forehead
+        cap.scale.set(1.06, 1.0, 1.06);
+        cap.position.y = r + 0.04;
+        const strands: [number, number, number, number][] = [
+          [-0.11, 0.1, 0.17, 0.35], [-0.03, 0.09, 0.19, -0.1], [0.06, 0.1, 0.18, 0.25], [0.13, 0.11, 0.15, -0.4],
+        ];
+        for (const [x, y, z, rz] of strands) {
+          const st = this.box(0.075, 0.16, 0.05, hair, x, r + y, z);
+          st.rotation.z = rz;
+          st.rotation.x = 0.25;
+          head.add(st);
+        }
+        head.add(this.box(0.09, 0.24, 0.16, hair, -r + 0.01, r + 0.02, -0.04));
+        head.add(this.box(0.09, 0.24, 0.16, hair, r - 0.01, r + 0.02, -0.04));
+        head.add(this.box(r * 1.6, 0.2, 0.1, hair, 0, r - 0.0, -r + 0.03));
+        for (const [x, y, z, rz] of [[-0.12, 0.26, -0.06, 0.5], [0.1, 0.27, -0.1, -0.45], [0, 0.29, 0.02, 0.1]] as const) {
+          const tuft = this.mesh(G.cone(0.045, 0.12, 5), hair, x, r + y, z);
+          tuft.rotation.z = rz;
+          head.add(tuft);
+        }
+        break;
+      }
       case "spiky": {
         cap.scale.set(1.0, 0.8, 1.0);
         const spikes: [number, number, number, number][] = [

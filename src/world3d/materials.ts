@@ -88,6 +88,39 @@ export function mat(color: string, opts: { emissive?: string; emissiveIntensity?
   return m;
 }
 
+/**
+ * Checkered cloth (Palakshi's trousers): a tiny canvas texture on a Lambert
+ * material. Lambert on purpose: the rig baker merges plain toon meshes and
+ * would drop the map, so this stays its own mesh. Cached per colour pair.
+ */
+export function checkerMaterial(a: string, b: string, repeatU = 5, repeatV = 3) {
+  const key = `chk|${a}|${b}|${repeatU}|${repeatV}`;
+  let m = matCache.get(key);
+  if (!m) {
+    const n = 8;
+    const canvas = document.createElement("canvas");
+    canvas.width = n;
+    canvas.height = n;
+    const ctx = canvas.getContext("2d")!;
+    for (let y = 0; y < n; y++) {
+      for (let x = 0; x < n; x++) {
+        ctx.fillStyle = (x + y) % 2 ? a : b;
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(repeatU / (n / 2), repeatV / (n / 2));
+    tex.colorSpace = THREE.SRGBColorSpace;
+    m = new THREE.MeshLambertMaterial({ map: tex });
+    matCache.set(key, m);
+  }
+  return m;
+}
+
 /** Unlit glow (lantern paper, fire, crystal). Cached. */
 export function glow(color: string, opacity = 1) {
   const key = `g|${color}|${opacity}`;
