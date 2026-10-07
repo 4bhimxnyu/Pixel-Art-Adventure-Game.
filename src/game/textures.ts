@@ -348,6 +348,8 @@ const CHARS: Record<string, CharSpec> = {
   faizal:    { hair: "#2a1a12", hairAlt: "#4a3220", outfit: "#2f7a3f", outfitAlt: "#3f9a52", trim: "#2a5a33", skin: "#d9a074", heavy: true },
   garv:      { hair: "#3a3236", hairAlt: "#8a8290", outfit: "#5a4a3c", outfitAlt: "#6e5c4c", trim: "#c9b48a", skin: "#cfa079" },
   hakim:     { hair: "#1c1416", outfit: "#3a3f5a", outfitAlt: "#4d546f", trim: "#c9c4bb", skin: "#d4a07a" },
+  // Palakshi's friend: mustard hoodie, dark shorts, pink scrunchie in a bun
+  riddhi:    { hair: "#2b1a16", hairAlt: "#ff5c8a", outfit: "#d9a63a", outfitAlt: "#c4932f", trim: "#f2e2a8", skin: "#e0a77e", legs: "#1a1a1e" },
   dev:       { hair: "#121010", hairAlt: "#2a2424", outfit: "#1f1f24", outfitAlt: "#2e2e36", trim: "#e0616b", skin: "#d0946a", heavy: true },
 };
 

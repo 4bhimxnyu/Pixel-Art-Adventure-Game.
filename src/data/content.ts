@@ -377,8 +377,51 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
     { who: "Palakshi", portrait: "palakshi", text: "…" },
     { who: "Elder Shu", portrait: "elder", text: "There. Fifty-one years running.", onEnd: "lantern_restored" },
   ],
+  // ------------------------------------------------------------ Riddhi
+  riddhi_town_1: [
+    { who: "Riddhi", portrait: "riddhi", text: "Oye. Birthday girl. Tu itni subah uth gayi? Kaun mar gaya?" },
+    { who: "Palakshi", portrait: "palakshi", text: "Mimo gaayab hai." },
+    { who: "Riddhi", portrait: "riddhi", text: "Toh dhoondh na. Aur jacket pehen, mausam mat dekh." },
+    { who: "Riddhi", portrait: "riddhi", text: "Mazaak. Main bhi aa rahi hoon... nahi aa rahi. Tu jaa, main yahan se cheer karungi.", onEnd: "riddhi_chat" },
+  ],
+  riddhi_town_2: [
+    { who: "Riddhi", portrait: "riddhi", text: "Abhi tak yahin hai? Kutta khud aa jayega kya tere liye." },
+    { who: "Palakshi", portrait: "palakshi", text: "Jaa rahi hoon." },
+    { who: "Riddhi", portrait: "riddhi", text: "Road pe east. Woh bachcha jo chillata rehta hai, usne kuch dekha hai.", onEnd: "riddhi_chat" },
+  ],
+  riddhi_town_3: [
+    { who: "Riddhi", portrait: "riddhi", text: "Photo bhej jab mil jaye. Kutte ki. Teri nahi.", onEnd: "riddhi_chat" },
+  ],
+  riddhi_village_1: [
+    { who: "Riddhi", portrait: "riddhi", text: "Tu yahan bhi? Festival cancel ho gaya aur tu nahi. Nice." },
+    { who: "Palakshi", portrait: "palakshi", text: "Tu kaise pahunchi?" },
+    { who: "Riddhi", portrait: "riddhi", text: "Bus hai yaar. Tum log pahaad chadh rahe ho, main chai pi rahi hoon." },
+    { who: "Riddhi", portrait: "riddhi", text: "Woh musician uncle kuch bol raha tha, sound-vound. Sun le, kaam ka lagta hai.", onEnd: "riddhi_chat" },
+  ],
+  riddhi_village_2: [
+    { who: "Riddhi", portrait: "riddhi", text: "Mimo ko dekh. Mimo ko dekh kaise chal raha hai. Royalty." },
+    { who: "Mimo", portrait: "mimo", text: "!", onEnd: "riddhi_chat" },
+  ],
+  riddhi_village_3: [
+    { who: "Riddhi", portrait: "riddhi", text: "Bamboo wala gate upar hai. Lanterns follow kar, nahi toh tu ghoomti rahegi.", onEnd: "riddhi_chat" },
+  ],
+  riddhi_garden_1: [
+    { who: "Riddhi", portrait: "riddhi", text: "Yeh garden dekh. Photo le. Nahi, mera photo le." },
+    { who: "Palakshi", portrait: "palakshi", text: "Prakriti kahan hai?" },
+    { who: "Riddhi", portrait: "riddhi", text: "Pond ke paas attitude leke khadi hai. Pehle woh udne wali cheez nipta, phir jaa dikha de.", onEnd: "riddhi_chat" },
+  ],
+  riddhi_garden_2: [
+    { who: "Riddhi", portrait: "riddhi", text: "Haar gayi toh bolna mat ki main yahan thi." },
+    { who: "Palakshi", portrait: "palakshi", text: "Jeet gayi toh?" },
+    { who: "Riddhi", portrait: "riddhi", text: "Toh main thi. Obviously.", onEnd: "riddhi_chat" },
+  ],
+  riddhi_garden_3: [
+    { who: "Riddhi", portrait: "riddhi", text: "Pahaad pe jaa rahi hai? Jacket. Main bol chuki hoon.", onEnd: "riddhi_chat" },
+  ],
+
   finale: [
     { who: "Bidisha", portrait: "bidisha", text: "You're late, you're filthy, and the whole village came." },
+    { who: "Riddhi", portrait: "riddhi", text: "Bhai tu sach mein ek teacher se lad ke aayi? Bata na kaise." },
     { who: "Abhimanyu", portrait: "abhimanyu", text: "I wrote the song after all." },
     { who: "Prakriti", portrait: "prakriti", text: "It's a passable song." },
     { who: "Mimo", portrait: "mimo", text: "!!!" },

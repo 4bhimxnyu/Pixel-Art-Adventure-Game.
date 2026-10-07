@@ -14,7 +14,7 @@
 // ---------------------------------------------------------------------------
 
 export type HairStyle =
-  | "long" | "ponytail" | "braid" | "bun" | "headdress" | "short" | "spiky" | "messy" | "shoulder" | "curly" | "crop" | "bald" | "grey";
+  | "long" | "ponytail" | "braid" | "bun" | "messybun" | "headdress" | "short" | "spiky" | "messy" | "shoulder" | "curly" | "crop" | "bald" | "grey";
 
 export type Outfit = "robe" | "dress" | "tee" | "jacket" | "tank" | "cardigan" | "vest" | "hoodie";
 
@@ -61,15 +61,35 @@ export type CharSpec = {
   /** Trouser width multiplier (loose fits > 1). */
   legWidth?: number;
   /** Only Abhimanyu may carry an instrument. */
-  props?: ("bass" | "ipad" | "staff" | "fan")[];
+  props?: ("bass" | "ipad" | "staff" | "fan" | "phone")[];
   /** Idle behaviour. */
-  idle?: "default" | "ipad" | "lift" | "crossed" | "lean" | "strum" | "sway";
+  idle?: "default" | "ipad" | "lift" | "crossed" | "lean" | "strum" | "sway" | "phone";
+  /** Walk-cycle bob multiplier (1 = normal; Riddhi bounces). */
+  bounce?: number;
+  /** Hoop earring colour. */
+  earrings?: string;
+  /** A wide grin instead of the small mouth. */
+  grin?: boolean;
+  /** Chunky white sneakers instead of dark shoes. */
+  sneakers?: boolean;
   /** Hair ornament colour (Palakshi's gold tie, Prakriti's teal ribbon). */
   ornament?: string;
   accent?: string;
 };
 
 export const CHARACTERS: Record<string, CharSpec> = {
+  // ------------------------------------------------------------ friends
+  // Riddhi: Palakshi's chaotic best friend. No reference yet; this is a
+  // deliberately distinctive stand-in (drop public/models/riddhi.glb to replace).
+  riddhi: {
+    id: "riddhi", skin: "#e0a77e", hair: "#2b1a16", hairHi: "#4a2e26", hairStyle: "messybun",
+    top: "#d9a63a", topAlt: "#c4932f", bottom: "#1a1a1e", trim: "#f2e2a8",
+    outfit: "hoodie", sleeves: "long", female: true,
+    build: "slim", shoulders: 1.08, hips: 1.0, headSize: 1.04, legs: 0.98, height: 0.97,
+    eyes: "round", grin: true, earrings: "#e8c35a", sneakers: true, bounce: 1.7,
+    props: ["phone"], idle: "phone", ornament: "#ff5c8a", accent: "#ff5c8a",
+  },
+
   // ------------------------------------------------------------ protagonist
   // Reference: young woman, shoulder-length dark hair, large black glasses,
   // black top / cardigan, loose green-and-white checkered trousers.

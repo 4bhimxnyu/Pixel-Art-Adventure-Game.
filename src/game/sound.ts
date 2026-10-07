@@ -74,6 +74,61 @@ type FileTrack = { key: string; el: HTMLAudioElement; gain: GainNode; src: Media
 let currentFile: FileTrack | null = null;
 const fileNodes = new WeakMap<HTMLAudioElement, MediaElementAudioSourceNode>();
 
+/**
+ * The game's own soundtrack: three tracks that rotate through the whole
+ * adventure (game 1 → 2 → 3 → 1 …) regardless of region, so the music never
+ * restarts at a map edge and never doubles up, plus one track reserved for
+ * THE END and the credits. If the files are missing the procedural score
+ * plays instead, exactly as before.
+ */
+const PLAYLIST_FILES = ["game 1.mp3", "game 2.mp3", "game 3.mp3"];
+const ENDING_FILE = "ending.mp4";
+const ENDING_KEYS = new Set(["bgm_end", "bgm_credits"]);
+let playlistAvailable = false;
+let playlistIdx = -1;
+let playlistActive = false;
+let endingActive = false;
+let advancing = false;
+let gestureHooked = false;
+
+/** Browsers refuse audio before the first gesture: resume whatever is pending on it. */
+function hookGesture() {
+  if (gestureHooked) return;
+  gestureHooked = true;
+  const resume = () => {
+    try { ctx?.resume(); } catch { /* noop */ }
+    const el = currentFile?.el;
+    if (el && el.paused) el.play().catch(() => { /* still blocked */ });
+  };
+  window.addEventListener("pointerdown", resume);
+  window.addEventListener("keydown", resume);
+  window.addEventListener("touchstart", resume, { passive: true });
+}
+
+function startPlaylist(fadeSec: number) {
+  playlistIdx = (playlistIdx + 1) % PLAYLIST_FILES.length;
+  const file = PLAYLIST_FILES[playlistIdx];
+  playlistActive = true;
+  playFileTrack(`playlist:${file}`, file, fadeSec, {
+    loop: false,
+    // crossfade into the next track a moment before this one ends
+    onNearEnd: () => {
+      if (!playlistActive || advancing) return;
+      advancing = true;
+      stopFileTrack(2.2);
+      startPlaylist(2.2);
+      window.setTimeout(() => { advancing = false; }, 2500);
+    },
+  });
+}
+
+/** Called once the manifest/files have been probed. */
+function probePlaylist() {
+  return fetch(`audio/${encodeURIComponent(PLAYLIST_FILES[0])}`, { method: "HEAD" })
+    .then((r) => { playlistAvailable = r.ok; })
+    .catch(() => { playlistAvailable = false; });
+}
+
 /** Clamp: never schedule in the past. See invariant note above. */
 function at(t: number) {
   return Math.max(t, (ctx?.currentTime ?? 0) + 0.25);
@@ -158,6 +213,7 @@ export async function loadAudioManifest() {
   } catch {
     // No manifest, malformed JSON, or offline — procedural score covers it.
   }
+  await probePlaylist();
   return fileManifest;
 }
 
@@ -192,12 +248,20 @@ function stopFileTrack(sec: number) {
  * Play a user-supplied file through the same music bus as the synth, so the
  * volume slider and crossfades behave identically.
  */
-function playFileTrack(key: string, file: string, fadeSec: number) {
+function playFileTrack(key: string, file: string, fadeSec: number, opts: { loop?: boolean; onNearEnd?: () => void } = {}) {
   if (!ctx) return false;
   try {
-    const url = `audio/${file}`;
+    const url = `audio/${encodeURIComponent(file)}`;
     const el = new Audio(url);
-    el.loop = true;
+    el.loop = opts.loop ?? true;
+    if (opts.onNearEnd) {
+      el.addEventListener("timeupdate", () => {
+        if (currentFile?.el !== el) return;
+        if (Number.isFinite(el.duration) && el.duration - el.currentTime < 2.4) opts.onNearEnd!();
+      });
+      el.addEventListener("ended", () => { if (currentFile?.el === el) opts.onNearEnd!(); });
+    }
+    hookGesture();
     el.crossOrigin = "anonymous";
     el.preload = "auto";
 
@@ -224,7 +288,9 @@ function playFileTrack(key: string, file: string, fadeSec: number) {
       } catch {
         /* noop */
       }
-      startProceduralTrack(key, 0.4);
+      if (key.startsWith("playlist:")) { playlistAvailable = false; playlistActive = false; startProceduralTrack("bgm_title", 0.4); }
+      else if (key === "ending") { endingActive = false; startProceduralTrack("bgm_end", 0.4); }
+      else startProceduralTrack(key, 0.4);
     });
 
     el.play().catch(() => {
@@ -1110,6 +1176,25 @@ function tick() {
 export function playBgm(key: string, fadeSec = 1.2) {
   initAudio();
   if (!ctx) return;
+
+  // The game's own soundtrack, when present, carries the whole adventure.
+  if (playlistAvailable) {
+    if (ENDING_KEYS.has(key)) {
+      if (endingActive) return;
+      playlistActive = false;
+      endingActive = true;
+      fadeOut(Math.max(fadeSec, 1.5));
+      window.setTimeout(() => playFileTrack("ending", ENDING_FILE, 2.0, { loop: true }), Math.max(fadeSec, 1.5) * 1000 * 0.6);
+      return;
+    }
+    if (endingActive) {
+      endingActive = false;
+      fadeOut(0.8);
+    }
+    if (!playlistActive || !currentFile) startPlaylist(fadeSec);
+    return;
+  }
+
   if (current?.key === key || currentFile?.key === key) return;
 
   // A user-supplied file for this cue wins over the procedural track.
@@ -1173,6 +1258,8 @@ export function fadeOut(sec = 1.2) {
 }
 
 export function stopBgm() {
+  playlistActive = false;
+  endingActive = false;
   fadeOut(0.25);
 }
 

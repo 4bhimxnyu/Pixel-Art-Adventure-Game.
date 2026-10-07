@@ -31,6 +31,7 @@ type Parts = {
   /** The same bass held in front while he plays. */
   guitarFront?: THREE.Group;
   ipad?: THREE.Group;
+  phone?: THREE.Group;
   dumbbell?: THREE.Group;
   cape?: THREE.Group;
 };
@@ -53,6 +54,7 @@ export class CharacterRig extends BaseRig {
   private d!: Dims;
   private capeJoint: THREE.Group | null = null;
   private lookUpTimer = 0;
+  private laughTimer = 0;
   private lookingUp = false;
   private override: { root: THREE.Object3D; mixer: THREE.AnimationMixer; clips: Record<string, THREE.AnimationAction> } | null = null;
 
@@ -112,7 +114,15 @@ export class CharacterRig extends BaseRig {
       } else {
         leg.add(this.box(legW, legLen, legW * 1.1, bottom, 0, -legLen / 2, 0));
       }
-      leg.add(this.box(Math.min(legW, 0.2) + 0.02, 0.08, Math.min(legW, 0.2) * 1.1 + 0.07, mat(skirted ? C.charcoal : "#2a2222"), 0, -legLen + 0.04, 0.03));
+      if (s.sneakers) {
+        // chunky white trainers with a dark sole and a coloured tab
+        const sw = Math.min(legW, 0.2) + 0.05;
+        leg.add(this.box(sw, 0.1, sw * 1.15 + 0.1, mat("#f4f2ee"), 0, -legLen + 0.05, 0.05));
+        leg.add(this.box(sw + 0.01, 0.035, sw * 1.15 + 0.11, mat("#2a2a30"), 0, -legLen + 0.012, 0.05));
+        leg.add(this.box(sw * 0.5, 0.03, 0.03, mat(s.accent ?? s.trim), 0, -legLen + 0.11, -sw * 0.45 + 0.05));
+      } else {
+        leg.add(this.box(Math.min(legW, 0.2) + 0.02, 0.08, Math.min(legW, 0.2) * 1.1 + 0.07, mat(skirted ? C.charcoal : "#2a2222"), 0, -legLen + 0.04, 0.03));
+      }
     }
 
     // --- torso
@@ -295,9 +305,35 @@ export class CharacterRig extends BaseRig {
       brow.castShadow = false;
       head.add(brow);
     }
-    const mouth = this.box(0.05, 0.012, 0.015, mat("#a8586a"), 0, headR - 0.07, headR - 0.012);
-    mouth.castShadow = false;
-    head.add(mouth);
+    if (s.grin) {
+      // a wide open grin: dark mouth, white teeth line, lifted corners
+      const grin = this.box(0.12, 0.035, 0.015, mat("#6a2a38"), 0, headR - 0.07, headR - 0.01);
+      grin.castShadow = false;
+      head.add(grin);
+      const teeth = this.box(0.1, 0.012, 0.016, mat("#f6f2ea"), 0, headR - 0.06, headR - 0.008);
+      teeth.castShadow = false;
+      head.add(teeth);
+      for (const side of [-1, 1]) {
+        const corner = this.box(0.025, 0.02, 0.015, mat("#6a2a38"), side * 0.068, headR - 0.055, headR - 0.012);
+        corner.castShadow = false;
+        head.add(corner);
+      }
+    } else {
+      const mouth = this.box(0.05, 0.012, 0.015, mat("#a8586a"), 0, headR - 0.07, headR - 0.012);
+      mouth.castShadow = false;
+      head.add(mouth);
+    }
+    if (s.earrings) {
+      // big hoops hanging from the ears
+      const ring = new THREE.TorusGeometry(0.045, 0.007, 6, 14);
+      for (const side of [-1, 1]) {
+        const hoop = new THREE.Mesh(ring, mat(s.earrings));
+        hoop.position.set(side * (headR + 0.01), headR - 0.06, 0.01);
+        hoop.rotation.y = Math.PI / 2;
+        hoop.castShadow = false;
+        head.add(hoop);
+      }
+    }
     if (s.female) {
       head.add(this.box(0.04, 0.02, 0.012, mat("#e39cb2"), -headR * 0.55, headR - 0.03, headR - 0.03));
       head.add(this.box(0.04, 0.02, 0.012, mat("#e39cb2"), headR * 0.55, headR - 0.03, headR - 0.03));
@@ -445,6 +481,31 @@ export class CharacterRig extends BaseRig {
         head.add(this.sphere(0.09, hair, 0, r + 0.2, -0.12, 8));
         if (s.ornament) head.add(this.box(0.22, 0.02, 0.02, orn, 0, r + 0.22, -0.12));
         break;
+      case "messybun": {
+        // a high, lopsided bun with a bright scrunchie, loose wavy strands and bits over the forehead
+        cap.scale.set(1.04, 0.95, 1.04);
+        const hi = mat(s.hairHi ?? s.hair);
+        const bun = this.sphere(0.12, hair, 0.03, r + 0.33, -0.08, 9);
+        bun.scale.set(1.15, 0.9, 1.05);
+        head.add(bun);
+        head.add(this.sphere(0.06, hi, 0.12, r + 0.38, -0.1, 7));
+        head.add(this.sphere(0.055, hair, -0.08, r + 0.4, -0.04, 7));
+        const scrunchie = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.03, 6, 14), orn);
+        scrunchie.position.set(0.03, r + 0.24, -0.08);
+        scrunchie.rotation.x = Math.PI / 2 - 0.3;
+        head.add(scrunchie);
+        // loose wavy strands down the sides and neck
+        for (const [x, y, z, rz, len] of [[-r + 0.02, r - 0.02, 0.03, 0.25, 0.3], [r - 0.02, r - 0.05, 0.0, -0.2, 0.26], [-r * 0.6, r - 0.1, -r + 0.04, 0.15, 0.22], [r * 0.5, r - 0.08, -r + 0.04, -0.3, 0.2]] as const) {
+          const strand = this.box(0.05, len, 0.06, hair, x, y, z);
+          strand.rotation.z = rz;
+          head.add(strand);
+        }
+        // a few short bits over the forehead, kept above the brows so the face stays clear
+        head.add(this.box(0.08, 0.04, 0.06, hair, -r * 0.5, r + 0.19, r - 0.04)).rotation.z = 0.35;
+        head.add(this.box(0.06, 0.04, 0.06, hi, r * 0.05, r + 0.2, r - 0.03)).rotation.z = -0.2;
+        head.add(this.box(0.05, 0.05, 0.05, hair, r * 0.55, r + 0.18, r - 0.04)).rotation.z = -0.5;
+        break;
+      }
       case "headdress": {
         fringe();
         head.add(this.sphere(0.13, hair, 0, r + 0.24, -0.06, 10));
@@ -549,6 +610,18 @@ export class CharacterRig extends BaseRig {
       handR.add(pad);
       this.p.ipad = pad;
     }
+    if (props.includes("phone")) {
+      // a phone in the right hand, screen lit, angled toward the face
+      const ph = new THREE.Group();
+      ph.add(this.box(0.075, 0.15, 0.012, mat("#15151a"), 0, 0, 0));
+      const screen = this.box(0.065, 0.135, 0.006, glow("#bfe3ff"), 0, 0, 0.007);
+      screen.castShadow = false;
+      ph.add(screen);
+      ph.position.set(-0.03, 0.03, 0.07);
+      ph.rotation.set(-0.9, 0.35, 0.15);
+      handR.add(ph);
+      this.p.phone = ph;
+    }
     if (props.includes("staff")) {
       handR.add(this.mesh(G.cyl(0.02, 0.025, 1.7, 6), mat(C.wood2), 0, 0.5, 0));
       handR.add(this.sphere(0.05, mat(C.gold), 0, 1.35, 0, 6));
@@ -629,6 +702,7 @@ export class CharacterRig extends BaseRig {
     p.armR.rotation.set(0, 0, -0.06);
     p.legL.rotation.set(0, 0, 0);
     p.legR.rotation.set(0, 0, 0);
+    p.handR.rotation.set(0, 0, 0);
     this.body.position.set(0, 0, 0);
     this.body.rotation.set(0, 0, 0);
     if (p.guitar) p.guitar.visible = true;
@@ -650,7 +724,7 @@ export class CharacterRig extends BaseRig {
     p.legR.rotation.x = -sw * 0.75;
     p.armL.rotation.x = -sw * 0.55;
     p.armR.rotation.x = sw * 0.55;
-    p.hips.position.y += Math.abs(Math.cos(t * freq)) * 0.035 * m;
+    p.hips.position.y += Math.abs(Math.cos(t * freq)) * 0.035 * m * (this.spec.bounce ?? 1);
     p.torso.rotation.y = sw * 0.08;
     p.hips.rotation.z = -sw * 0.03;
     if (p.cape) p.cape.rotation.x = 0.1 + m * 0.25 + Math.sin(t * freq) * 0.04 * m;
@@ -673,6 +747,23 @@ export class CharacterRig extends BaseRig {
         p.armL.rotation.x += -1.2 * idleW;
         p.armL.rotation.z += 0.45 * idleW;
         p.head.rotation.x = (this.lookingUp ? 0.02 : 0.42 + Math.sin(t * 3) * 0.02) * idleW;
+        break;
+      }
+      case "phone": {
+        // scrolling with the thumb, head down at the screen, the odd laugh and head tilt
+        this.laughTimer += dt;
+        if (this.laughTimer > 7 && !this.action) {
+          this.laughTimer = 0;
+          this.play("cheer", 0.45);
+        }
+        p.armR.rotation.x += (-1.6 + Math.sin(t * 5.5) * 0.02) * idleW;
+        p.armR.rotation.z += -0.6 * idleW;
+        p.handR.rotation.y = Math.sin(t * 6) * 0.08 * idleW; // thumb scroll
+        p.armL.rotation.x += -0.25 * idleW;
+        p.armL.rotation.z += 0.2 * idleW;
+        p.head.rotation.x = (0.2 + Math.sin(t * 2.6) * 0.03) * idleW;
+        p.head.rotation.z = Math.sin(t * 0.9) * 0.1 * idleW;
+        this.body.rotation.z = Math.sin(t * 1.1) * 0.025 * idleW;
         break;
       }
       case "lift": {

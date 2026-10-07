@@ -323,6 +323,16 @@ export class StoryController {
       case "npc_witness": return D(f.clueWitnessHeard ? "townie2" : "witness");
       case "npc_townie1": return D("townie1");
       case "npc_townie2": return D("townie2");
+      case "npc_riddhi": {
+        // Riddhi has three things to say wherever she turns up, then cycles the last two
+        const where = def.id === "town" ? "town" : def.id === "village" ? "village" : "garden";
+        const n = store.flags.villageTalks; // unused counter kept for saves; Riddhi tracks her own
+        void n;
+        const count = Object.keys(f.npcSpoken).filter((k) => k.startsWith(`riddhi_${where}_`)).length;
+        const pick = count === 0 ? 1 : count === 1 ? 2 : count % 2 === 0 ? 3 : 2;
+        store.markRecord("npcSpoken", `riddhi_${where}_${count}`);
+        return D(`riddhi_${where}_${pick}`);
+      }
       case "mimo_here": return D("mimo_bush");
       case "npc_prakriti": {
         const q = store.quests.find((qq) => qq.id === "prakriti");
@@ -525,6 +535,10 @@ export class StoryController {
 
       case "village_talk":
         store.setFlag("villageTalks", store.flags.villageTalks + 1);
+        break;
+
+      case "riddhi_chat":
+        // nothing to unlock; she is company, not a quest
         break;
 
       case "give_supplies":

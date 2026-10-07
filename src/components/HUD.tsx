@@ -52,17 +52,21 @@ export default function HUD() {
       </div>
 
       {stuck && (
-        <div className="pointer-events-auto absolute left-1/2 top-[30%] -translate-x-1/2 sb-pop">
-          <button
-            onClick={() => bus.emit("unstuck")}
-            className="btn btn-primary flex items-center gap-3 px-5 py-3 text-[13px]"
-            style={{ fontFamily: "var(--font-body)", letterSpacing: "0.02em" }}
-          >
-            <span>Having trouble? Reset position</span>
-            <kbd className="rounded border border-[rgba(242,223,166,.4)] bg-black/30 px-1.5 py-0.5 text-[10px]">
-              {k === "gamepad" ? "Select" : k === "touch" ? "tap" : "R"}
-            </kbd>
-          </button>
+        <div className="pointer-events-auto absolute left-1/2 top-[26%] -translate-x-1/2 sb-pop">
+          <div className="surface flex flex-col gap-2 px-4 py-3">
+            <div className="flex items-center justify-between gap-6">
+              <span className="title-lg text-[13px] text-[#f2dfa6]">Need help?</span>
+              <button onClick={() => { setStuck(false); bus.emit("stuck", false); }} className="text-[11px] text-[var(--ink-4)] hover:text-[var(--ink-2)]">Close</button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => { bus.emit("help:direction"); setStuck(false); }} className="btn px-3 py-2 text-[11px]" style={{ fontFamily: "var(--font-body)", letterSpacing: "0.02em" }}>Show direction</button>
+              <button onClick={() => { setStuck(false); useGameStore.getState().setOverlay({ kind: "quests" }); }} className="btn px-3 py-2 text-[11px]" style={{ fontFamily: "var(--font-body)", letterSpacing: "0.02em" }}>Show objective</button>
+              <button onClick={() => bus.emit("unstuck")} className="btn btn-primary flex items-center gap-2 px-3 py-2 text-[11px]" style={{ fontFamily: "var(--font-body)", letterSpacing: "0.02em" }}>
+                Reset position
+                <kbd className="rounded border border-[rgba(242,223,166,.4)] bg-black/30 px-1.5 py-0.5 text-[9px]">{k === "gamepad" ? "Select" : k === "touch" ? "" : "R"}</kbd>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

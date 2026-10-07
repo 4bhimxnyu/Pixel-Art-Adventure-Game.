@@ -116,6 +116,19 @@ const SPECS: Record<string, Spec> = {
     robe: "#5a4a3c", robeHi: "#6e5c4c", trim: "#c9b48a",
     extra: [[3, 2, 2, 1, "#8a8290"], [11, 2, 2, 1, "#8a8290"], [5, 10, 6, 2, "#4a3e40"], [6, 11, 4, 1, "#3a3236"]],
   },
+  riddhi: {
+    // chaotic best friend: high messy bun with a pink scrunchie, gold hoops, mustard hoodie, big grin
+    bg: "#2a2410", hair: "#2b1a16", hairHi: "#4a2e26", skin: "#e0a77e", shade: "#b8805a",
+    robe: "#d9a63a", robeHi: "#c4932f", trim: "#f2e2a8",
+    extra: [
+      [5, 0, 6, 1, "#2b1a16"], [4, 1, 1, 1, "#4a2e26"],
+      [6, 1, 4, 1, "#ff5c8a"],
+      [2, 7, 1, 3, "#e8c35a"], [13, 7, 1, 3, "#e8c35a"], [2, 9, 2, 1, "#e8c35a"], [12, 9, 2, 1, "#e8c35a"],
+      [5, 10, 6, 1, "#6a2a38"], [6, 10, 4, 1, "#f6f2ea"],
+      [4, 8, 1, 1, "#e39cb2"], [11, 8, 1, 1, "#e39cb2"],
+      [6, 12, 4, 1, "#c4932f"],
+    ],
+  },
   hakim: {
     // always on his iPad — the tablet is in frame, below the chin, never over the eyes
     bg: "#1a1f2e", hair: "#1c1416", skin: "#d4a07a", shade: "#a87a52",

@@ -40,7 +40,7 @@ import { G, glow, mat, disposeObject, skyMaterial } from "./materials";
 import { input, isTouchDevice } from "../input/InputManager";
 import { currentStepId } from "../store/useGameStore";
 import { targetFor, routeBetween } from "../lib/targets";
-import { MAP_PLACE } from "../lib/guidance";
+import { MAP_PLACE, guideFor } from "../lib/guidance";
 
 type Entity = {
   kind: string;
@@ -222,6 +222,7 @@ export class World3D {
     this.busUnsubs.push(bus.on("world:reload", () => this.loadMap(useGameStore.getState().map, true)));
     this.busUnsubs.push(bus.on("mimo:ping", () => this.mimoSniff()));
     this.busUnsubs.push(bus.on("unstuck", () => this.resetPosition()));
+    this.busUnsubs.push(bus.on("help:direction", () => this.showDirection()));
     this.unsubStore = useGameStore.subscribe((s, prev) => {
       input.overlayOpen = !!s.overlay;
       if (s.settings !== prev.settings) {
@@ -567,6 +568,58 @@ export class World3D {
     });
   }
 
+  /** "Show direction": swing the camera toward the objective and let Mimo point the way. */
+  private showDirection() {
+    if (!this.beacon || this.mode !== "explore") {
+      bus.emit("toast", { text: "Open the Journey (Q) to see the next step.", tone: "info" });
+      return;
+    }
+    const b = this.beacon.position;
+    const dx = b.x - this.playerPos.x;
+    const dz = b.z - this.playerPos.z;
+    if (Math.hypot(dx, dz) > 0.5) {
+      // camera sits behind the player, looking toward the beacon
+      this.cam.yaw = Math.atan2(-dx, -dz) + Math.PI;
+      this.heading = Math.atan2(dx, dz);
+      this.player.setHeading(this.heading);
+    }
+    if (this.companion && this.companionId === "mimo") {
+      this.companion.faceToward(b.x, b.z);
+      this.companion.play("sniff", 1.2);
+      this.delay(1200, () => this.companion?.play("bark", 0.7));
+    }
+    const s = useGameStore.getState();
+    const main = s.quests.find((q) => q.id === "main")!;
+    const stepId = main.steps[Math.min(main.step, main.steps.length - 1)].id;
+    const g = guideFor(stepId);
+    bus.emit("toast", { text: g ? `${g.objective}. ${g.hints[0]}` : "This way.", tone: "info" });
+  }
+
+  /** Mimo nudges: while you stand still he looks toward the objective now and then. */
+  private mimoNudgeT = 0;
+  private idleT = 0;
+  private mimoGuidance(dt: number, moving: boolean) {
+    if (!this.companion || this.companionId !== "mimo" || this.mode !== "explore") return;
+    this.idleT = moving ? 0 : this.idleT + dt;
+    this.mimoNudgeT += dt;
+    if (this.idleT > 6 && this.mimoNudgeT > 35 && this.beacon && !this.companion.currentAction) {
+      this.mimoNudgeT = 0;
+      const b = this.beacon.position;
+      this.companion.faceToward(b.x, b.z);
+      this.companion.play("sniff", 1.4);
+      this.tip("mimo-nudge", {
+        keyboard: "Mimo keeps looking the same way. He knows where to go; follow him or press R for help.",
+        gamepad: "Mimo keeps looking the same way. He knows where to go; follow him or press Select for help.",
+        touch: "Mimo keeps looking the same way. He knows where to go.",
+      });
+    }
+    // a soft hint after a long idle, once per objective
+    if (this.idleT > 25) {
+      this.idleT = 0;
+      bus.emit("stuck", true);
+    }
+  }
+
   // ================================================================ recovery
 
   /** Nearest open cell by breadth-first search; never resets any progress. */
@@ -862,6 +915,7 @@ export class World3D {
 
     // --- companion + entities
     this.updateCompanion(dt, moving);
+    this.mimoGuidance(dt, moving || !!store.overlay);
     if (this.pawTrail && this.companion && this.companionId === "mimo") {
       const c = this.companion;
       this.pawTrail.track(c.group.position, c.heading, c.group.position.distanceTo(this.pawLast) > 0.01, dt);
@@ -1017,7 +1071,8 @@ export class World3D {
       store.setMap(to, tx, ty, dir);
       this.loadMap(to);
       bus.emit("fade", { to: 0, ms: 320 });
-      this.inputLocked = false;
+      // an arrival cinematic keeps control until it has finished
+      if (!this.cam.cinematicActive) this.inputLocked = false;
       bus.emit("cinematic", { kind: "location", mapId: to });
     });
   }

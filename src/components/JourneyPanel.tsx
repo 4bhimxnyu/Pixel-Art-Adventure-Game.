@@ -219,12 +219,17 @@ export default function JourneyPanel() {
 
                 <section className="mt-6">
                   <div className="eyebrow mb-2.5">World map</div>
-                  <WorldMap targetRegion={mission.region} playerRegion={playerRegion} boss={!!mission.boss} />
+                  <WorldMap targetRegion={mission.region} playerRegion={playerRegion} boss={!!mission.boss}
+                            unlocked={new Set(missions.filter((m) => m.state !== "LOCKED").map((m) => m.region))} />
                   <div className="mt-3 flex flex-wrap gap-4 text-[11px] text-[var(--ink-4)]">
                     <span><span className="text-[#7ddca4]">●</span> You</span>
                     <span><span className="text-[#d9b45b]">◆</span> Mission</span>
                     <span><span className="text-[#e0616b]">⚔</span> Boss</span>
+                    <span><span className="text-[var(--ink-4)]">🔒</span> Not yet open</span>
                   </div>
+                  <p className="mt-2 text-[11px] text-[var(--ink-3)]">
+                    Landmarks: {regionById(mission.region).landmark}
+                  </p>
                 </section>
               </>
             )}
@@ -247,9 +252,9 @@ function Field({ label, value, accent }: { label: string; value: string; accent?
 }
 
 function WorldMap({
-  targetRegion, playerRegion, boss,
+  targetRegion, playerRegion, boss, unlocked,
 }: {
-  targetRegion: string; playerRegion: string; boss: boolean;
+  targetRegion: string; playerRegion: string; boss: boolean; unlocked: Set<string>;
 }) {
   const target = regionById(targetRegion as never);
   return (
@@ -268,6 +273,7 @@ function WorldMap({
       {REGIONS.map((r) => {
         const isTarget = r.id === targetRegion;
         const isPlayer = r.id === playerRegion;
+        const locked = !unlocked.has(r.id) && !isPlayer;
         return (
           <div key={r.id} className="absolute -translate-x-1/2 -translate-y-1/2 text-center"
                style={{ left: `${r.x * 100}%`, top: `${r.y * 100}%` }}>
@@ -278,10 +284,12 @@ function WorldMap({
                   {boss ? "⚔" : "◆"}
                 </span>
               )}
-              <PixelIcon name={r.icon} size={isTarget ? 19 : 13} />
+              <span style={{ opacity: locked ? 0.4 : 1, filter: locked ? "grayscale(1)" : undefined }}>
+                <PixelIcon name={r.icon} size={isTarget ? 19 : 13} />
+              </span>
               <span className="whitespace-nowrap text-[9px] font-medium"
-                    style={{ color: isTarget ? "#f2dfa6" : isPlayer ? "#7ddca4" : "var(--ink-4)" }}>
-                {r.name}
+                    style={{ color: isTarget ? "#f2dfa6" : isPlayer ? "#7ddca4" : "var(--ink-4)", opacity: locked ? 0.6 : 1 }}>
+                {locked ? "🔒 " : ""}{r.name}
               </span>
               {isPlayer && <span className="text-[9px] text-[#7ddca4]">●</span>}
             </div>

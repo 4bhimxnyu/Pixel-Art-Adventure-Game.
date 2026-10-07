@@ -9,19 +9,19 @@ import type { IconName } from "../components/pixel/MissionIcons";
 
 export type RegionId = "home" | "village" | "bamboo" | "mountain" | "temple" | "garden" | "cave" | "academy" | "f1205";
 
-export type Region = { id: RegionId; name: string; x: number; y: number; icon: IconName };
+export type Region = { id: RegionId; name: string; x: number; y: number; icon: IconName; landmark: string };
 
 /** x/y are 0..1 coordinates on the Journey panel's world map. */
 export const REGIONS: Region[] = [
-  { id: "home",     name: "Home & Sparkle Town",   x: 0.16, y: 0.74, icon: "home" },
-  { id: "village",  name: "Lantern Village",       x: 0.33, y: 0.52, icon: "lantern" },
-  { id: "bamboo",   name: "Bamboo Forest",         x: 0.48, y: 0.66, icon: "bamboo" },
-  { id: "garden",   name: "Cherry Blossom Garden", x: 0.60, y: 0.42, icon: "blossom" },
-  { id: "mountain", name: "Mountain Trail",        x: 0.72, y: 0.26, icon: "mountain" },
-  { id: "temple",   name: "Temple of Echoes",      x: 0.86, y: 0.18, icon: "temple" },
-  { id: "cave",     name: "Ancient Cave",          x: 0.78, y: 0.58, icon: "cave" },
-  { id: "academy",  name: "Style Academy",         x: 0.88, y: 0.80, icon: "boss" },
-  { id: "f1205",    name: "F-1205",                x: 0.08, y: 0.36, icon: "guitar" },
+  { id: "home",     name: "Home & Sparkle Town",   x: 0.16, y: 0.74, icon: "home",     landmark: "Your house, the town gate east" },
+  { id: "village",  name: "Lantern Village",       x: 0.33, y: 0.52, icon: "lantern",  landmark: "Village gate, lantern plaza" },
+  { id: "bamboo",   name: "Bamboo Forest",         x: 0.48, y: 0.66, icon: "bamboo",   landmark: "Stone lantern trail, ancient shrine" },
+  { id: "garden",   name: "Cherry Blossom Garden", x: 0.60, y: 0.42, icon: "blossom",  landmark: "Moon gate, pond, blossom shrine" },
+  { id: "mountain", name: "Mountain Trail",        x: 0.72, y: 0.26, icon: "mountain", landmark: "Stone pass, overlook, shrine" },
+  { id: "temple",   name: "Temple of Echoes",      x: 0.86, y: 0.18, icon: "temple",   landmark: "Great doors, courtyard, sacred lantern" },
+  { id: "cave",     name: "Ancient Cave",          x: 0.78, y: 0.58, icon: "cave",     landmark: "Cave mouth, echo stones, flame chamber" },
+  { id: "academy",  name: "Style Academy",         x: 0.88, y: 0.80, icon: "boss",     landmark: "Final gate, Arshiya's stage" },
+  { id: "f1205",    name: "F-1205",                x: 0.08, y: 0.36, icon: "guitar",   landmark: "The West Road, the flats past the river" },
 ];
 
 export type Reward = { kind: "ability" | "region" | "item" | "lore"; label: string };

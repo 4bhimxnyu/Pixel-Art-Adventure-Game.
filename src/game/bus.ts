@@ -16,6 +16,7 @@ export type BusEvent =
   | "hint:next"
   | "stuck"
   | "unstuck"
+  | "help:direction"
   | "tutorial";
 
 type Handler = (payload?: any) => void;

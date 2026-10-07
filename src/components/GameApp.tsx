@@ -77,9 +77,12 @@ export default function GameApp() {
     setVolumes(settings.musicVol, settings.sfxVol);
   }, [settings.musicVol, settings.sfxVol]);
 
-  // --- optional user-supplied music (public/audio/manifest.json)
+  // --- the game's own soundtrack (public/audio) or the procedural score
   useEffect(() => {
-    void loadAudioManifest();
+    void loadAudioManifest().then(() => {
+      const s = useGameStore.getState();
+      if (s.screen === "title") playBgm("bgm_title", 1.2);
+    });
   }, []);
 
   // --- title / end / credits music
