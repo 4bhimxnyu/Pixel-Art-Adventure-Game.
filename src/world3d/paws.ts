@@ -7,7 +7,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
-export const pawPrintColor = "#3a2a22";
+export const pawPrintColor = "#2b1b14";
 
 let cached: THREE.BufferGeometry | null = null;
 
@@ -38,6 +38,8 @@ export function pawGeometry(): THREE.BufferGeometry {
   for (const [x, z, rot] of arc) parts.push(pad(0.0085, 0.012, x, z, rot));
   const merged = mergeGeometries(parts, false) ?? parts[0];
   parts.forEach((p) => p !== merged && p.dispose());
+  // readable from the third-person camera: about 0.22 units long
+  merged.scale(2.4, 1, 2.4);
   merged.computeVertexNormals();
   cached = merged;
   return merged;

@@ -9,8 +9,8 @@ import * as THREE from "three";
 import { pawGeometry, pawPrintColor } from "./paws";
 
 const CAP = 56;
-const LIFE = 9;
-const STRIDE = 0.21;
+const LIFE = 22;
+const STRIDE = 0.3;
 
 export class PawTrail {
   readonly mesh: THREE.InstancedMesh;
@@ -27,7 +27,7 @@ export class PawTrail {
   private s = new THREE.Vector3();
 
   constructor() {
-    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(pawPrintColor), transparent: true, opacity: 0.5, depthWrite: false });
+    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(pawPrintColor), transparent: true, opacity: 0.7, depthWrite: false });
     this.mesh = new THREE.InstancedMesh(pawGeometry(), mat, CAP);
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 1;
@@ -46,8 +46,8 @@ export class PawTrail {
       if (this.since >= STRIDE) {
         this.since = 0;
         this.side = -this.side;
-        const px = pos.x - Math.cos(heading) * 0.075 * this.side;
-        const pz = pos.z + Math.sin(heading) * 0.075 * this.side;
+        const px = pos.x - Math.cos(heading) * 0.1 * this.side;
+        const pz = pos.z + Math.sin(heading) * 0.1 * this.side;
         this.stamp(px, pz, heading + (Math.random() - 0.5) * 0.3, 0.9 + Math.random() * 0.25);
       }
     }

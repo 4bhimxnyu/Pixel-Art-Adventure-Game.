@@ -44,15 +44,34 @@ export class DogRig extends BaseRig {
     bodyJoint.add(this.bodyMesh);
 
     // overlapping fur: chest ruff, rump, and the long coat "skirt" that hides the legs
-    const ruff = this.mesh(G.sphere(0.2, 10), fur, 0, 0.3, 0.2);
-    ruff.scale.set(1.0, 0.8, 0.8);
+    const ruff = this.mesh(G.sphere(0.23, 10), fur, 0, 0.3, 0.2);
+    ruff.scale.set(1.05, 0.85, 0.8);
     this.body.add(ruff);
+    for (const s of [-1, 1]) this.body.add(this.sphere(0.1, fur, s * 0.17, 0.26, 0.24, 7));
     const rump = this.mesh(G.sphere(0.2, 10), fur, 0, 0.32, -0.24);
     rump.scale.set(0.95, 0.75, 0.8);
     this.body.add(rump);
-    const skirt = this.mesh(G.sphere(0.26, 12), furShade, 0, 0.2, -0.02);
-    skirt.scale.set(0.98, 0.5, 1.28);
+    const skirt = this.mesh(G.sphere(0.28, 12), furShade, 0, 0.2, -0.02);
+    skirt.scale.set(1.0, 0.55, 1.32);
     this.body.add(skirt);
+    // a ring of loose fur clumps around the coat's edge, and a few hanging locks,
+    // so the silhouette reads as long soft hair rather than a smooth shell
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2;
+      const rx = 0.27 + (i % 2) * 0.03;
+      const rz = 0.34 + (i % 3) * 0.02;
+      const clump = this.sphere(0.075 + (i % 3) * 0.012, i % 2 ? fur : furShade, Math.cos(a) * rx, 0.17 + (i % 2) * 0.04, Math.sin(a) * rz - 0.02, 7);
+      clump.scale.set(1, 0.8, 1);
+      this.body.add(clump);
+    }
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + 0.2;
+      this.body.add(this.sphere(0.055, furShade, Math.cos(a) * 0.24, 0.09, Math.sin(a) * 0.3 - 0.02, 6));
+    }
+    // extra fluff along the back and flanks
+    for (const [x, y, z, r] of [[-0.2, 0.42, 0.05, 0.11], [0.2, 0.42, 0.05, 0.11], [-0.18, 0.4, -0.2, 0.1], [0.18, 0.4, -0.2, 0.1], [0, 0.5, 0.12, 0.12], [-0.12, 0.47, -0.3, 0.09], [0.12, 0.47, -0.3, 0.09]] as const) {
+      this.body.add(this.sphere(r, fur, x, y, z, 8));
+    }
     // gold-tan saddle on the back
     const saddle = this.mesh(G.sphere(0.2, 10), tan, 0, 0.47, -0.06);
     saddle.scale.set(0.85, 0.4, 1.0);
@@ -126,10 +145,13 @@ export class DogRig extends BaseRig {
 
     // --- tail: a plume curled up over the back
     this.tail = this.joint(0, 0.5, -0.3);
-    this.tail.add(this.sphere(0.07, fur, 0, 0.06, -0.04, 7));
-    this.tail.add(this.sphere(0.075, fur, 0, 0.15, 0.0, 7));
-    this.tail.add(this.sphere(0.07, tan, 0, 0.2, 0.08, 7));
-    this.tail.add(this.sphere(0.055, fur, 0, 0.19, 0.16, 7));
+    this.tail.add(this.sphere(0.08, fur, 0, 0.06, -0.04, 7));
+    this.tail.add(this.sphere(0.09, fur, 0, 0.16, 0.0, 7));
+    this.tail.add(this.sphere(0.085, tan, 0, 0.22, 0.09, 7));
+    this.tail.add(this.sphere(0.07, fur, 0, 0.2, 0.19, 7));
+    this.tail.add(this.sphere(0.06, furShade, -0.06, 0.12, 0.06, 6));
+    this.tail.add(this.sphere(0.06, furShade, 0.06, 0.13, 0.05, 6));
+    this.tail.add(this.sphere(0.05, fur, 0.03, 0.25, 0.02, 6));
 
     this.bake();
   }
