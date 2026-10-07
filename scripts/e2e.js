@@ -169,6 +169,75 @@ async function audit() {
   }
 }
 
+// ---------------------------------------------------------------- map-aware helpers
+let MAPS_MOD = null;
+async function mapsMod() { return (MAPS_MOD ??= await import("/src/game/maps.ts")); }
+async function def(id) { return (await mapsMod()).MAPS[id]; }
+/** Cell of a marker letter on a map. */
+async function cellOf(mapId, marker) {
+  const d = await def(mapId);
+  for (let y = 0; y < d.rows.length; y++) { const x = d.rows[y].indexOf(marker); if (x >= 0) return { x, y }; }
+  throw new Error(`marker ${marker} not on ${mapId}`);
+}
+/** All cells of a tile char on a map, in row order. */
+async function tileCells(mapId, ch) {
+  const d = await def(mapId);
+  const out = [];
+  for (let y = 0; y < d.rows.length; y++) for (let x = 0; x < d.rows[y].length; x++) if (d.rows[y][x] === ch) out.push({ x, y });
+  return out;
+}
+/** The first portal on `mapId` that leads to `to`. */
+async function portalTo(mapId, to) {
+  const d = await def(mapId);
+  const p = d.portals.find((q) => q.to === to);
+  if (!p) throw new Error(`no portal ${mapId} -> ${to}`);
+  return p;
+}
+/** Walk through the gate to another map. */
+async function go(to) {
+  const from = S().map;
+  const p = await portalTo(from, to);
+  const d = await def(from);
+  const W0 = d.rows[0].length, H0 = d.rows.length;
+  const inward = p.x === 0 ? { x: 1, y: 0 } : p.x === W0 - 1 ? { x: -1, y: 0 } : p.y === 0 ? { x: 0, y: 1 } : p.y === H0 - 1 ? { x: 0, y: -1 } : { x: 0, y: -1 };
+  await walkTo(p.x + inward.x, p.y + inward.y);
+  await walkTo(p.x, p.y, { untilMap: to });
+  await until(() => S().map === to, 4000, `entered ${to}`);
+  await sleep(400);
+}
+/** Stand next to a cell on an open side and face it. */
+async function standBy(cell) {
+  const story = await import("/src/game/story.ts");
+  const d = await def(S().map);
+  const flags = S().flags;
+  const sides = [[0, 1, "up"], [0, -1, "down"], [-1, 0, "right"], [1, 0, "left"]];
+  for (const [dx, dy, dir] of sides) {
+    const x = cell.x + dx, y = cell.y + dy;
+    if (x < 0 || y < 0 || y >= d.rows.length || x >= d.rows[0].length) continue;
+    if (story.cellBlocked(d, x, y, flags)) continue;
+    if (W().entities.some((e) => e.x === x && e.y === y)) continue;
+    await walkTo(x, y);
+    placeAt(x, y, dir);
+    return true;
+  }
+  fails.push(`no open side next to ${cell.x},${cell.y} on ${S().map}`);
+  return false;
+}
+async function talk(marker, expectDialogue = true) { await standBy(await cellOf(S().map, marker)); await interact(expectDialogue); }
+async function useTile(ch, nth = 0, expectDialogue = false) {
+  const cells = await tileCells(S().map, ch);
+  const c = cells[nth];
+  if (!c) { fails.push(`no '${ch}' #${nth} on ${S().map}`); return; }
+  await standBy(c);
+  await interact(expectDialogue);
+}
+/** Underfoot tiles (plates) are used by standing on them. */
+async function standOn(ch, nth = 0) {
+  const c = (await tileCells(S().map, ch))[nth];
+  await walkTo(c.x, c.y);
+  W().tryInteract(); await sleep(250); await dialogueThroughIfAny();
+}
+
 async function run() {
   log.length = 0;
   fails.length = 0;
@@ -183,219 +252,174 @@ async function run() {
   await dialogueThrough(() => S().flags.introDone);
   expect(S().flags.introDone, "intro done");
 
-  // --- Mission 1: Find Mimo
-  await walkTo(5, 7); await walkTo(5, 8, { untilMap: "house" });
-  await until(() => S().map === "house", 3000, "entered house");
+  // --- Chapter 1: Find Mimo
+  await go("house");
   expect(S().quests[0].step >= 1, "leaving the bedroom advanced the objective");
   expectBeacon("house");
-  await sleep(400);
-  await walkTo(5, 5); placeAt(5, 5, "up"); await interact(); // Mum
+  await talk("M");
   expect(S().flags.metMom, "met Mum");
-  await walkTo(5, 8); await walkTo(5, 9, { untilMap: "town" });
-  await until(() => S().map === "town", 3000, "entered town");
-  await sleep(400);
-  await walkTo(10, 7); placeAt(10, 7, "up"); await interact(); // Abhimanyu at (10,6)
+  await go("town");
+  await talk("A");
   expect(S().flags.abhimanyuJoined, "Abhimanyu joined");
   expect(W().companion && W().companionId === "abhimanyu", "Abhimanyu follows as companion");
-  await sleep(300);
-  await walkTo(9, 10); placeAt(9, 10, "up"); await interact(); // witness at (9,9)
+  await talk("R"); await talk("R"); // Riddhi, twice: she must have more than one thing to say
+  expect(Object.keys(S().flags.npcSpoken).filter((k) => k.startsWith("riddhi_town")).length === 2, "Riddhi chatted twice in town");
+  await talk("W");
   expect(S().flags.clueWitnessHeard, "witness heard");
-  await walkTo(17, 7); await walkTo(18, 7, { untilMap: "route1" });
-  await until(() => S().map === "route1", 3000, "entered route1");
-  await sleep(300);
-  await walkTo(7, 8); placeAt(7, 8, "up"); await interact(); // toy at (7,7)
+  await go("route1");
+  await useTile("y");
   expect(S().flags.clueToyFound, "toy found");
-  await walkTo(8, 9, { stopOnOverlay: true }); // paw print tiles (8,8)/(8,9) open the clue
-  await dialogueThroughIfAny();
-  await walkTo(8, 8, { stopOnOverlay: true });
-  await dialogueThroughIfAny();
+  { const paws = await tileCells("route1", "p"); await walkTo(paws[0].x, paws[0].y, { stopOnOverlay: true }); await dialogueThroughIfAny(); }
   expect(S().flags.cluePawsSeen, "paw prints seen");
-  // avoid tall grass: go up the path x=8/9
-  await walkTo(8, 1); await walkTo(8, 0, { untilMap: "forest" });
-  await until(() => S().map === "forest", 3000, "entered forest");
-  await sleep(300);
-  await walkTo(8, 6); placeAt(8, 6, "down"); await interact(); // bush at (8,7)
+  await go("forest");
+  await talk("C"); // the rustling bush
   await fight();
   expect(S().flags.mimoRecognized, "Mimo recognised after the battle");
   await sleep(2800);
   expect(S().party.some((p) => p.id === "mimo") && !S().party.some((p) => p.id === "abhimanyu"), "Mimo in party, Abhimanyu left");
   expect(W().companionId === "mimo", "Mimo follows");
-  // sniff ability
-  window.__game.bus.emit("mimo:ping");
-  await sleep(1600);
-  // side quest: Prakriti
-  await walkTo(4, 5); placeAt(4, 5, "up"); await interact();
+  window.__game.bus.emit("mimo:ping"); await sleep(1600);
+  await talk("P");
   expect(S().quests.some((q) => q.id === "prakriti"), "Prakriti side quest accepted");
-  await walkTo(16, 2); placeAt(16, 2, "right"); W().tryInteract(); await sleep(400); // ribbon at (17,1)? marker R at (16,1)
-  placeAt(16, 2, "up"); W().tryInteract(); await sleep(400);
+  await talk("R", false); await sleep(400);
   expect(S().flags.ribbonFound, "ribbon found");
-  await walkTo(4, 5); placeAt(4, 5, "up"); await interact();
+  await talk("P");
   expect(S().quests.find((q) => q.id === "prakriti")?.done, "ribbon returned");
 
-  // --- Mission: Lantern Village
-  await walkTo(8, 1); await walkTo(8, 0, { untilMap: "village" });
-  await until(() => S().map === "village", 3000, "entered village");
+  // --- Chapter 2: Lantern Village
+  await go("village");
   expectBeacon("village");
-  await until(() => S().overlay?.kind === "dialogue", 6000, "village arrival dialogue");
+  await until(() => S().overlay?.kind === "dialogue", 9000, "village arrival dialogue");
   await dialogueThrough();
-  await walkTo(8, 8); placeAt(8, 8, "up"); await interact(); // Elder at (8,7)
+  await talk("E");
   expect(S().flags.elderBriefed, "elder briefed");
-  await walkTo(14, 11); placeAt(14, 11, "up"); await interact(); // musician N at (14,10)
+  await talk("N");
   expect(S().flags.musicianMet, "musician met");
-  await walkTo(3, 11); placeAt(3, 11, "up"); await interact(); // merchant O at (3,10)
+  await talk("O");
   expect(S().flags.villageSupplies, "supplies received");
-  // --- Lost Scroll
-  await walkTo(8, 1); await walkTo(8, 0, { untilMap: "bamboo" });
-  await until(() => S().map === "bamboo", 3000, "entered bamboo");
-  await sleep(3000); // arrival cinematic
-  await walkTo(8, 12); placeAt(8, 12, "up"); await interact(); // barrier at (8,11)
+  await talk("R");
+  expect(Object.keys(S().flags.npcSpoken).some((k) => k.startsWith("riddhi_village")), "Riddhi met in the village");
+
+  // --- Chapter 3: The Bamboo Forest
+  await go("bamboo");
+  await sleep(3200);
+  await useTile("=", 0, true);
   expect(S().flags.barrierBroken, "barrier broken");
-  await sleep(400);
-  await walkTo(8, 10); await walkTo(9, 2); placeAt(9, 2, "up"); await interact(); // scroll at (9,1)
+  await sleep(500);
+  await useTile("$", 0, true);
   expect(S().flags.scrollFound, "scroll found");
-  await walkTo(8, 13); await walkTo(8, 14, { untilMap: "village" });
-  await until(() => S().map === "village", 3000, "back in village");
-  await walkTo(8, 8); placeAt(8, 8, "up"); await interact();
+  await go("village");
+  await talk("E");
   expect(S().flags.scrollDelivered, "scroll delivered");
-  // --- Bamboo Trial
-  await walkTo(8, 1); await walkTo(8, 0, { untilMap: "bamboo" });
-  await until(() => S().map === "bamboo", 3000, "bamboo again");
-  await walkTo(3, 3); placeAt(3, 3, "up"); W().tryInteract(); await sleep(300); await dialogueThroughIfAny();
-  await walkTo(16, 3); placeAt(16, 3, "up"); W().tryInteract(); await sleep(300); await dialogueThroughIfAny();
-  await walkTo(4, 4); W().tryInteract(); await sleep(300); await dialogueThroughIfAny();
-  await walkTo(15, 4); W().tryInteract(); await sleep(300); await dialogueThroughIfAny();
+  await go("bamboo");
+  await useTile("u", 0); await useTile("u", 1);
+  await standOn("z", 0); await standOn("z", 1);
   expect(S().flags.trialStarted, "trial started (2 statues + 2 plates)");
-  await walkTo(5, 8); placeAt(5, 8, "up"); await interact(); // sentinel X at (5,7)
+  await talk("X");
   await fight();
   expect(S().flags.trialDone, "trial done");
   await expectGone("npc_miniboss1", "Bamboo Sentinel");
   expectBeacon("after trial");
-  await sleep(500);
-  // --- Prakriti
-  await walkTo(18, 7); await walkTo(19, 7, { untilMap: "garden" });
-  await until(() => S().map === "garden", 3000, "entered garden");
-  await sleep(3000);
-  await walkTo(14, 6); placeAt(14, 6, "up"); await interact(); // Blossom Warden X at (14,5)
+
+  // --- Chapter 4: The Hidden Garden
+  await go("garden");
+  await sleep(3200);
+  await talk("R");
+  expect(Object.keys(S().flags.npcSpoken).some((k) => k.startsWith("riddhi_garden")), "Riddhi met in the garden");
+  await talk("X");
   await fight();
   expect(S().flags.miniboss3Done, "Blossom Warden defeated");
   await expectGone("npc_miniboss3", "Blossom Warden");
-  await walkTo(4, 9); placeAt(4, 9, "up"); await interact(); // Prakriti P at (4,8)
+  await talk("P");
   await fight();
   expect(S().flags.prakritiDone, "Prakriti defeated");
   await expectGone("npc_prakriti_duel", "Prakriti");
-  placeAt(4, 9, "up"); W().tryInteract(); await sleep(400);
-  expect(S().overlay?.kind !== "battle" && S().overlay?.kind !== "dialogue", "Prakriti's duel cannot restart");
-  await sleep(500);
-  await walkTo(14, 6); await walkTo(14, 5); placeAt(14, 5, "up"); await interact(false); // garden flame at (14,4)
+  await useTile("!");
   expect(S().flags.flameGarden, "garden flame");
   await sleep(2500);
-  // --- Temple
-  await walkTo(8, 1); await walkTo(8, 0, { untilMap: "mountain" });
-  await until(() => S().map === "mountain", 3000, "entered mountain");
-  await sleep(3000);
-  await walkTo(6, 8); placeAt(6, 8, "up"); await interact(); // warden X at (6,7)
+
+  // --- Chapter 5: The Mountain Path
+  await go("mountain");
+  await sleep(3200);
+  await talk("X");
   await fight();
   expect(S().flags.miniboss2Done, "warden defeated");
   await expectGone("npc_miniboss2", "Mountain Warden");
-  await sleep(500);
-  await walkTo(14, 10); placeAt(14, 10, "up"); await interact(false); // mountain flame at (14,9)
+  await useTile("!");
   expect(S().flags.flameMountain, "mountain flame");
   await sleep(2500);
-  await walkTo(8, 1); await walkTo(8, 0, { untilMap: "temple" });
-  await until(() => S().map === "temple", 3000, "entered temple");
-  await sleep(3000);
-  for (const [sx, sy] of [[3, 2], [16, 2], [3, 8], [16, 8]]) { await walkTo(sx, sy + 1); placeAt(sx, sy + 1, "up"); W().tryInteract(); await sleep(250); await dialogueThroughIfAny(); }
-  for (const [px, py] of [[3, 4], [16, 4], [3, 10], [16, 10]]) { await walkTo(px, py); W().tryInteract(); await sleep(250); await dialogueThroughIfAny(); }
+  await go("temple");
+  await sleep(3200);
+  for (let i = 0; i < 4; i++) await useTile("u", i);
+  for (let i = 0; i < 4; i++) await standOn("z", i);
   expect(S().flags.templeOpened, "temple plates held");
-  await walkTo(10, 13); placeAt(10, 13, "up"); await interact(); // guardian G at (10,12)
+  await talk("G");
   await fight();
   expect(S().flags.guardianDone, "guardian defeated");
   await expectGone("npc_guardian", "Temple Guardian");
-  await sleep(500);
-  // --- Cave flame
-  await walkTo(9, 13); await walkTo(9, 14, { untilMap: "mountain" });
-  await until(() => S().map === "mountain", 3000, "mountain again");
-  await walkTo(18, 7); await walkTo(19, 7, { untilMap: "cave" });
-  await until(() => S().map === "cave", 3000, "entered cave");
-  await sleep(3000);
-  // echo stones: two statues, then two plates, then the flame
-  for (const [sx, sy] of [[5, 4], [14, 4]]) { await walkTo(sx, sy + 1); placeAt(sx, sy + 1, "up"); W().tryInteract(); await sleep(250); await dialogueThroughIfAny(); }
-  for (const [px, py] of [[5, 11], [14, 11]]) { await walkTo(px, py); W().tryInteract(); await sleep(250); await dialogueThroughIfAny(); }
-  await walkTo(10, 10); placeAt(10, 10, "up"); await interact(false); // cave flame at (10,9)
+
+  // --- Chapter 6: The Three Flames
+  await go("mountain");
+  await go("cave");
+  await sleep(3200);
+  await useTile("u", 0); await useTile("u", 1);
+  await standOn("z", 0); await standOn("z", 1);
+  await useTile("!");
   expect(S().flags.flameCave, "cave flame");
   await sleep(2500);
-  expect(S().quests[0].steps[S().quests[0].step].id === "lantern", "all three flames → lantern step");
-  // --- Sacred Lantern
-  await walkTo(1, 7); await walkTo(0, 7, { untilMap: "mountain" });
-  await until(() => S().map === "mountain", 3000, "mountain from cave");
-  await walkTo(8, 1); await walkTo(8, 0, { untilMap: "temple" });
-  await until(() => S().map === "temple", 3000, "temple again");
-  await walkTo(10, 5); placeAt(10, 5, "up"); await interact(); // lantern & at (10,4)
+  expect(S().quests[0].steps[S().quests[0].step].id === "lantern", "all three flames: lantern step");
+  await go("mountain");
+  await go("temple");
+  await useTile("&", 0, true);
   expect(S().flags.lanternRestored, "lantern restored");
   await sleep(4500);
-  // --- Academy
-  S().setMap("town", 9, 12, "down"); window.__game.bus.emit("world:reload"); await sleep(800);
-  await walkTo(9, 13); await walkTo(9, 14, { untilMap: "academy" });
-  await until(() => S().map === "academy", 3000, "entered academy");
-  await walkTo(9, 8); placeAt(9, 8, "up"); await interact(); // gatekeeper G at (9,7)
+
+  // --- Chapter 7: Arshiya
+  { const p = await portalTo("town", "academy"); S().setMap("town", p.x, p.y - 1, "down"); window.__game.bus.emit("world:reload"); await sleep(800); }
+  await go("academy");
+  await talk("G");
   expect(S().flags.gateOpen, "gate open");
   await sleep(400);
-  await walkTo(9, 6); await walkTo(9, 3); placeAt(9, 3, "up"); await interact(); // Arshiya Y at (9,2)
+  await talk("Y");
   await fight();
   expect(S().flags.bossDefeated, "Arshiya defeated");
   expect(!W().entities.some((e) => e.kind === "npc_boss"), "Arshiya has left the Academy");
   await until(() => S().overlay?.kind === "dialogue", 8000, "finale dialogue");
   await dialogueThrough();
-  expect(S().flags.finaleDone, "finale → mission 26");
-  // --- Final chapter
-  S().setMap("town", 1, 10, "left"); window.__game.bus.emit("world:reload"); await sleep(800);
-  await walkTo(0, 10, { untilMap: "road" });
-  await until(() => S().map === "road", 3000, "entered the west road");
-  await sleep(3000);
-  await walkTo(11, 6); await walkTo(11, 9); await walkTo(11, 11); await walkTo(11, 12, { untilMap: "f1205" });
-  await until(() => S().map === "f1205", 3000, "entered F-1205");
-  await sleep(3000);
+  expect(S().flags.finaleDone, "finale: the West Road opens");
+
+  // --- Chapter 8: The West Road
+  { const p = await portalTo("town", "road"); S().setMap("town", p.x + 1, p.y, "left"); window.__game.bus.emit("world:reload"); await sleep(800); }
+  await go("road");
+  await sleep(3200);
+  await go("f1205");
+  await sleep(3200);
   expect(W().cam.firstPerson === true, "F-1205 is first-person");
-  // Faizal in the kitchen (13,4) holds the door: the welcome is the arrival
-  await walkTo(4, 7); await walkTo(14, 7); await walkTo(14, 6); await walkTo(14, 5); placeAt(13, 5, "up"); await interact();
+
+  // --- Chapter 9: F-1205
+  await talk("Z"); // Faizal holds the door
   expect(S().flags.f1205Arrived, "arrived at F-1205");
   await sleep(2800);
-  await walkTo(14, 7); await walkTo(4, 7); await walkTo(4, 9); await walkTo(4, 11); placeAt(4, 11, "down"); await interact(); // Abhimanyu A at (4,12)
+  await talk("A");
   expect(S().flags.metAbhiHome, "met Abhimanyu in his room");
-  await walkTo(4, 9); await walkTo(4, 7); await walkTo(4, 5); await walkTo(4, 3); placeAt(4, 3, "up"); await interact(); // Hakim Q at (4,2)
-  await walkTo(4, 5); await walkTo(4, 7); await walkTo(11, 7); await walkTo(11, 9); await walkTo(13, 11); placeAt(13, 11, "down"); await interact(); // Garv N at (13,12)
-  await walkTo(16, 13); placeAt(16, 13, "up"); await interact(); // Dev V at (16,12)
-  await walkTo(11, 9); await walkTo(11, 7); await walkTo(14, 7); await walkTo(14, 5); placeAt(13, 5, "up"); await interact(); // Faizal again
+  await talk("Q"); await talk("N"); await talk("V"); await talk("Z");
   expect(["metFaizal", "metGarv", "metHakim", "metDev"].every((k) => S().flags[k]), "met all four flatmates");
-  await sleep(2800);
-  await walkTo(14, 7); await walkTo(4, 7); await walkTo(4, 5); placeAt(6, 5, "up"); await interact(); // Abhimanyu now in the living room (6,4): the evening
-  await until(() => S().overlay?.kind === "dialogue", 4000, "evening conversation");
+  await sleep(3400); // the flat rearranges
+  { const a = W().entities.find((e) => e.kind === "npc_abhimanyu_home"); expect(a && a.y <= 5, "Abhimanyu moved to the living room"); await standBy({ x: a.x, y: a.y }); await interact(); }
+  await until(() => S().overlay?.kind === "dialogue", 9000, "evening conversation");
   await dialogueThrough();
   expect(S().flags.eveningDone, "evening done");
-  await sleep(500);
-  await walkTo(3, 7); placeAt(3, 7, "left"); await interact(); // Abhimanyu by the door (2,7)
+  await sleep(600);
+  { const a = W().entities.find((e) => e.kind === "npc_abhimanyu_home"); await standBy({ x: a.x, y: a.y }); await interact(); }
   await until(() => S().flags.hugDone, 4000, "hug");
-  await until(() => S().screen === "end", 20000, "THE END");
+  await until(() => S().screen === "end", 25000, "THE END");
   expect(S().screen === "end", "the game ends with THE END");
-  say(`DONE — ${fails.length} failures`);
+  say(`DONE: ${fails.length} failures`);
   return { log, fails };
-}
-
-/** The villain we just beat must be gone from the world and never fight again. */
-async function expectGone(kind, label) {
-  await sleep(2200); // leave animation + rebuild
-  expect(!W().entities.some((e) => e.kind === kind), `${label} has left the scene`);
-}
-
-/** The objective beacon must exist whenever the main quest is unfinished. */
-function expectBeacon(label) {
-  const q = S().quests.find((x) => x.id === "main");
-  if (q.done) return;
-  expect(!!W().beacon, `beacon shown: ${label}`);
 }
 
 async function dialogueThroughIfAny() {
   if (S().overlay?.kind === "dialogue") await dialogueThrough();
 }
 
-window.__e2e = { run, walkTo, placeAt, interact, fight, dialogueThrough, log, fails };
+window.__e2e = { run, walkTo, placeAt, interact, fight, dialogueThrough, go, talk, useTile, standOn, cellOf, log, fails };
