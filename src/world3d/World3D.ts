@@ -269,6 +269,9 @@ export class World3D {
     this.busUnsubs.push(bus.on("mimo:ping", () => this.mimoSniff()));
     this.busUnsubs.push(bus.on("unstuck", () => this.resetPosition()));
     this.busUnsubs.push(bus.on("help:direction", () => this.showDirection()));
+    this.busUnsubs.push(bus.on("photo:mode", (on: boolean) => this.setPhotoMode(!!on)));
+    this.busUnsubs.push(bus.on("camera:recenter", () => this.recenter()));
+    this.busUnsubs.push(bus.on("world:snapshot", () => this.snapshot()));
     this.reducedMotion = !!feelSettings().reducedMotion;
     this.unsubStore = useGameStore.subscribe((s, prev) => {
       input.overlayOpen = !!s.overlay;
@@ -750,6 +753,60 @@ export class World3D {
     return best;
   }
 
+  // ============================================================== photo mode
+
+  /**
+   * Photo mode: the UI hides itself; here the player freezes (no steps, so no
+   * portals or encounters; no interactions, so no dialogue), the camera orbits
+   * freely with drag + wheel, and the world keeps breathing. Leaving snaps the
+   * camera back behind the player and restores every limit.
+   */
+  private setPhotoMode(on: boolean) {
+    if (this.photoMode === on) return;
+    this.photoMode = on;
+    this.cam.setPhoto(on);
+    if (on) {
+      this.vel.set(0, 0, 0);
+      this.dashT = 0;
+      this.player.setMoving(0);
+      this.cam.shoulderTarget = 0;
+      if (this.lastPrompt) {
+        this.lastPrompt = "";
+        bus.emit("prompt", "");
+      }
+    } else {
+      this.recenter();
+      // a cell reached before the freeze is re-evaluated on the next frame
+      this.lastCell = { x: -1, y: -1 };
+    }
+  }
+
+  private recenter() {
+    this.cam.sinceLook = 10;
+    if (this.mode === "battle" || this.cam.cinematicActive) return;
+    this.cam.snapBehind(this.playerPos, this.heading);
+  }
+
+  /** One frame rendered straight into a PNG download (the drawing buffer is not preserved, so render first). */
+  private snapshot() {
+    try {
+      this.renderer.render(this.scene, this.cam.camera);
+      const url = this.renderer.domElement.toDataURL("image/png");
+      const a = document.createElement("a");
+      const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      a.href = url;
+      a.download = `shaolin-baddie-${ts}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      sfx("confirm");
+      bus.emit("toast", { text: "Snapshot saved.", tone: "good" });
+    } catch (err) {
+      console.error("[world] snapshot failed", err);
+      bus.emit("toast", { text: "Couldn't save a snapshot here.", tone: "warn" });
+    }
+  }
+
   // ================================================================ recovery
 
   /** Nearest open cell by breadth-first search; never resets any progress. */
@@ -990,7 +1047,7 @@ export class World3D {
     input.poll(dt);
     const st = input.state;
     const overlay = !!store.overlay;
-    const locked = this.inputLocked || overlay || store.screen !== "playing" || this.mode !== "explore" || this.cam.cinematicActive;
+    const locked = this.inputLocked || overlay || store.screen !== "playing" || this.mode !== "explore" || this.cam.cinematicActive || this.photoMode;
 
     // --- camera look always allowed unless a menu is up
     if (!overlay && !this.cam.cinematicActive) {
@@ -1114,7 +1171,7 @@ export class World3D {
 
     // --- companion + entities
     this.updateCompanion(dt, moving);
-    this.mimoGuidance(dt, moving || !!store.overlay);
+    this.mimoGuidance(dt, moving || !!store.overlay || this.photoMode);
     if (this.pawTrail && this.companion && this.companionId === "mimo") {
       const c = this.companion;
       this.pawTrail.track(c.group.position, c.heading, c.group.position.distanceTo(this.pawLast) > 0.01, dt);
@@ -1173,7 +1230,7 @@ export class World3D {
     // re-align behind the player only while they walk away from the camera;
     // strafing or backing up must never swing the view around under them
     const walkingForward = moving && st.move.y > 0.35 && Math.abs(st.move.x) < 0.6;
-    const fpp = this.firstPerson;
+    const fpp = this.firstPerson && !this.photoMode;
     if (fpp) {
       // the body faces where the player looks; the eye is the camera
       this.heading = this.cam.yaw + Math.PI;

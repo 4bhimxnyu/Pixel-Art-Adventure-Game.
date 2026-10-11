@@ -48,6 +48,8 @@ export class CameraRig {
   hold: { pos: THREE.Vector3; look: THREE.Vector3; sway?: number } | null = null;
   /** First-person: the camera is the player's eyes (F-1205). */
   firstPerson = false;
+  /** Photo mode: free orbit with wide pitch / distance limits; overrides hold and first person. */
+  photo = false;
   private fppPitch = 0;
   private bobT = 0;
   private holdT = 0;
@@ -69,6 +71,10 @@ export class CameraRig {
   rotate(dYaw: number, dPitch: number) {
     if (this.cine) return;
     this.yaw -= dYaw;
+    if (this.photo) {
+      this.pitch = THREE.MathUtils.clamp(this.pitch + dPitch, -0.08, 1.45);
+      return;
+    }
     if (this.firstPerson) {
       this.fppPitch = THREE.MathUtils.clamp(this.fppPitch + dPitch, -0.9, 0.75);
       return;
@@ -78,7 +84,19 @@ export class CameraRig {
   }
 
   zoom(delta: number) {
-    this.targetDistance = THREE.MathUtils.clamp(this.targetDistance + delta, 2.6, 8);
+    this.targetDistance = this.photo
+      ? THREE.MathUtils.clamp(this.targetDistance + delta, 1.2, 16)
+      : THREE.MathUtils.clamp(this.targetDistance + delta, 2.6, 8);
+  }
+
+  /** Enter / leave photo mode; leaving restores the normal limits. */
+  setPhoto(on: boolean) {
+    if (this.photo === on) return;
+    this.photo = on;
+    if (!on) {
+      this.pitch = THREE.MathUtils.clamp(this.pitch, this.indoor ? 0.42 : 0.12, 1.15);
+      this.targetDistance = THREE.MathUtils.clamp(this.targetDistance, 2.6, 8);
+    }
   }
 
   /** Snap behind the target immediately (map change, battle end). */
@@ -166,7 +184,7 @@ export class CameraRig {
     }
 
     // --- first person (F-1205): eye height, gentle walk bob, look where the stick points
-    if (this.firstPerson && !this.hold) {
+    if (this.firstPerson && !this.hold && !this.photo) {
       this.bobT += dt * (moving ? 9 : 2);
       const fwd = this.groundForward(new THREE.Vector3());
       const eye = new THREE.Vector3(target.x, target.y + 1.38 + Math.sin(this.bobT) * (moving ? 0.025 : 0.006), target.z);
@@ -181,7 +199,7 @@ export class CameraRig {
     }
 
     // --- held pose (battle stage)
-    if (this.hold) {
+    if (this.hold && !this.photo) {
       this.holdT += dt;
       const sway = this.hold.sway ?? 0.18;
       const p = this.hold.pos.clone();
@@ -204,7 +222,7 @@ export class CameraRig {
     // (after the player has looked around, the camera waits 2.5 s before it
     // starts drifting back, so a deliberate glance is never fought)
     this.sinceLook = lookInputActive ? 0 : this.sinceLook + dt;
-    if (moving && !lookInputActive && this.sinceLook > 2.5) {
+    if (moving && !lookInputActive && this.sinceLook > 2.5 && !this.photo) {
       this.autoAlign = Math.min(1, this.autoAlign + dt * 0.5);
       const want = heading + Math.PI;
       let d = want - this.yaw;
@@ -218,8 +236,8 @@ export class CameraRig {
     // camera is allowed to rise over a wall it would clear at full distance,
     // and only pulls in when its resting spot is actually inside something,
     // or when something solid sits right behind the player's head.
-    if (this.indoor) this.pitch = Math.max(this.pitch, 0.42);
-    const maxD = this.indoor ? Math.min(this.targetDistance, 4.6) : this.targetDistance;
+    if (this.indoor && !this.photo) this.pitch = Math.max(this.pitch, 0.42);
+    const maxD = this.indoor && !this.photo ? Math.min(this.targetDistance, 4.6) : this.targetDistance;
     let d = maxD;
     const steps = 14;
     const base = new THREE.Vector3(target.x, target.y + this.lookHeight, target.z);
