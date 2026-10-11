@@ -236,15 +236,19 @@ export class CharacterRig extends BaseRig {
       torso.add(this.box(torsoW * 0.42, 0.1, 0.05, top, -torsoW * 0.22, torsoH * 0.78, torsoD / 2));
       torso.add(this.box(torsoW * 0.42, 0.1, 0.05, top, torsoW * 0.22, torsoH * 0.78, torsoD / 2));
     } else {
-      const chest = this.mesh(G.cyl(torsoW * 0.56, waistW * 0.56, torsoH, 10), top, 0, torsoH / 2, 0);
+      // with a belly the chest flares toward the waist so the shirt drapes over the gut
+      const flare = belly > 0 ? 1 + 0.06 * Math.min(belly, 1.4) : 1;
+      const chest = this.mesh(G.cyl(torsoW * 0.56, waistW * 0.56 * flare, torsoH, 12), top, 0, torsoH / 2, 0);
       chest.scale.z = chestZ;
       torso.add(chest);
     }
     if (belly > 0) {
-      // a gut that stays part of the torso: never wider than the waist or taller than the chest
-      const br = Math.min(waistW * 0.5 * Math.min(belly, 1.25), torsoH * 0.38);
-      const bl = this.sphere(br, top, 0, torsoH * 0.32, torsoD * 0.12, 12);
-      bl.scale.set(1.12, 0.82, 0.85);
+      // a round gut under the shirt: centred, the shirt's own material, and sunk into
+      // the chest so only a smooth bulge comes through the front, 0.035 proud of it
+      const br = Math.min(waistW * 0.42 * Math.min(belly, 1.4), torsoH * 0.36);
+      const chestFront = waistW * 0.56 * chestZ;
+      const bl = this.sphere(br, top, 0, torsoH * 0.3, 0, 14);
+      bl.scale.set(1.0, 0.8, (chestFront + 0.035) / br);
       torso.add(bl);
     }
     if (trousers) {
