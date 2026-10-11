@@ -36,6 +36,7 @@ import type { BaseRig } from "./BaseRig";
 import { CameraRig, type Keyframe } from "./CameraRig";
 import { AmbientParticles, Burst } from "./Particles";
 import { PawTrail } from "./PawTrail";
+import { FxPool, FocusRing, NameLabels, type LabelTarget } from "./Fx";
 import { G, glow, mat, disposeObject, skyMaterial } from "./materials";
 import { input, isTouchDevice } from "../input/InputManager";
 import { currentStepId } from "../store/useGameStore";
@@ -153,6 +154,19 @@ export class World3D {
   private stuckShown = false;
   private lastStuckPos = new THREE.Vector3();
   private pawTrail: PawTrail | null = null;
+  /** Pooled feel effects (see Fx.ts); rebuilt with every map. */
+  private fx: FxPool | null = null;
+  private focus: FocusRing | null = null;
+  private labels: NameLabels | null = null;
+  private labelTargets: { t: LabelTarget; fade: number }[] = [];
+  private labelSlots: LabelTarget[] = [];
+  private lastNearKey = "";
+  /** Photo mode: HUD hidden by the UI, free orbit camera, no interactions or encounters. */
+  private photoMode = false;
+  /** Hidden / uncollected things close enough to sparkle, rescanned a few times a second. */
+  private sparkleCells: { x: number; z: number }[] = [];
+  private sparkleT = 0;
+  private sparkleScanT = 0;
   private lockedBefore = new Map<MapId, string>();
   private promptSeenAt = 0;
   private quality: { shadows: boolean; mobile: boolean; particles: number };
@@ -273,6 +287,7 @@ export class World3D {
     this.cam.camera.aspect = w / h;
     this.cam.camera.fov = w < h ? 62 : 50;
     this.cam.camera.updateProjectionMatrix();
+    this.fx?.setViewport(this.renderer.domElement.height);
   }
 
   // ================================================================== map
@@ -307,6 +322,18 @@ export class World3D {
     this.pawTrail?.dispose();
     this.pawTrail = null;
     this.trail = [];
+    this.fx?.dispose();
+    this.fx = null;
+    this.focus?.dispose();
+    this.focus = null;
+    this.labels?.dispose();
+    this.labels = null;
+    this.labelSlots = [];
+    this.sparkleCells = [];
+    if (this.lastNearKey) {
+      this.lastNearKey = "";
+      bus.emit("near", null);
+    }
   }
 
   loadMap(id: MapId, hard = false) {
@@ -364,6 +391,14 @@ export class World3D {
     this.buildHighlights();
     this.pawTrail = new PawTrail();
     this.scene.add(this.pawTrail.mesh);
+    this.fx = new FxPool();
+    this.fx.setViewport(this.renderer.domElement.height);
+    this.scene.add(this.fx.points);
+    this.focus = new FocusRing();
+    this.scene.add(this.focus.group);
+    this.labels = new NameLabels();
+    this.scene.add(this.labels.group);
+    this.sparkleScanT = 0;
 
     // a gate that was closed last time we stood here has just opened
     const lockedNow = this.built.gates.filter((g) => g.locked).map((g) => g.to).sort().join(",");
@@ -1026,6 +1061,7 @@ export class World3D {
     if (this.sky) this.sky.position.set(this.cam.camera.position.x, -8, this.cam.camera.position.z);
     if (this.water) ((this.water.material as THREE.ShaderMaterial).uniforms.uTime.value as number) = this.timer.getElapsed();
     this.particles?.update(dt);
+    this.fx?.update(dt);
     this.bursts = this.bursts.filter((b) => b.update(dt));
     const now = this.timer.getElapsed();
     const pulse = 0.25 + Math.abs(Math.sin(now * 2.2)) * 0.3;
@@ -1061,6 +1097,7 @@ export class World3D {
     // --- contextual prompt
     const hit = locked ? null : this.facedInteract();
     const label = hit ? promptLabel(hit.kind, hit.name) : "";
+    this.interactionFeel(dt, hit);
     if (label !== this.lastPrompt) {
       this.lastPrompt = label;
       bus.emit("prompt", label);
@@ -1325,6 +1362,87 @@ export class World3D {
       this.lastTalked = hit.entity;
     }
     this.story.handleInteract(hit.kind, hit.x, hit.y);
+  }
+
+  /**
+   * What the player can reach, made visible: the gold ring under the faced
+   * interactable, name tags over nearby people, a faint sparkle on things
+   * still to be found, and the "near" event the HUD listens to.
+   */
+  private interactionFeel(dt: number, hit: { kind: string; name?: string; x: number; y: number; entity?: Entity } | null) {
+    // --- near event (only when the target changes)
+    const key = hit ? `${hit.kind}|${hit.x},${hit.y}` : "";
+    if (key !== this.lastNearKey) {
+      this.lastNearKey = key;
+      bus.emit("near", hit ? { kind: hit.kind, name: hit.name, x: hit.x, y: hit.y } : null);
+    }
+    // --- focus ring
+    if (this.focus) {
+      if (hit && this.mode === "explore") {
+        const p = hit.entity ? hit.entity.object.position : null;
+        this.focus.set(p ? p.x : hit.x + 0.5, p ? p.z : Z(hit.y));
+      } else this.focus.set(null);
+      this.focus.update(dt);
+    }
+    // --- name labels: the six closest named people within 3.5 units
+    if (this.labels) {
+      const list = this.labelTargets;
+      list.length = 0;
+      const show = this.mode === "explore" && !this.photoMode;
+      if (show) {
+        let slot = 0;
+        for (const e of this.entities) {
+          if (!e.rig || !e.name || !e.object.visible) continue;
+          const d = e.object.position.distanceTo(this.playerPos);
+          if (d > 3.5) continue;
+          const fade = d < 2.6 ? 1 : 1 - (d - 2.6) / 0.9;
+          let t = this.labelSlots[slot];
+          if (!t) t = this.labelSlots[slot] = { name: "", x: 0, y: 0, z: 0 };
+          slot++;
+          t.name = e.name;
+          t.x = e.object.position.x;
+          t.y = e.rig.height + 0.32;
+          t.z = e.object.position.z;
+          list.push({ t, fade });
+        }
+        list.sort((a, b) => b.fade - a.fade);
+        if (list.length > 6) list.length = 6;
+      }
+      this.labels.update(dt, list);
+    }
+    // --- sparkle on chests / buried things / clues within 4 units
+    if (this.fx && this.mode === "explore") {
+      this.sparkleScanT -= dt;
+      if (this.sparkleScanT <= 0) {
+        this.sparkleScanT = 0.5;
+        this.sparkleCells.length = 0;
+        const def = this.mapDef;
+        const flags = useGameStore.getState().flags;
+        const px = Math.floor(this.playerPos.x);
+        const py = ROW(this.playerPos.z);
+        for (let y = Math.max(0, py - 4); y <= Math.min(mapHeight(def) - 1, py + 4); y++) {
+          for (let x = Math.max(0, px - 4); x <= Math.min(mapWidth(def) - 1, px + 4); x++) {
+            const ch = tileAt(def, x, y);
+            if (!"*h~$y".includes(ch) || isHidden(def, ch, x, y, flags)) continue;
+            if (Math.hypot(x + 0.5 - this.playerPos.x, Z(y) - this.playerPos.z) > 4) continue;
+            this.sparkleCells.push({ x: x + 0.5, z: Z(y) });
+          }
+        }
+      }
+      if (this.sparkleCells.length) {
+        this.sparkleT -= dt;
+        if (this.sparkleT <= 0) {
+          this.sparkleT = 0.22 / Math.min(3, this.sparkleCells.length);
+          const c = this.sparkleCells[Math.floor(Math.random() * this.sparkleCells.length)];
+          const a = Math.random() * Math.PI * 2;
+          const r = 0.15 + Math.random() * 0.3;
+          this.fx.spawn({
+            x: c.x + Math.cos(a) * r, y: 0.2 + Math.random() * 0.5, z: c.z + Math.sin(a) * r,
+            vy: 0.35, life: 0.9, size: 0.07, color: "#fff1b8", shrink: 1, drag: 0.5, alpha: 0.9,
+          });
+        }
+      }
+    }
   }
 
   private flourish(x: number, y: number) {
