@@ -773,8 +773,6 @@ export class CharacterRig extends BaseRig {
     const heavy = s.build === "heavy";
     const hi = mat(s.hairHi ?? shade(s.hair, 1.35));
     const orn = mat(s.ornament ?? s.trim);
-    const skin = mat(s.skin);
-
     const cap = this.mesh(G.sphere(HR, 14), hair, 0, 0.31, -0.03);
     cap.scale.set(heavy ? 1.08 : 1.025, 0.95, 1.0);
     head.add(cap);
@@ -819,6 +817,7 @@ export class CharacterRig extends BaseRig {
       return Math.max(c < 1 ? 0.31 + HR * cap.scale.y * Math.sqrt(1 - c) : 0, b < 1 ? 0.4 + 0.064 * Math.sqrt(1 - b) : 0);
     };
     /** A skin parting line laid along the scalp surface from zFront back to zBack. */
+    const partMat = mat(shade(s.skin, 0.62));
     const parting = (x: number, zFront: number, zBack: number, n = 5) => {
       const step = (zFront - zBack) / n;
       for (let i = 0; i < n; i++) {
@@ -828,7 +827,8 @@ export class CharacterRig extends BaseRig {
         const y1 = scalpY(x, z1);
         if (!y0 || !y1) continue; // off the scalp: no segment (a drop to 0 drew a stub sticking out of the crown)
         const len = Math.hypot(step, y1 - y0) + 0.006;
-        const p = this.box(0.014, 0.012, Math.round(len * 1000) / 1000, skin, x, (y0 + y1) / 2 + 0.004, (z0 + z1) / 2);
+        // a thin, darker line sunk into the scalp: reads as a parting in the hair, never as a ridge on top of it
+        const p = this.box(0.008, 0.008, Math.round(len * 1000) / 1000, partMat, x, (y0 + y1) / 2 - 0.004, (z0 + z1) / 2);
         p.rotation.x = Math.atan2(y1 - y0, step);
         p.castShadow = false;
         head.add(p);
@@ -976,7 +976,6 @@ export class CharacterRig extends BaseRig {
         lobe.scale.set(0.75, 0.35, 0.6);
         lobe.rotation.z = 0.3;
         head.add(lobe);
-        parting(-0.065, 0.13, -0.1);
         for (const side of [-1, 1]) head.add(this.box(0.07, 0.16, 0.18, hair, side * 0.2, 0.3, -0.04));
         back(0.2, 0.36, 0.08);
         break;
@@ -1025,7 +1024,7 @@ export class CharacterRig extends BaseRig {
         break;
       case "lowbun": {
         // pulled back tight from the forehead with a centre parting into a low bun at the nape; ears clear
-        parting(0, 0.15, -0.12, 6);
+        parting(0, 0.09, -0.12, 6);
         for (const side of [-1, 1]) {
           head.add(this.box(0.06, 0.2, 0.16, hair, side * 0.2, 0.3, -0.11)); // behind the ears to the nape
           const wisp = this.box(0.022, 0.09, 0.025, hair, side * 0.2, 0.33, 0.07);
