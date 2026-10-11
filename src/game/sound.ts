@@ -190,9 +190,30 @@ export function setVolumes(music: number, sfxV: number) {
   sfxBus.gain.setTargetAtTime(sfxV, ctx.currentTime, 0.05);
 }
 
-function applyMusicGain() {
+/** Held duck level (dialogue, battle menus) and a short dip for one-shot sounds. */
+let duckHold = 1;
+let duckDipTimer: number | null = null;
+
+function applyMusicGain(rate = 0.08) {
   if (!ctx) return;
-  musicBus.gain.setTargetAtTime(musicVol, ctx.currentTime, 0.08);
+  musicBus.gain.cancelScheduledValues(ctx.currentTime);
+  musicBus.gain.setTargetAtTime(musicVol * duckHold, ctx.currentTime, rate);
+}
+
+/** Hold the music at `level` (0..1 of the slider) until called again with 1. */
+export function duckMusic(level: number) {
+  duckHold = Math.max(0.2, Math.min(1, level));
+  applyMusicGain(0.25);
+}
+
+/** A quick dip under a sound effect or gong, then back to the held level. */
+function duckDip(depth: number, holdMs: number) {
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  musicBus.gain.cancelScheduledValues(now);
+  musicBus.gain.setTargetAtTime(musicVol * duckHold * depth, now, 0.03);
+  if (duckDipTimer != null) window.clearTimeout(duckDipTimer);
+  duckDipTimer = window.setTimeout(() => { duckDipTimer = null; applyMusicGain(0.2); }, holdMs);
 }
 
 /** Load the optional custom-audio manifest. Safe to call repeatedly. */
@@ -656,6 +677,7 @@ function playPerc(kind: "dagu" | "luo" | "bangzi" | "muyu", t: number, vol: numb
 
 export function gong() {
   initAudio();
+  duckDip(0.55, 1200);
   playPerc("luo", ctx!.currentTime, 0.55);
 }
 
@@ -1297,6 +1319,7 @@ export function sfx(name: SfxName) {
     o.start(t); o.stop(t + dur + 0.02);
   };
 
+  if (name !== "step" && name !== "menu") duckDip(0.8, 260);
   switch (name) {
     case "step":    beep(180, 0.05, "square", 0.05); break;
     case "menu":    beep(620, 0.05, "square", 0.09); break;
