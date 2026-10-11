@@ -10,8 +10,8 @@
 // Silhouette first: shoulders, hips, belly, head size, sleeves, skirt and
 // hair are what make a character recognisable from across a map. Up close
 // the face carries it: every head is built on the same skull model (see
-// buildHead) so eyes, brows, nose, lips, cheeks and the hairline always land
-// on the skin, and every hair style is layered on the same scalp cap.
+// buildHead: one smooth egg) so eyes, brows, nose, lips and the hairline
+// always land on the skin, and every hair style is layered on the same scalp cap.
 //
 // Arms have an elbow: shoulder joint -> forearm joint -> hand joint, so idles
 // can fold arms, rest hands on hips or hold things in front of the chest.
@@ -502,37 +502,31 @@ export class CharacterRig extends BaseRig {
     const skinDark = mat(shade(s.skin, 0.6));
     const stubble = s.stubble ? mat(s.stubble) : null;
 
-    // --- skull: an egg, with a separate jaw mass, a chin and cheek volume
-    const skull = this.mesh(G.sphere(HR, 16), skin, 0, 0.25, 0);
-    skull.scale.set(heavy ? 1.04 : 0.95, heavy ? 1.0 : 1.05, 0.98);
+    // --- skull: ONE smooth egg (a high-segment sphere scaled taller than wide)
+    // so the skin reads as a single continuous surface. The only other skin
+    // volume is a small chin that sits almost entirely inside the egg and
+    // just rounds out the bottom of the face. No jaw mass, no cheek spheres:
+    // separate spheres shade as lumps under the toon gradient.
+    const skull = this.mesh(G.sphere(HR, 20), skin, 0, 0.25, 0);
+    skull.scale.set(heavy ? 1.06 : 0.95, heavy ? 1.02 : 1.1, heavy ? 1.0 : 0.97);
     head.add(skull);
-    const jaw = this.sphere(0.148, skin, 0, 0.11, 0.015, 12);
-    jaw.scale.set(heavy ? 1.18 : 1.02, heavy ? 0.8 : 0.66, 0.95);
-    head.add(jaw);
-    const chin = this.sphere(0.055, stubble ?? skin, 0, 0.05, 0.1, 8);
-    chin.scale.set(1.25, 0.7, 0.9);
+    const chin = this.sphere(heavy ? 0.08 : 0.07, skin, 0, heavy ? 0.08 : 0.07, heavy ? 0.045 : 0.06, 12);
+    chin.scale.set(heavy ? 1.3 : 1.15, heavy ? 0.72 : 0.75, heavy ? 0.95 : 1.0);
     head.add(chin);
-    if (heavy) {
-      const dc = this.sphere(0.1, skin, 0, 0.03, 0.05, 8); // double chin
-      dc.scale.set(1.35, 0.5, 0.95);
-      head.add(dc);
-    }
     for (const side of [-1, 1]) {
-      const cheek = this.sphere(0.058, skin, side * 0.1, 0.19, 0.12, 8);
-      cheek.scale.set(1, 0.85, 0.75);
-      head.add(cheek);
-      const ear = this.sphere(0.04, skin, side * 0.195, 0.25, -0.01, 7);
+      const ear = this.sphere(0.04, skin, side * (heavy ? 0.205 : 0.19), 0.25, -0.01, 7);
       ear.scale.set(0.45, 1.0, 0.7);
       head.add(ear);
-      const inner = this.sphere(0.02, skinDark, side * 0.206, 0.25, -0.005, 6);
+      const inner = this.sphere(0.02, skinDark, side * (heavy ? 0.216 : 0.201), 0.25, -0.005, 6);
       inner.scale.set(0.3, 0.6, 0.5);
       inner.castShadow = false;
       head.add(inner);
     }
     if (stubble) {
-      // a shadow of stubble over the jaw, just outside the jaw mass
-      const st = this.sphere(0.148, stubble, 0, 0.105, 0.015, 12);
-      st.scale.set(1.035, 0.65, 0.965);
+      // a shadow of stubble over the lower face: a sphere that sits inside the
+      // egg at mouth level and comes through only below the lip and along the jaw
+      const st = this.sphere(0.148, stubble, 0, 0.115, 0.01, 14);
+      st.scale.set(1.0, 0.68, 0.98);
       st.castShadow = false;
       head.add(st);
     }
@@ -546,10 +540,13 @@ export class CharacterRig extends BaseRig {
     const browMat = mat(s.hairStyle === "bald" ? shade(s.skin, 0.45) : s.hair);
     const browT = s.brows === "strong" ? 0.022 : s.brows === "thin" ? 0.011 : 0.015;
     const lashes = s.lashes ?? !!s.female;
+    // a round (heavy) skull is a touch deeper at the brow, so its features sit a hair further forward
+    const fz = heavy ? 0.006 : 0;
     for (const side of [-1, 1]) {
       const ex = side * 0.072;
       const ey = 0.255;
-      const ez = 0.151;
+      // the eyeball centre sits 0.03 behind the skin, so only a small cap of white shows around the iris
+      const ez = 0.151 + fz;
       const ball = this.sphere(0.046, white, ex, ey, ez, 9);
       ball.scale.set(1.05, almond ? 0.72 : 0.9, 0.75);
       ball.castShadow = false;
@@ -573,11 +570,11 @@ export class CharacterRig extends BaseRig {
         head.add(lash);
       }
       // brow: an inner segment rising outward, an outer segment falling toward the temple
-      const inner = this.box(0.048, browT, 0.022, browMat, side * 0.047, 0.305, 0.179);
+      const inner = this.box(0.048, browT, 0.022, browMat, side * 0.047, 0.305, 0.179 + fz);
       inner.rotation.z = side * 0.18;
       inner.castShadow = false;
       head.add(inner);
-      const outer = this.box(0.052, browT * 0.9, 0.022, browMat, side * 0.095, 0.312, 0.156);
+      const outer = this.box(0.052, browT * 0.9, 0.022, browMat, side * 0.095, 0.312, 0.156 + fz);
       outer.rotation.z = side * -0.4;
       outer.rotation.y = side * 0.35;
       outer.castShadow = false;
@@ -585,34 +582,34 @@ export class CharacterRig extends BaseRig {
     }
 
     // --- nose: a wedge with a rounded tip and two nostrils; a philtrum above the lip
-    const nose = this.mesh(G.cone(0.03, 0.09, 4), skin, 0, 0.205, 0.2);
+    const nose = this.mesh(G.cone(0.03, 0.09, 4), skin, 0, 0.205, 0.2 + fz);
     nose.rotation.x = Math.PI / 2 - 0.35;
     nose.rotation.y = Math.PI / 4;
     head.add(nose);
-    head.add(this.sphere(0.021, skin, 0, 0.188, 0.225, 6));
+    head.add(this.sphere(0.021, skin, 0, 0.188, 0.225 + fz, 6));
     for (const side of [-1, 1]) {
-      const nostril = this.sphere(0.008, skinDark, side * 0.016, 0.176, 0.205, 5);
+      const nostril = this.sphere(0.008, skinDark, side * 0.016, 0.176, 0.205 + fz, 5);
       nostril.castShadow = false;
       head.add(nostril);
-      head.add(this.box(0.006, 0.026, 0.01, skin, side * 0.008, 0.163, 0.181)); // philtrum ridges
+      head.add(this.box(0.006, 0.026, 0.01, skin, side * 0.008, 0.163, 0.181 + fz)); // philtrum ridges
     }
 
     // --- mouth: two-tone lips with a dark seam, or a toothy grin
     const lipMat = mat(mix(s.skin, "#8a3a48", s.female ? 0.62 : 0.4));
     const lipDark = mat(mix(s.skin, "#3a1218", 0.7));
     if (!s.grin) {
-      const upper = this.box(0.076, 0.012, 0.016, lipMat, 0, 0.145, 0.168);
+      const upper = this.box(0.076, 0.012, 0.016, lipMat, 0, 0.145, 0.168 + fz);
       upper.castShadow = false;
       head.add(upper);
-      const lower = this.box(0.064, 0.016, 0.018, lipMat, 0, 0.129, 0.16);
+      const lower = this.box(0.064, 0.016, 0.018, lipMat, 0, 0.129, 0.16 + fz);
       lower.castShadow = false;
       head.add(lower);
-      const seam = this.box(0.07, 0.004, 0.006, lipDark, 0, 0.137, 0.173);
+      const seam = this.box(0.07, 0.004, 0.006, lipDark, 0, 0.137, 0.173 + fz);
       seam.castShadow = false;
       head.add(seam);
       if (s.smirk || s.smile) {
         for (const side of s.smirk ? [1] : [-1, 1]) {
-          const corner = this.box(0.028, 0.011, 0.014, lipMat, side * 0.047, 0.15, 0.164);
+          const corner = this.box(0.028, 0.011, 0.014, lipMat, side * 0.047, 0.15, 0.164 + fz);
           corner.rotation.z = side * 0.5;
           corner.castShadow = false;
           head.add(corner);
@@ -620,21 +617,21 @@ export class CharacterRig extends BaseRig {
       }
     } else {
       // a wide open grin: dark mouth, white teeth line, lifted corners
-      const grin = this.box(0.12, 0.036, 0.015, mat("#5a2430"), 0, 0.136, 0.164);
+      const grin = this.box(0.12, 0.036, 0.015, mat("#5a2430"), 0, 0.136, 0.164 + fz);
       grin.castShadow = false;
       head.add(grin);
-      const teeth = this.box(0.1, 0.013, 0.016, mat("#f6f2ea"), 0, 0.145, 0.167);
+      const teeth = this.box(0.1, 0.013, 0.016, mat("#f6f2ea"), 0, 0.145, 0.167 + fz);
       teeth.castShadow = false;
       head.add(teeth);
       for (const side of [-1, 1]) {
-        const corner = this.box(0.026, 0.02, 0.015, mat("#5a2430"), side * 0.068, 0.15, 0.156);
+        const corner = this.box(0.026, 0.02, 0.015, mat("#5a2430"), side * 0.068, 0.15, 0.156 + fz);
         corner.rotation.z = side * 0.4;
         corner.castShadow = false;
         head.add(corner);
       }
     }
     if (s.moustache) {
-      const m = this.box(0.1, 0.028, 0.03, mat(s.moustache), 0, 0.16, 0.184);
+      const m = this.box(0.1, 0.028, 0.03, mat(s.moustache), 0, 0.16, 0.184 + fz);
       m.castShadow = false;
       head.add(m);
     }
