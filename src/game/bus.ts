@@ -17,7 +17,18 @@ export type BusEvent =
   | "stuck"
   | "unstuck"
   | "help:direction"
-  | "tutorial";
+  | "tutorial"
+  // --- UI <-> world contract added for the experience pass
+  /** world -> UI: the interactable the player is facing / standing near, or null. { kind, name, x, y } */
+  | "near"
+  /** UI <-> world: photo mode on/off (UI hides itself, world frees the camera). payload: boolean */
+  | "photo:mode"
+  /** UI -> world: snap the camera back behind the player */
+  | "camera:recenter"
+  /** UI -> world: save the current frame as a PNG download */
+  | "world:snapshot"
+  /** world -> UI: adaptive quality stepped down. payload: 0 | 1 | 2 */
+  | "quality:tier";
 
 type Handler = (payload?: any) => void;
 
