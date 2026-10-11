@@ -305,8 +305,8 @@ function buildVista(group: THREE.Group, W: number, dropRow: number) {
   stars.instanceMatrix.needsUpdate = true;
   group.add(stars);
   // the moon, and the lantern's gold light somewhere down in the valley
-  const moon = new THREE.Mesh(G.sphere(3.2, 12), glow("#fff6d8", 1.0));
-  moon.position.set(W / 2 + 26, 24, edge - 110);
+  const moon = new THREE.Mesh(G.sphere(2.4, 12), glow("#fff6d8", 1.0));
+  moon.position.set(W / 2 + 18, 17, edge - 58);
   group.add(moon);
   const lantern = new THREE.Mesh(G.sphere(0.5, 8), glow("#f2dfa6", 1.0));
   lantern.position.set(W / 2 - 14, -24.6, edge - 48);
@@ -458,8 +458,8 @@ export function buildMap(def: MapDef, flags: Flags, quality: { shadows: boolean 
       if (railRow > 0) {
         const n = Math.floor((W - 3) / 1.1);
         for (let i = 0; i < n; i++) {
-          const bulb = new THREE.Mesh(G.sphere(0.035, 6), glow(i % 2 ? "#ffd27a" : "#ff9a6a", 1.0));
-          bulb.position.set(1.6 + i * 1.1, 1.12 + (i % 2) * 0.1, -railRow - 0.5 + 0.14);
+          const bulb = new THREE.Mesh(G.sphere(0.022, 6), glow(i % 2 ? "#ffd27a" : "#ff9a6a", 1.0));
+          bulb.position.set(1.6 + i * 1.1, 1.08 + (i % 2) * 0.08, -railRow - 0.5 + 0.14);
           group.add(bulb);
         }
       }
