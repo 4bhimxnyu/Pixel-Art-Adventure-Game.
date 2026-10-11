@@ -233,7 +233,7 @@ export const CHARACTERS: Record<string, CharSpec> = {
     id: "merchant", skin: "#e0a67e", hair: "#2a2018", hairStyle: "crop",
     top: "#2f4a5c", topAlt: "#8fa3b5", bottom: "#243a48", trim: "#d9b45b",
     outfit: "vest", sleeves: "long",
-    build: "heavy", belly: 1.1, eyes: "almond", moustache: "#2a2018", smile: true,
+    build: "heavy", belly: 1.1, headSize: 0.98, eyes: "almond", moustache: "#2a2018", smile: true,
   },
   musician: {
     // sings; the only instrument in the game is Abhimanyu's bass
@@ -242,10 +242,11 @@ export const CHARACTERS: Record<string, CharSpec> = {
     outfit: "robe", sleeves: "long", skirt: 0.9, footwear: "boots",
     build: "slim", eyes: "almond", smile: true, idle: "sway", ornament: "#f2dfa6",
   },
-  // Gatekeeper: the muscular guard: cropped hair, stubble, heavy brows, a dark vest with red trim.
+  // Gatekeeper: the muscular guard: cropped hair, stubble, heavy brows, a near-black
+  // vest with a lighter piped edge over a charcoal shirt, black trousers, the red sash.
   gatekeeper: {
     id: "gatekeeper", skin: "#c98f68", hair: "#1c1c1c", hairStyle: "crop",
-    top: "#1a0f12", topAlt: "#2a2028", bottom: "#141014", trim: "#b3252f",
+    top: "#15101a", topAlt: "#3b3b44", bottom: "#141014", trim: "#b3252f", accent: "#6a5c66",
     outfit: "vest", sleeves: "long", footwear: "boots",
     build: "muscular", eyes: "almond", brows: "strong", stubble: "#5a4238", props: ["staff"],
   },
@@ -271,7 +272,7 @@ export const CHARACTERS: Record<string, CharSpec> = {
     top: "#1f3a2a", topAlt: "#1f3a2a", bottom: "#2a2a2e", trim: "#c9b58f", stripes: "#c9b58f",
     outfit: "polo", sleeves: "long", footwear: "shoes",
     build: "average", shoulders: 1.1, height: 1.03, headSize: 1.04, eyes: "almond", iris: "#2c1a10",
-    brows: "strong", stubble: "#8f6e52", bracelet: "#f0a0b8", braceletStyle: "thread", idle: "crossed",
+    brows: "strong", stubble: "#75563e", bracelet: "#f0a0b8", braceletStyle: "thread", idle: "crossed",
   },
   // Hakim: from his photo: slim young man, dark medium hair with a side
   // parting and a soft sweep across the forehead, big bright smile with teeth,
@@ -295,7 +296,7 @@ export const CHARACTERS: Record<string, CharSpec> = {
     top: "#1a1a1e", topAlt: "#1a1a1e", bottom: "#2b2a30", trim: "#e0616b", drawstring: true, accent: "#0e0e10",
     outfit: "tank", sleeves: "none", footwear: "sandals",
     build: "slim", shoulders: 1.15, hips: 0.95, height: 1.06, eyes: "almond", iris: "#2a1810",
-    sleepy: true, smile: true, stubble: "#8a5e42", bracelet: "#141414", braceletStyle: "thread", idle: "stretch",
+    sleepy: true, smile: true, stubble: "#6b4630", bracelet: "#141414", braceletStyle: "thread", idle: "stretch",
   },
 };
 

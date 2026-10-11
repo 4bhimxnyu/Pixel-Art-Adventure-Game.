@@ -10,8 +10,8 @@
 // Silhouette first: shoulders, hips, belly, head size, sleeves, skirt and
 // hair are what make a character recognisable from across a map. Up close
 // the face carries it: every head is built on the same skull model (see
-// buildHead) so eyes, brows, nose, lips, cheeks and the hairline always land
-// on the skin, and every hair style is layered on the same scalp cap.
+// buildHead: one smooth egg) so eyes, brows, nose, lips and the hairline
+// always land on the skin, and every hair style is layered on the same scalp cap.
 //
 // Arms have an elbow: shoulder joint -> forearm joint -> hand joint, so idles
 // can fold arms, rest hands on hips or hold things in front of the chest.
@@ -228,23 +228,29 @@ export class CharacterRig extends BaseRig {
     const chestZ = torsoD / (torsoW * 1.1);
     const trousers = !(s.outfit === "robe" || s.outfit === "dress");
 
-    // core body: wider at the shoulders than the waist; V-shape for the athlete
+    // core body: wider at the shoulders than the waist; V-shape for the athlete.
+    // Under a vest the body is the shirt (topAlt), so the vest reads as a layer over it.
+    const bodyMat = s.outfit === "vest" ? topAlt : top;
     if (b === "muscular") {
-      torso.add(this.box(torsoW + 0.08, torsoH * 0.55, torsoD, top, 0, torsoH * 0.72, 0));
-      torso.add(this.box(waistW, torsoH * 0.5, torsoD - 0.06, top, 0, torsoH * 0.25, 0));
+      torso.add(this.box(torsoW + 0.08, torsoH * 0.55, torsoD, bodyMat, 0, torsoH * 0.72, 0));
+      torso.add(this.box(waistW, torsoH * 0.5, torsoD - 0.06, bodyMat, 0, torsoH * 0.25, 0));
       // chest plates read as "built" even in silhouette
-      torso.add(this.box(torsoW * 0.42, 0.1, 0.05, top, -torsoW * 0.22, torsoH * 0.78, torsoD / 2));
-      torso.add(this.box(torsoW * 0.42, 0.1, 0.05, top, torsoW * 0.22, torsoH * 0.78, torsoD / 2));
+      torso.add(this.box(torsoW * 0.42, 0.1, 0.05, bodyMat, -torsoW * 0.22, torsoH * 0.78, torsoD / 2));
+      torso.add(this.box(torsoW * 0.42, 0.1, 0.05, bodyMat, torsoW * 0.22, torsoH * 0.78, torsoD / 2));
     } else {
-      const chest = this.mesh(G.cyl(torsoW * 0.56, waistW * 0.56, torsoH, 10), top, 0, torsoH / 2, 0);
+      // with a belly the chest flares toward the waist so the shirt drapes over the gut
+      const flare = belly > 0 ? 1 + 0.06 * Math.min(belly, 1.4) : 1;
+      const chest = this.mesh(G.cyl(torsoW * 0.56, waistW * 0.56 * flare, torsoH, 12), bodyMat, 0, torsoH / 2, 0);
       chest.scale.z = chestZ;
       torso.add(chest);
     }
     if (belly > 0) {
-      // a gut that stays part of the torso: never wider than the waist or taller than the chest
-      const br = Math.min(waistW * 0.5 * Math.min(belly, 1.25), torsoH * 0.38);
-      const bl = this.sphere(br, top, 0, torsoH * 0.32, torsoD * 0.12, 12);
-      bl.scale.set(1.12, 0.82, 0.85);
+      // a round gut under the shirt: centred, the shirt's own material, and sunk into
+      // the chest so only a smooth bulge comes through the front, 0.035 proud of it
+      const br = Math.min(waistW * 0.42 * Math.min(belly, 1.4), torsoH * 0.36);
+      const chestFront = waistW * 0.56 * chestZ;
+      const bl = this.sphere(br, bodyMat, 0, torsoH * 0.3, 0, 14);
+      bl.scale.set(1.0, 0.8, (chestFront + 0.035) / br);
       torso.add(bl);
     }
     if (trousers) {
@@ -284,12 +290,17 @@ export class CharacterRig extends BaseRig {
         break;
       }
       case "tank": {
-        // bare shoulders: skin caps either side, narrow straps, collarbones
-        torso.add(this.sphere(torsoW * 0.22, skin, -torsoW * 0.4, torsoH - 0.03, 0, 8));
-        torso.add(this.sphere(torsoW * 0.22, skin, torsoW * 0.4, torsoH - 0.03, 0, 8));
-        torso.add(this.box(torsoW * 0.7, 0.07, torsoD * 0.9, skin, 0, torsoH - 0.01, 0.01)); // upper chest
-        torso.add(this.box(0.05, 0.12, torsoD * 0.8, top, -torsoW * 0.28, torsoH - 0.05, 0));
-        torso.add(this.box(0.05, 0.12, torsoD * 0.8, top, torsoW * 0.28, torsoH - 0.05, 0));
+        // bare shoulders: small rounded deltoids either side, a thin domed skin cap over
+        // the top of the chest (not a slab), narrow straps
+        for (const side of [-1, 1]) {
+          const delt = this.sphere(torsoW * 0.17, skin, side * torsoW * 0.42, torsoH - 0.035, 0, 10);
+          delt.scale.set(1, 0.85, 0.9);
+          torso.add(delt);
+          torso.add(this.box(0.045, 0.11, torsoD * 0.78, top, side * torsoW * 0.27, torsoH - 0.045, 0));
+        }
+        const upper = this.sphere(torsoW * 0.56, skin, 0, torsoH - 0.012, 0, 12);
+        upper.scale.set(1, 0.12, chestZ);
+        torso.add(upper);
         if (s.vneck) {
           // a skin wedge at the neckline reads as the V
           const v = this.box(0.09, 0.09, 0.03, skin, 0, torsoH - 0.06, torsoD / 2 - 0.005);
@@ -304,9 +315,13 @@ export class CharacterRig extends BaseRig {
       case "jacket":
       case "cardigan": {
         const longer = s.outfit === "cardigan" ? 0.14 : 0.02;
-        const panelW = torsoW * 0.36;
+        // an open jacket shows a full panel of tee between two narrow fronts; a cardigan hangs closer to closed
+        const jacket = s.outfit === "jacket";
+        const panelW = torsoW * (jacket ? 0.24 : 0.36);
+        const panelX = torsoW * (jacket ? 0.39 : 0.33);
+        if (jacket) torso.add(this.box(torsoW * 0.6, torsoH * 0.96, 0.03, top, 0, torsoH / 2, torsoD / 2 - 0.004));
         for (const side of [-1, 1]) {
-          torso.add(this.box(panelW, torsoH + longer, 0.05, topAlt, side * torsoW * 0.33, (torsoH - longer) / 2 + 0.02, torsoD / 2 + 0.01));
+          torso.add(this.box(panelW, torsoH + longer, 0.05, topAlt, side * panelX, (torsoH - longer) / 2 + 0.02, torsoD / 2 + 0.01));
           torso.add(this.box(0.05, torsoH + longer, torsoD + 0.04, topAlt, side * (torsoW / 2 + 0.01), (torsoH - longer) / 2 + 0.02, 0));
         }
         torso.add(this.box(torsoW + 0.06, torsoH + longer, 0.05, topAlt, 0, (torsoH - longer) / 2 + 0.02, -torsoD / 2 - 0.01));
@@ -320,12 +335,12 @@ export class CharacterRig extends BaseRig {
           }
           for (let i = 0; i < 3; i++) torso.add(this.sphere(0.015, mat("#2a2020"), 0, torsoH * 0.6 - i * 0.12, torsoD / 2 + 0.05, 5));
         } else {
-          // denim: collar flaps, a chest pocket each side, a dark hem band
+          // denim: small collar points, a chest pocket on each front, a dark hem band
           for (const side of [-1, 1]) {
-            const flap = this.box(0.1, 0.07, 0.03, trim, side * torsoW * 0.28, torsoH - 0.02, torsoD / 2 + 0.035);
-            flap.rotation.z = side * 0.45;
+            const flap = this.box(0.065, 0.045, 0.03, trim, side * torsoW * 0.31, torsoH - 0.012, torsoD / 2 + 0.035);
+            flap.rotation.z = side * 0.5;
             torso.add(flap);
-            torso.add(this.box(0.08, 0.07, 0.012, mat(shade(s.topAlt, 0.88)), side * torsoW * 0.33, torsoH * 0.62, torsoD / 2 + 0.04));
+            torso.add(this.box(0.055, 0.06, 0.012, mat(shade(s.topAlt, 0.88)), side * panelX, torsoH * 0.62, torsoD / 2 + 0.04));
           }
           torso.add(this.box(torsoW * 0.72, 0.012, 0.04, trim, 0, torsoH + 0.02, torsoD / 2 - 0.01)); // collar stand
         }
@@ -347,9 +362,24 @@ export class CharacterRig extends BaseRig {
         break;
       }
       case "vest": {
-        torso.add(this.box(torsoW * 0.9, torsoH * 0.9, torsoD + 0.06, top, 0, torsoH * 0.45, 0));
+        // a vest over the shirt: a lighter piped edge down each front opening and
+        // around the armholes so it reads as its own layer; a sash with a knot and
+        // tails on the left hip
+        const vw = torsoW * 0.9;
+        const vh = torsoH * 0.9;
+        const vd = torsoD + 0.06;
+        const edge = mat(s.accent ?? shade(s.top, 1.7));
+        torso.add(this.box(vw, vh, vd, top, 0, torsoH * 0.45, 0));
+        for (const side of [-1, 1]) {
+          torso.add(this.box(0.028, vh, 0.012, edge, side * torsoW * 0.2, torsoH * 0.45, vd / 2 + 0.004));
+          torso.add(this.box(0.02, vh * 0.55, vd + 0.008, edge, side * (vw / 2 - 0.006), torsoH * 0.65, 0));
+        }
         torso.add(this.box(torsoW * 0.5, 0.06, torsoD * 0.6, topAlt, 0, torsoH - 0.01, 0.03)); // shirt collar
-        torso.add(this.box(waistW * 1.05, 0.06, torsoD + 0.08, trim, 0, 0.05, 0));
+        torso.add(this.box(waistW * 1.05, 0.075, torsoD + 0.08, trim, 0, 0.05, 0)); // sash
+        torso.add(this.sphere(0.03, trim, -waistW * 0.5, 0.05, torsoD * 0.3, 6)); // knot
+        const tail = this.box(0.04, 0.14, 0.02, trim, -waistW * 0.52, -0.04, torsoD * 0.3);
+        tail.rotation.z = 0.15;
+        torso.add(tail);
         break;
       }
       case "hoodie": {
@@ -408,9 +438,20 @@ export class CharacterRig extends BaseRig {
       const capeH = torsoH + legLen * 0.9;
       capeJ.add(this.mesh(G.box(torsoW * 1.25, capeH, 0.05), bottom, 0, -capeH / 2, -0.03));
       capeJ.add(this.box(torsoW * 1.3, 0.06, 0.06, trim, 0, -capeH + 0.03, -0.03));
-      capeJ.add(this.box(torsoW * 1.3, 0.06, 0.06, trim, 0, -0.03, -0.03));
       capeJ.rotation.x = 0.1;
       this.capeJoint = capeJ;
+      // a rounded standing collar: a thick ring around the neck base, tilted so it rises
+      // behind the head and dips into the chest in front, with a gold rim under it
+      // (the torus lies in its local XY plane; local y becomes world z once it is laid
+      // flat, so the ring is squashed on y and tilted past flat so the back rises)
+      const collar = this.mesh(G.torus(torsoW * 0.42, 0.035, 8, 20), bottom, 0, torsoH - 0.01, -0.04);
+      collar.scale.y = 0.6;
+      collar.rotation.set(Math.PI / 2 + 0.35, 0, 0);
+      torso.add(collar);
+      const rim = this.mesh(G.torus(torsoW * 0.42 + 0.03, 0.012, 6, 20), trim, 0, torsoH - 0.025, -0.045);
+      rim.scale.y = 0.6;
+      rim.rotation.set(Math.PI / 2 + 0.35, 0, 0);
+      torso.add(rim);
     }
   }
 
@@ -461,16 +502,21 @@ export class CharacterRig extends BaseRig {
       arm.add(this.box(0.012, 0.055, 0.045, mat(s.patch), side * (armT * 0.6 + 0.004), -U * 0.5, 0));
     }
 
-    // --- hand: palm, thumb toward the body, four fingers fanned below the palm
-    const palmH = armT * 0.9;
-    hand.add(this.box(armT * 0.78, palmH, armT * 0.4, skin, 0, -palmH / 2 - 0.005, 0));
+    // --- hand: a palm about three quarters of the arm's thickness, thumb toward the
+    // body, four thin fingers fanned below the palm. Wide sleeves swallow a small
+    // hand, so the hand grows with the sleeve and hangs clear of its hem.
+    const hk = s.sleeves === "wide" ? 1.15 + 0.15 * (s.sleeveScale ?? 1) : 1;
+    const palmW = armT * 0.58 * hk;
+    const palmH = armT * 0.68 * hk;
+    const hy = s.sleeves === "wide" ? -0.03 : 0;
+    hand.add(this.box(palmW, palmH, armT * 0.3 * hk, skin, 0, hy - palmH / 2 - 0.005, 0));
     const inward = -side; // thumbs point toward the body
-    const thumb = this.box(armT * 0.24, armT * 0.46, armT * 0.28, skin, inward * armT * 0.46, -armT * 0.36, armT * 0.1);
+    const thumb = this.box(armT * 0.18 * hk, armT * 0.36 * hk, armT * 0.2 * hk, skin, inward * armT * 0.35 * hk, hy - armT * 0.28 * hk, armT * 0.08 * hk);
     thumb.rotation.z = -inward * 0.55;
     hand.add(thumb);
     for (let i = 0; i < 4; i++) {
-      const fx = (i - 1.5) * armT * 0.19;
-      const f = this.box(armT * 0.16, armT * 0.5, armT * 0.3, skin, fx, -palmH - armT * 0.22, 0);
+      const fx = (i - 1.5) * armT * 0.145 * hk;
+      const f = this.box(armT * 0.115 * hk, armT * 0.4 * hk, armT * 0.22 * hk, skin, fx, hy - palmH - armT * 0.17 * hk, 0);
       f.rotation.z = (i - 1.5) * 0.06;
       f.rotation.x = 0.12;
       hand.add(f);
@@ -502,37 +548,31 @@ export class CharacterRig extends BaseRig {
     const skinDark = mat(shade(s.skin, 0.6));
     const stubble = s.stubble ? mat(s.stubble) : null;
 
-    // --- skull: an egg, with a separate jaw mass, a chin and cheek volume
-    const skull = this.mesh(G.sphere(HR, 16), skin, 0, 0.25, 0);
-    skull.scale.set(heavy ? 1.04 : 0.95, heavy ? 1.0 : 1.05, 0.98);
+    // --- skull: ONE smooth egg (a high-segment sphere scaled taller than wide)
+    // so the skin reads as a single continuous surface. The only other skin
+    // volume is a small chin that sits almost entirely inside the egg and
+    // just rounds out the bottom of the face. No jaw mass, no cheek spheres:
+    // separate spheres shade as lumps under the toon gradient.
+    const skull = this.mesh(G.sphere(HR, 20), skin, 0, 0.25, 0);
+    skull.scale.set(heavy ? 1.06 : 0.95, heavy ? 1.02 : 1.1, heavy ? 1.0 : 0.97);
     head.add(skull);
-    const jaw = this.sphere(0.148, skin, 0, 0.11, 0.015, 12);
-    jaw.scale.set(heavy ? 1.18 : 1.02, heavy ? 0.8 : 0.66, 0.95);
-    head.add(jaw);
-    const chin = this.sphere(0.055, stubble ?? skin, 0, 0.05, 0.1, 8);
-    chin.scale.set(1.25, 0.7, 0.9);
+    const chin = this.sphere(heavy ? 0.08 : 0.07, skin, 0, heavy ? 0.08 : 0.07, heavy ? 0.045 : 0.06, 12);
+    chin.scale.set(heavy ? 1.3 : 1.15, heavy ? 0.72 : 0.75, heavy ? 0.95 : 1.0);
     head.add(chin);
-    if (heavy) {
-      const dc = this.sphere(0.1, skin, 0, 0.03, 0.05, 8); // double chin
-      dc.scale.set(1.35, 0.5, 0.95);
-      head.add(dc);
-    }
     for (const side of [-1, 1]) {
-      const cheek = this.sphere(0.058, skin, side * 0.1, 0.19, 0.12, 8);
-      cheek.scale.set(1, 0.85, 0.75);
-      head.add(cheek);
-      const ear = this.sphere(0.04, skin, side * 0.195, 0.25, -0.01, 7);
+      const ear = this.sphere(0.04, skin, side * (heavy ? 0.205 : 0.19), 0.25, -0.01, 7);
       ear.scale.set(0.45, 1.0, 0.7);
       head.add(ear);
-      const inner = this.sphere(0.02, skinDark, side * 0.206, 0.25, -0.005, 6);
+      const inner = this.sphere(0.02, skinDark, side * (heavy ? 0.216 : 0.201), 0.25, -0.005, 6);
       inner.scale.set(0.3, 0.6, 0.5);
       inner.castShadow = false;
       head.add(inner);
     }
     if (stubble) {
-      // a shadow of stubble over the jaw, just outside the jaw mass
-      const st = this.sphere(0.148, stubble, 0, 0.105, 0.015, 12);
-      st.scale.set(1.035, 0.65, 0.965);
+      // a shadow of stubble over the lower face: a sphere that sits inside the
+      // egg at mouth level and comes through only below the lip and along the jaw
+      const st = this.sphere(0.148, stubble, 0, 0.115, 0.01, 14);
+      st.scale.set(1.0, 0.68, 0.98);
       st.castShadow = false;
       head.add(st);
     }
@@ -546,10 +586,13 @@ export class CharacterRig extends BaseRig {
     const browMat = mat(s.hairStyle === "bald" ? shade(s.skin, 0.45) : s.hair);
     const browT = s.brows === "strong" ? 0.022 : s.brows === "thin" ? 0.011 : 0.015;
     const lashes = s.lashes ?? !!s.female;
+    // a round (heavy) skull is a touch deeper at the brow, so its features sit a hair further forward
+    const fz = heavy ? 0.006 : 0;
     for (const side of [-1, 1]) {
       const ex = side * 0.072;
       const ey = 0.255;
-      const ez = 0.151;
+      // the eyeball centre sits 0.03 behind the skin, so only a small cap of white shows around the iris
+      const ez = 0.151 + fz;
       const ball = this.sphere(0.046, white, ex, ey, ez, 9);
       ball.scale.set(1.05, almond ? 0.72 : 0.9, 0.75);
       ball.castShadow = false;
@@ -573,11 +616,11 @@ export class CharacterRig extends BaseRig {
         head.add(lash);
       }
       // brow: an inner segment rising outward, an outer segment falling toward the temple
-      const inner = this.box(0.048, browT, 0.022, browMat, side * 0.047, 0.305, 0.179);
+      const inner = this.box(0.048, browT, 0.022, browMat, side * 0.047, 0.305, 0.179 + fz);
       inner.rotation.z = side * 0.18;
       inner.castShadow = false;
       head.add(inner);
-      const outer = this.box(0.052, browT * 0.9, 0.022, browMat, side * 0.095, 0.312, 0.156);
+      const outer = this.box(0.052, browT * 0.9, 0.022, browMat, side * 0.095, 0.312, 0.156 + fz);
       outer.rotation.z = side * -0.4;
       outer.rotation.y = side * 0.35;
       outer.castShadow = false;
@@ -585,56 +628,59 @@ export class CharacterRig extends BaseRig {
     }
 
     // --- nose: a wedge with a rounded tip and two nostrils; a philtrum above the lip
-    const nose = this.mesh(G.cone(0.03, 0.09, 4), skin, 0, 0.205, 0.2);
+    const nose = this.mesh(G.cone(0.03, 0.09, 4), skin, 0, 0.205, 0.2 + fz);
     nose.rotation.x = Math.PI / 2 - 0.35;
     nose.rotation.y = Math.PI / 4;
     head.add(nose);
-    head.add(this.sphere(0.021, skin, 0, 0.188, 0.225, 6));
+    head.add(this.sphere(0.021, skin, 0, 0.188, 0.225 + fz, 6));
     for (const side of [-1, 1]) {
-      const nostril = this.sphere(0.008, skinDark, side * 0.016, 0.176, 0.205, 5);
+      const nostril = this.sphere(0.008, skinDark, side * 0.016, 0.176, 0.205 + fz, 5);
       nostril.castShadow = false;
       head.add(nostril);
-      head.add(this.box(0.006, 0.026, 0.01, skin, side * 0.008, 0.163, 0.181)); // philtrum ridges
+      head.add(this.box(0.006, 0.026, 0.01, skin, side * 0.008, 0.163, 0.181 + fz)); // philtrum ridges
     }
 
     // --- mouth: two-tone lips with a dark seam, or a toothy grin
     const lipMat = mat(mix(s.skin, "#8a3a48", s.female ? 0.62 : 0.4));
     const lipDark = mat(mix(s.skin, "#3a1218", 0.7));
     if (!s.grin) {
-      const upper = this.box(0.076, 0.012, 0.016, lipMat, 0, 0.145, 0.168);
+      const upper = this.box(0.076, 0.012, 0.016, lipMat, 0, 0.145, 0.168 + fz);
       upper.castShadow = false;
       head.add(upper);
-      const lower = this.box(0.064, 0.016, 0.018, lipMat, 0, 0.129, 0.16);
+      const lower = this.box(0.064, 0.016, 0.018, lipMat, 0, 0.129, 0.16 + fz);
       lower.castShadow = false;
       head.add(lower);
-      const seam = this.box(0.07, 0.004, 0.006, lipDark, 0, 0.137, 0.173);
+      const seam = this.box(0.07, 0.004, 0.006, lipDark, 0, 0.137, 0.173 + fz);
       seam.castShadow = false;
       head.add(seam);
       if (s.smirk || s.smile) {
         for (const side of s.smirk ? [1] : [-1, 1]) {
-          const corner = this.box(0.028, 0.011, 0.014, lipMat, side * 0.047, 0.15, 0.164);
+          const corner = this.box(0.028, 0.011, 0.014, lipMat, side * 0.047, 0.15, 0.164 + fz);
           corner.rotation.z = side * 0.5;
           corner.castShadow = false;
           head.add(corner);
         }
       }
     } else {
-      // a wide open grin: dark mouth, white teeth line, lifted corners
-      const grin = this.box(0.12, 0.036, 0.015, mat("#5a2430"), 0, 0.136, 0.164);
-      grin.castShadow = false;
-      head.add(grin);
-      const teeth = this.box(0.1, 0.013, 0.016, mat("#f6f2ea"), 0, 0.145, 0.167);
+      // a wide smile showing teeth: one white tooth line framed by the lips, corners lifted
+      const upper = this.box(0.1, 0.012, 0.016, lipMat, 0, 0.152, 0.167 + fz);
+      upper.castShadow = false;
+      head.add(upper);
+      const teeth = this.box(0.092, 0.016, 0.016, mat("#f6f2ea"), 0, 0.138, 0.168 + fz);
       teeth.castShadow = false;
       head.add(teeth);
+      const lower = this.box(0.096, 0.013, 0.018, lipMat, 0, 0.124, 0.163 + fz);
+      lower.castShadow = false;
+      head.add(lower);
       for (const side of [-1, 1]) {
-        const corner = this.box(0.026, 0.02, 0.015, mat("#5a2430"), side * 0.068, 0.15, 0.156);
-        corner.rotation.z = side * 0.4;
+        const corner = this.box(0.03, 0.013, 0.015, lipMat, side * 0.058, 0.156, 0.16 + fz);
+        corner.rotation.z = side * 0.55;
         corner.castShadow = false;
         head.add(corner);
       }
     }
     if (s.moustache) {
-      const m = this.box(0.1, 0.028, 0.03, mat(s.moustache), 0, 0.16, 0.184);
+      const m = this.box(0.1, 0.028, 0.03, mat(s.moustache), 0, 0.16, 0.184 + fz);
       m.castShadow = false;
       head.add(m);
     }
@@ -736,19 +782,57 @@ export class CharacterRig extends BaseRig {
     band.scale.set(1.1, 0.4, 0.9);
     head.add(band);
 
-    /** A fringe piece over the forehead: its bottom edge stays above the brows. */
+    /** A fringe piece over the forehead: a flattened ellipsoid whose lower edge stays above the brows. */
     const fringe = (w: number, x: number, tilt = 0, m: THREE.Material = hair) => {
-      const f = this.box(w, 0.05, 0.06, m, x, 0.372, 0.165);
+      const f = this.sphere(0.1, m, x, 0.375, 0.16, 10);
+      f.scale.set(w / 0.2, 0.28, 0.32);
       f.rotation.z = tilt;
       head.add(f);
       return f;
     };
-    /** Side masses from the temples down, outside the cheeks. */
-    const sides = (h: number, depth = 0.26, zc = -0.03, w = 0.09) => {
-      for (const side of [-1, 1]) head.add(this.box(w, h, depth, hair, side * (0.19 + w / 2 - 0.015), 0.4 - h / 2, zc));
+    /**
+     * A hanging mass of hair: an elliptical column (w across, depth deep) with a
+     * rounded top shoulder and a rounded end, the end tucked slightly toward `curl`.
+     * taper < 1 narrows it toward the end; 1 keeps a straight-cut bob.
+     */
+    const lock = (x: number, top: number, h: number, w: number, depth: number, zc: number, taper: number, curlX = 0, curlZ = 0) => {
+      const col = this.mesh(G.cyl(1, taper, 1, 12), hair, x, top - h / 2, zc);
+      col.scale.set(w / 2, h, depth / 2);
+      head.add(col);
+      const shoulder = this.sphere(1, hair, x, top, zc, 10);
+      shoulder.scale.set(w / 2, 0.05, depth / 2);
+      head.add(shoulder);
+      const end = this.sphere(1, hair, x + curlX, top - h, zc + curlZ, 10);
+      end.scale.set((w / 2) * taper, 0.035, (depth / 2) * taper);
+      head.add(end);
     };
-    /** The back of the hair, hanging from the crown. */
-    const back = (h: number, w = 0.42, thick = 0.1) => head.add(this.box(w, h, thick, hair, 0, 0.38 - h / 2, -0.2));
+    /** Side masses from the temples down, outside the cheeks, ends curled in toward the jaw. */
+    const sides = (h: number, depth = 0.26, zc = -0.03, w = 0.09, taper = 0.85) => {
+      for (const side of [-1, 1]) lock(side * (0.19 + w / 2 - 0.015), 0.4, h, w, depth, zc, taper, -side * 0.012);
+    };
+    /** The back of the hair, hanging from the crown, its end curled in toward the neck. */
+    const back = (h: number, w = 0.42, thick = 0.1) => lock(0, 0.38, h, w, thick, -0.2, 0.9, 0, 0.012);
+    /** Height of the hair surface (scalp cap or hairline band) over a point of the scalp. */
+    const scalpY = (x: number, z: number) => {
+      const c = (x / (HR * cap.scale.x)) ** 2 + ((z + 0.03) / (HR * cap.scale.z)) ** 2;
+      const b = (x / 0.176) ** 2 + ((z - 0.06) / 0.144) ** 2;
+      return Math.max(c < 1 ? 0.31 + HR * cap.scale.y * Math.sqrt(1 - c) : 0, b < 1 ? 0.4 + 0.064 * Math.sqrt(1 - b) : 0);
+    };
+    /** A skin parting line laid along the scalp surface from zFront back to zBack. */
+    const parting = (x: number, zFront: number, zBack: number, n = 5) => {
+      const step = (zFront - zBack) / n;
+      for (let i = 0; i < n; i++) {
+        const z0 = zFront - i * step;
+        const z1 = z0 - step;
+        const y0 = scalpY(x, z0);
+        const y1 = scalpY(x, z1);
+        const len = Math.hypot(step, y1 - y0) + 0.006;
+        const p = this.box(0.014, 0.012, Math.round(len * 1000) / 1000, skin, x, (y0 + y1) / 2 + 0.004, (z0 + z1) / 2);
+        p.rotation.x = Math.atan2(y1 - y0, step);
+        p.castShadow = false;
+        head.add(p);
+      }
+    };
 
     switch (style) {
       case "crop":
@@ -774,22 +858,32 @@ export class CharacterRig extends BaseRig {
         break;
       }
       case "shoulder": {
-        // straight, parted fringe, hair to the shoulders all the way round, ends curled in
+        // a straight-cut bob with a parted fringe: hair to the shoulders all the way round,
+        // no taper, rounded corners and ends tucked in
         fringe(0.1, -0.1, 0.15);
         fringe(0.17, 0.065, -0.1);
-        sides(0.42, 0.26, -0.03, 0.1);
-        back(0.44);
-        for (const side of [-1, 1]) head.add(this.box(0.11, 0.05, 0.26, hair, side * 0.21, -0.02, -0.03));
+        sides(0.42, 0.3, -0.05, 0.1, 1.0);
+        back(0.44, 0.46, 0.14);
         break;
       }
       case "long": {
+        // long straight hair: tapering side masses that curl in at the ends, a rounded back
         fringe(0.26, 0);
-        sides(0.5);
-        back(0.55);
+        sides(0.5, 0.3, -0.05, 0.1);
+        back(0.55, 0.46, 0.14);
         if (s.ornament) {
-          head.add(this.box(0.12, 0.03, 0.06, orn, 0, 0.4, -0.2));
-          head.add(this.box(0.03, 0.18, 0.02, orn, -0.04, 0.3, -0.27));
-          head.add(this.box(0.03, 0.18, 0.02, orn, 0.04, 0.3, -0.27));
+          // a small ribbon bow pinned at the top of the right side lock, where it shows from the front
+          const bx = 0.262;
+          head.add(this.sphere(0.017, orn, bx, 0.4, 0.04, 6)); // knot
+          for (const side of [-1, 1]) {
+            const loop = this.sphere(0.034, orn, bx - 0.004, 0.414, 0.04 + side * 0.04, 8);
+            loop.scale.set(0.45, 0.7, 1.0);
+            loop.rotation.x = side * 0.5;
+            head.add(loop);
+            const tail = this.box(0.012, 0.11, 0.024, orn, bx + 0.004, 0.335, 0.04 + side * 0.02);
+            tail.rotation.x = side * 0.22;
+            head.add(tail);
+          }
         }
         break;
       }
@@ -807,65 +901,83 @@ export class CharacterRig extends BaseRig {
         }
         for (const side of [-1, 1]) head.add(this.box(0.09, 0.22, 0.18, hair, side * 0.2, 0.3, -0.05));
         back(0.24, 0.38);
-        for (const [x, y, z, rz] of [[-0.12, 0.5, -0.06, 0.5], [0.1, 0.51, -0.1, -0.45], [0, 0.53, 0.0, 0.1], [-0.04, 0.5, -0.14, 0.2]] as const) {
-          const tuft = this.mesh(G.cone(0.045, 0.12, 5), hair, x, y, z);
+        // rounded tufts that ride just over the crown, inside the hair silhouette
+        for (const [x, y, z, rz, m] of [[-0.12, 0.465, -0.06, 0.35, hair], [0.1, 0.465, -0.1, -0.3, hi], [0.0, 0.498, 0.0, 0.1, hair], [-0.04, 0.465, -0.14, 0.2, hair], [0.11, 0.47, 0.04, -0.25, hair]] as const) {
+          const tuft = this.sphere(0.06, m, x, y, z, 8);
+          tuft.scale.set(1.25, 0.6, 1.1);
           tuft.rotation.z = rz;
           head.add(tuft);
         }
         break;
       }
       case "wavy": {
-        // wavy, messy hair with volume on top, pushed back off the forehead
+        // wavy, messy hair with volume on top, pushed back off the forehead: a sweep
+        // rising off the hairline and three large overlapping waves over the crown
         cap.scale.set(1.04, 1.0, 1.03);
-        const sweep = this.box(0.26, 0.07, 0.06, hair, 0, 0.43, 0.11);
-        sweep.rotation.x = -0.55;
+        const sweep = this.sphere(0.13, hair, 0, 0.43, 0.1, 12);
+        sweep.scale.set(1.1, 0.45, 0.6);
+        sweep.rotation.x = -0.5;
         head.add(sweep);
-        const waves: [number, number, number, THREE.Material][] = [
-          [-0.09, 0.5, 0.0, hair], [0.07, 0.52, -0.04, hi], [0.0, 0.5, -0.12, hair], [-0.15, 0.44, -0.1, hair], [0.16, 0.45, -0.06, hair], [0.12, 0.47, 0.06, hair],
+        const waves: [number, number, number, number, number, THREE.Material][] = [
+          [-0.05, 0.47, 0.0, 0.12, 0.25, hair], [0.09, 0.48, -0.06, 0.11, -0.3, hi], [0.0, 0.46, -0.14, 0.1, 0.1, hair],
         ];
-        for (const [x, y, z, m] of waves) {
-          const w = this.sphere(0.065, m, x, y, z, 7);
-          w.scale.set(1.1, 0.8, 1.1);
+        for (const [x, y, z, r, rz, m] of waves) {
+          const w = this.sphere(r, m, x, y, z, 12);
+          w.scale.set(1.3, 0.7, 1.1);
+          w.rotation.z = rz;
           head.add(w);
         }
-        for (const side of [-1, 1]) head.add(this.box(0.07, 0.16, 0.16, hair, side * 0.205, 0.31, -0.06));
+        for (const side of [-1, 1]) {
+          const s1 = this.sphere(0.085, hair, side * 0.2, 0.31, -0.06, 10);
+          s1.scale.set(0.8, 1.0, 1.0);
+          head.add(s1);
+        }
         back(0.2, 0.36, 0.09);
         break;
       }
       case "quiff": {
-        // thick hair swept back and up from the forehead, falling to the ears and the nape
-        const mass = this.sphere(0.17, hair, 0, 0.47, -0.03, 12);
-        mass.scale.set(1.15, 0.78, 1.1);
+        // thick hair swept back and up from the hairline: overlapping ellipsoids, a big
+        // volume tilting back over the crown, a swell rising off the forehead, a lighter
+        // crest, rounded sides falling to the ears and a soft nape mass. No boxes.
+        const mass = this.sphere(0.18, hair, 0, 0.45, -0.04, 14);
+        mass.scale.set(1.1, 0.85, 1.15);
+        mass.rotation.x = -0.3;
         head.add(mass);
-        const front = this.box(0.3, 0.1, 0.07, hair, 0, 0.44, 0.13);
-        front.rotation.x = -0.6;
+        const front = this.sphere(0.12, hair, 0, 0.46, 0.07, 12);
+        front.scale.set(1.3, 0.8, 0.9);
+        front.rotation.x = -0.35;
         head.add(front);
-        const crest = this.box(0.2, 0.08, 0.12, hi, 0.02, 0.53, 0.05);
+        const crest = this.sphere(0.09, hi, 0.02, 0.53, 0.02, 10);
+        crest.scale.set(1.2, 0.6, 1.0);
         crest.rotation.x = -0.4;
         crest.rotation.z = -0.15;
         head.add(crest);
         for (const side of [-1, 1]) {
-          head.add(this.box(0.08, 0.22, 0.2, hair, side * 0.21, 0.28, -0.05));
-          const flick = this.box(0.06, 0.12, 0.08, hair, side * 0.22, 0.2, -0.12);
-          flick.rotation.z = side * 0.25;
-          head.add(flick);
+          const s1 = this.sphere(0.1, hair, side * 0.19, 0.3, -0.05, 10);
+          s1.scale.set(0.7, 1.2, 1.0);
+          head.add(s1);
         }
-        head.add(this.box(0.32, 0.16, 0.09, hair, 0, 0.2, -0.2)); // nape
+        const nape = this.sphere(0.16, hair, 0, 0.22, -0.16, 12);
+        nape.scale.set(1.1, 0.6, 0.6);
+        head.add(nape);
         break;
       }
       case "sidepart": {
-        // medium hair, parted on the left, a soft sweep across the forehead to the right
-        const sweep = this.box(0.24, 0.06, 0.07, hair, 0.035, 0.385, 0.155);
+        // medium hair parted on the left: a flattened mass swept across the forehead to the
+        // right, lifting off the parting, a smaller flat lobe on the near side, and a skin
+        // parting line laid along the scalp between them. No crown knob.
+        const sweep = this.sphere(0.15, hair, 0.0975, 0.43, 0.075, 12);
+        sweep.scale.set(0.95, 0.4, 0.62);
         sweep.rotation.z = -0.12;
-        sweep.rotation.x = 0.15;
+        sweep.rotation.x = 0.1;
         head.add(sweep);
-        const small = this.box(0.08, 0.05, 0.06, hair, -0.135, 0.39, 0.14);
-        small.rotation.z = 0.35;
-        head.add(small);
-        head.add(this.box(0.012, 0.014, 0.16, skin, -0.075, 0.49, -0.02)).rotation.x = 0.1; // parting
+        const lobe = this.sphere(0.1, hair, -0.16, 0.42, 0.06, 10);
+        lobe.scale.set(0.75, 0.35, 0.6);
+        lobe.rotation.z = 0.3;
+        head.add(lobe);
+        parting(-0.065, 0.13, -0.1);
         for (const side of [-1, 1]) head.add(this.box(0.07, 0.16, 0.18, hair, side * 0.2, 0.3, -0.04));
         back(0.2, 0.36, 0.08);
-        head.add(this.sphere(0.07, hair, 0.08, 0.5, -0.06, 7)); // a little lift on the heavy side
         break;
       }
       case "spiky": {
@@ -887,6 +999,7 @@ export class CharacterRig extends BaseRig {
         const tail = this.mesh(G.cyl(0.055, 0.025, 0.55, 8), hair, 0, 0.1, -0.27);
         tail.rotation.x = 0.18;
         head.add(tail);
+        head.add(this.sphere(0.028, hair, 0, -0.17, -0.32, 7)); // rounded tip
         if (s.female) {
           sides(0.3, 0.09, 0.02, 0.08);
           if (s.ornament) {
@@ -911,12 +1024,7 @@ export class CharacterRig extends BaseRig {
         break;
       case "lowbun": {
         // pulled back tight from the forehead with a centre parting into a low bun at the nape; ears clear
-        for (const [y, z, len, rx] of [[0.455, 0.065, 0.15, 0.55], [0.492, -0.06, 0.12, -0.08]] as const) {
-          const part = this.box(0.012, 0.012, len, skin, 0, y, z);
-          part.rotation.x = rx;
-          part.castShadow = false;
-          head.add(part);
-        }
+        parting(0, 0.15, -0.12, 6);
         for (const side of [-1, 1]) {
           head.add(this.box(0.06, 0.2, 0.16, hair, side * 0.2, 0.3, -0.11)); // behind the ears to the nape
           const wisp = this.box(0.022, 0.09, 0.025, hair, side * 0.2, 0.33, 0.07);
@@ -1030,9 +1138,16 @@ export class CharacterRig extends BaseRig {
       front.rotation.set(0.15, 0.1, 1.25);
       front.visible = false;
       torso.add(front);
-      const strap = this.box(0.05, torsoH * 1.1, 0.02, mat("#2a2024"), 0, torsoH * 0.5, torsoD / 2 + 0.03);
-      strap.rotation.z = 0.6;
+      // the strap runs over the right shoulder (+x), down across the chest to the left hip, and back up the back
+      const strapMat = mat("#2a2024");
+      const { torsoW } = this.d;
+      const strap = this.box(0.05, torsoH * 1.1, 0.02, strapMat, 0, torsoH * 0.5, torsoD / 2 + 0.03);
+      strap.rotation.z = -0.55;
       torso.add(strap);
+      torso.add(this.box(0.05, 0.02, torsoD + 0.1, strapMat, torsoW * 0.42, torsoH + 0.012, 0));
+      const strapBack = this.box(0.05, torsoH * 0.95, 0.02, strapMat, 0.05, torsoH * 0.52, -torsoD / 2 - 0.03);
+      strapBack.rotation.z = 0.35;
+      torso.add(strapBack);
       this.p.guitar = back;
       this.p.guitarFront = front;
     }
@@ -1228,16 +1343,18 @@ export class CharacterRig extends BaseRig {
         break;
       }
       case "crossed": {
-        // arms folded: elbows near the body, each forearm angled up across the chest
-        // toward the opposite shoulder, the left forearm in front of the right
-        p.armR.rotation.x += -0.42 * idleW;
-        p.armR.rotation.z += 0.1 * idleW;
-        p.foreR.rotation.x += 0.77 * idleW;
-        p.foreR.rotation.z = -2.3 * idleW;
-        p.armL.rotation.x += -0.78 * idleW;
-        p.armL.rotation.z += -0.1 * idleW;
-        p.foreL.rotation.x += 1.12 * idleW;
-        p.foreL.rotation.z = 2.3 * idleW;
+        // arms folded: both upper arms hang close to the body with the elbows tucked at
+        // the sides, both forearms lie level across the chest. The left forearm runs
+        // across the lower chest (hand near the right elbow); the right forearm crosses
+        // in front of and above it (hand near the left elbow).
+        p.armR.rotation.x += -0.55 * idleW;
+        p.armR.rotation.z += 0.14 * idleW;
+        p.foreR.rotation.x += 0.56 * idleW;
+        p.foreR.rotation.z = -1.93 * idleW;
+        p.armL.rotation.x += -0.35 * idleW;
+        p.armL.rotation.z += -0.14 * idleW;
+        p.foreL.rotation.x += 0.31 * idleW;
+        p.foreL.rotation.z = 1.75 * idleW;
         p.head.rotation.x = Math.sin(t * 0.9) * 0.04 * idleW;
         break;
       }
@@ -1261,18 +1378,18 @@ export class CharacterRig extends BaseRig {
         break;
       }
       case "stretch": {
-        // a lazy stretch: arms up and folded behind the head, a slight lean back, chin up
+        // a lazy stretch: upper arms out to the sides and up at about 55 degrees, pulled
+        // back so the elbows sit beside and slightly behind the head; forearms fold back
+        // behind the head with the hands at the nape. The face stays clear from every angle.
         const k = 1 + Math.sin(t * 1.1) * 0.04;
-        p.armR.rotation.x += -0.35 * idleW;
-        p.armR.rotation.z += 2.75 * k * idleW;
-        p.foreR.rotation.x += 0.12 * idleW;
-        p.foreR.rotation.y = 0.05 * idleW;
-        p.foreR.rotation.z = 1.65 * idleW;
-        p.armL.rotation.x += -0.35 * idleW;
-        p.armL.rotation.z += -2.75 * k * idleW;
-        p.foreL.rotation.x += 0.12 * idleW;
-        p.foreL.rotation.y = -0.05 * idleW;
-        p.foreL.rotation.z = -1.65 * idleW;
+        p.armR.rotation.x += -0.6 * idleW;
+        p.armR.rotation.z += 2.5 * k * idleW;
+        p.foreR.rotation.x += 0.3 * idleW;
+        p.foreR.rotation.z = 2.23 * idleW;
+        p.armL.rotation.x += -0.6 * idleW;
+        p.armL.rotation.z += -2.5 * k * idleW;
+        p.foreL.rotation.x += 0.3 * idleW;
+        p.foreL.rotation.z = -2.23 * idleW;
         p.torso.rotation.x += -0.08 * idleW;
         p.head.rotation.x = (-0.18 + Math.sin(t * 1.1) * 0.03) * idleW;
         break;
