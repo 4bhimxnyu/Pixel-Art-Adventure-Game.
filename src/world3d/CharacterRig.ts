@@ -624,16 +624,19 @@ export class CharacterRig extends BaseRig {
         }
       }
     } else {
-      // a wide open grin: dark mouth, white teeth line, lifted corners
-      const grin = this.box(0.12, 0.036, 0.015, mat("#5a2430"), 0, 0.136, 0.164 + fz);
-      grin.castShadow = false;
-      head.add(grin);
-      const teeth = this.box(0.1, 0.013, 0.016, mat("#f6f2ea"), 0, 0.145, 0.167 + fz);
+      // a wide smile showing teeth: one white tooth line framed by the lips, corners lifted
+      const upper = this.box(0.1, 0.012, 0.016, lipMat, 0, 0.152, 0.167 + fz);
+      upper.castShadow = false;
+      head.add(upper);
+      const teeth = this.box(0.092, 0.016, 0.016, mat("#f6f2ea"), 0, 0.138, 0.168 + fz);
       teeth.castShadow = false;
       head.add(teeth);
+      const lower = this.box(0.096, 0.013, 0.018, lipMat, 0, 0.124, 0.163 + fz);
+      lower.castShadow = false;
+      head.add(lower);
       for (const side of [-1, 1]) {
-        const corner = this.box(0.026, 0.02, 0.015, mat("#5a2430"), side * 0.068, 0.15, 0.156 + fz);
-        corner.rotation.z = side * 0.4;
+        const corner = this.box(0.03, 0.013, 0.015, lipMat, side * 0.058, 0.156, 0.16 + fz);
+        corner.rotation.z = side * 0.55;
         corner.castShadow = false;
         head.add(corner);
       }
@@ -754,6 +757,27 @@ export class CharacterRig extends BaseRig {
     };
     /** The back of the hair, hanging from the crown. */
     const back = (h: number, w = 0.42, thick = 0.1) => head.add(this.box(w, h, thick, hair, 0, 0.38 - h / 2, -0.2));
+    /** Height of the hair surface (scalp cap or hairline band) over a point of the scalp. */
+    const scalpY = (x: number, z: number) => {
+      const c = (x / (HR * cap.scale.x)) ** 2 + ((z + 0.03) / (HR * cap.scale.z)) ** 2;
+      const b = (x / 0.176) ** 2 + ((z - 0.06) / 0.144) ** 2;
+      return Math.max(c < 1 ? 0.31 + HR * cap.scale.y * Math.sqrt(1 - c) : 0, b < 1 ? 0.4 + 0.064 * Math.sqrt(1 - b) : 0);
+    };
+    /** A skin parting line laid along the scalp surface from zFront back to zBack. */
+    const parting = (x: number, zFront: number, zBack: number, n = 5) => {
+      const step = (zFront - zBack) / n;
+      for (let i = 0; i < n; i++) {
+        const z0 = zFront - i * step;
+        const z1 = z0 - step;
+        const y0 = scalpY(x, z0);
+        const y1 = scalpY(x, z1);
+        const len = Math.hypot(step, y1 - y0) + 0.006;
+        const p = this.box(0.014, 0.012, Math.round(len * 1000) / 1000, skin, x, (y0 + y1) / 2 + 0.004, (z0 + z1) / 2);
+        p.rotation.x = Math.atan2(y1 - y0, step);
+        p.castShadow = false;
+        head.add(p);
+      }
+    };
 
     switch (style) {
       case "crop":
@@ -861,18 +885,21 @@ export class CharacterRig extends BaseRig {
         break;
       }
       case "sidepart": {
-        // medium hair, parted on the left, a soft sweep across the forehead to the right
-        const sweep = this.box(0.24, 0.06, 0.07, hair, 0.035, 0.385, 0.155);
+        // medium hair parted on the left: a flattened mass swept across the forehead to the
+        // right, lifting off the parting, a smaller flat lobe on the near side, and a skin
+        // parting line laid along the scalp between them. No crown knob.
+        const sweep = this.sphere(0.15, hair, 0.0975, 0.43, 0.075, 12);
+        sweep.scale.set(0.95, 0.4, 0.62);
         sweep.rotation.z = -0.12;
-        sweep.rotation.x = 0.15;
+        sweep.rotation.x = 0.1;
         head.add(sweep);
-        const small = this.box(0.08, 0.05, 0.06, hair, -0.135, 0.39, 0.14);
-        small.rotation.z = 0.35;
-        head.add(small);
-        head.add(this.box(0.012, 0.014, 0.16, skin, -0.075, 0.49, -0.02)).rotation.x = 0.1; // parting
+        const lobe = this.sphere(0.1, hair, -0.16, 0.42, 0.06, 10);
+        lobe.scale.set(0.75, 0.35, 0.6);
+        lobe.rotation.z = 0.3;
+        head.add(lobe);
+        parting(-0.065, 0.13, -0.1);
         for (const side of [-1, 1]) head.add(this.box(0.07, 0.16, 0.18, hair, side * 0.2, 0.3, -0.04));
         back(0.2, 0.36, 0.08);
-        head.add(this.sphere(0.07, hair, 0.08, 0.5, -0.06, 7)); // a little lift on the heavy side
         break;
       }
       case "spiky": {
@@ -918,12 +945,7 @@ export class CharacterRig extends BaseRig {
         break;
       case "lowbun": {
         // pulled back tight from the forehead with a centre parting into a low bun at the nape; ears clear
-        for (const [y, z, len, rx] of [[0.455, 0.065, 0.15, 0.55], [0.492, -0.06, 0.12, -0.08]] as const) {
-          const part = this.box(0.012, 0.012, len, skin, 0, y, z);
-          part.rotation.x = rx;
-          part.castShadow = false;
-          head.add(part);
-        }
+        parting(0, 0.15, -0.12, 6);
         for (const side of [-1, 1]) {
           head.add(this.box(0.06, 0.2, 0.16, hair, side * 0.2, 0.3, -0.11)); // behind the ears to the nape
           const wisp = this.box(0.022, 0.09, 0.025, hair, side * 0.2, 0.33, 0.07);
