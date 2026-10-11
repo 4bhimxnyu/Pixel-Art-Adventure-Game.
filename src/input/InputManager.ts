@@ -68,6 +68,7 @@ class InputManager {
     held: new Set(),
     lookActive: false,
   };
+  /** Physical keys held (KeyboardEvent.code), so Shift / Caps Lock can never leave a key stuck. */
   private keys = new Set<string>();
   private pressedQueue = new Set<Action>();
   private mouseDown = false;
@@ -156,16 +157,21 @@ class InputManager {
   private onKeyDown = (e: KeyboardEvent) => {
     if (e.isTrusted) this.setDevice("keyboard");
     if (e.repeat) return;
-    this.keys.add(e.key);
+    // Held keys are tracked by physical position: with Shift down "w" arrives
+    // as "W" and the release as "w", which used to leave the player running.
+    this.keys.add(e.code || e.key);
     if (e.key === "Shift") this.keys.add("Shift");
     const a = KEY_ACTION[e.key];
     if (a && !this.overlayOpen) {
       this.pressedQueue.add(a);
       if (["e", "E", "z", "Z", "Enter", " ", "f", "F", "m", "M"].includes(e.key)) e.preventDefault();
     }
+    // arrows turn the camera in the world; never scroll the page
+    if (!this.overlayOpen && e.key.startsWith("Arrow")) e.preventDefault();
   };
   private onKeyUp = (e: KeyboardEvent) => {
-    this.keys.delete(e.key);
+    this.keys.delete(e.code || e.key);
+    if (e.key === "Shift") this.keys.delete("Shift");
   };
   private onBlur = () => {
     this.keys.clear();
@@ -211,15 +217,29 @@ class InputManager {
     s.zoom = 0;
     s.lookActive = false;
 
-    // keyboard move
+    // keyboard: WASD moves, the arrow keys turn the camera (so a keyboard
+    // alone can look around, in the third-person view and in first person)
     let mx = 0;
     let my = 0;
     const k = this.keys;
-    if (k.has("a") || k.has("A") || k.has("ArrowLeft")) mx -= 1;
-    if (k.has("d") || k.has("D") || k.has("ArrowRight")) mx += 1;
-    if (k.has("w") || k.has("W") || k.has("ArrowUp")) my += 1;
-    if (k.has("s") || k.has("S") || k.has("ArrowDown")) my -= 1;
-    if (k.has("Shift")) s.held.add("dodge");
+    if (k.has("KeyA")) mx -= 1;
+    if (k.has("KeyD")) mx += 1;
+    if (k.has("KeyW")) my += 1;
+    if (k.has("KeyS")) my -= 1;
+    if (k.has("Shift") || k.has("ShiftLeft") || k.has("ShiftRight")) s.held.add("dodge");
+    if (!this.overlayOpen) {
+      let lx = 0;
+      let ly = 0;
+      if (k.has("ArrowLeft")) lx -= 1;
+      if (k.has("ArrowRight")) lx += 1;
+      if (k.has("ArrowUp")) ly -= 1;
+      if (k.has("ArrowDown")) ly += 1;
+      if (lx || ly) {
+        s.look.x += lx * 2.4 * dt * this.lookSens;
+        s.look.y += ly * 1.3 * dt * this.lookSens * (this.invertY ? -1 : 1);
+        s.lookActive = true;
+      }
+    }
 
     // mouse look (hold button and drag)
     if (this.mouseDelta.x || this.mouseDelta.y) {

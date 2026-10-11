@@ -1373,7 +1373,7 @@ export class World3D {
     }
     if (!locked && store.flags.introDone) {
       this.tip("move", {
-        keyboard: "Move with WASD. Hold a mouse button and drag to look around. The gold beacon marks your objective.",
+        keyboard: "Move with WASD. Arrow keys turn the camera (or hold a mouse button and drag). The gold beacon marks your objective.",
         gamepad: "Left stick moves, right stick looks around. The gold beacon marks your objective.",
         touch: "Drag on the left half to walk, on the right half to look around. The gold beacon marks your objective.",
       });

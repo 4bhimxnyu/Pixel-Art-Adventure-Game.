@@ -21,7 +21,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 const CONTROLS: Record<Tab, [string, string][]> = {
   keyboard: [
-    ["Move", "WASD / Arrows"], ["Look", "Drag the mouse · wheel zooms"], ["Interact / advance", "E · Enter · Space"],
+    ["Move", "WASD"], ["Look", "Arrow keys · drag the mouse · wheel zooms"], ["Interact / advance", "E · Enter · Space"],
     ["Dash", "Shift"], ["Mimo sniffs", "F"], ["Items", "I"], ["Journey", "Q"], ["Hint", "H"],
     ["Menu", "Esc"], ["Save", "F5"], ["Dialogue auto / skip", "A · hold X"], ["Reset position", "R"],
   ],

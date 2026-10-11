@@ -40,8 +40,8 @@ npm run build      # typecheck + production build
 
 | Action | Keyboard / mouse | Gamepad | Touch |
 | --- | --- | --- | --- |
-| Move | WASD / arrows | Left stick / D-pad | Left-side joystick |
-| Look | Drag with a mouse button, wheel to zoom | Right stick, triggers to zoom | Drag on the right half |
+| Move | WASD | Left stick / D-pad | Left-side joystick |
+| Look | Arrow keys, or drag with a mouse button; wheel to zoom | Right stick, triggers to zoom | Drag on the right half |
 | Interact / advance | E, Z, Enter, Space | A | Big red button |
 | Dash | Shift | B | Dash button |
 | Mimo sniffs | F | RB | Paw button |

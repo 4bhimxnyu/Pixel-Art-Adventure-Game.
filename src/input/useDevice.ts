@@ -33,5 +33,5 @@ export function glyph(action: "interact" | "cancel" | "menu" | "items" | "quests
   if (kind === "touch") {
     return { interact: "●", cancel: "✕", menu: "☰", items: "▣", quests: "◆", hint: "?", sniff: "🐾", dodge: "↯", save: "", look: "drag", move: "joystick" }[action];
   }
-  return { interact: "E", cancel: "X", menu: "Esc", items: "I", quests: "Q", hint: "H", sniff: "F", dodge: "Shift", save: "F5", look: "Drag", move: "WASD" }[action];
+  return { interact: "E", cancel: "X", menu: "Esc", items: "I", quests: "Q", hint: "H", sniff: "F", dodge: "Shift", save: "F5", look: "Arrows / drag", move: "WASD" }[action];
 }

@@ -241,7 +241,7 @@ export default function TitleScreen() {
             ? "Left stick moves · right stick looks · A interacts · Y missions"
             : device.kind === "touch"
             ? "Drag left to walk · drag right to look · the red button interacts"
-            : "WASD to move · drag the mouse to look · E to interact · Q for missions"}
+            : "WASD to move · arrows or mouse drag to look · E to interact · Q for missions"}
         </p>
         {!armed && (
           <p className="sb-blink mt-3 text-[11px] font-semibold tracking-[.3em] text-[#d9b45b]">
