@@ -21,7 +21,7 @@ then walk the West Road to F-1205 for the final chapter and one goodbye, for now
 | 6 | The Three Flames | Ancient Cave, Temple | the echo-stone puzzle, the cave flame, the Sacred Lantern |
 | 7 | Arshiya | Academy | the gatekeeper, **Arshiya** (three phases) |
 | 8 | The West Road | Sparkle Town, West Road | the finale, Faizal at the door |
-| 9 | F-1205 | the flat, first person | Abhimanyu, Garv, Hakim, Faizal, Dev, the evening, the goodbye, THE END |
+| 9 | F-1205 | the flat, first person | Abhimanyu, Garv, Hakim, Faizal, Dev, the evening, the balcony sutta with Riddhi, the goodbye, "I love you Pala", the note |
 
 Mission states (LOCKED / AVAILABLE / ACTIVE / COMPLETED) are derived from the quest
 step in `lib/missionMeta.ts` and shown in the Journey panel. Every region beyond the
@@ -186,8 +186,9 @@ village plaza and stream, the garden pond and moon gate, the mountain's east led
 the temple courtyard, the cave's chain of chambers, the Academy's banner avenue).
 Lantern posts line the way to each destination and the objective hints name them.
 
-Characters are procedural rigs built from their `characters.ts` spec, from written
-references: Palakshi (shoulder-length dark hair, large black glasses, black top and
+Characters are procedural rigs built from their `characters.ts` spec, from photos where
+they exist (`riddhi`, `dev.jpeg`, `garv.jpeg`, `hakim.jpeg` in the project root, kept out
+of git) and written references otherwise: Palakshi (shoulder-length dark hair, large black glasses, black top and
 cardigan, loose green-and-white checkered trousers), Abhimanyu (messy fringe, light
 denim jacket, black tee and jeans, and the only instrument in the game, his white
 bass), Mimo (a fluffy male Shih Tzu who leaves paw prints), Riddhi (messy bun, hoops,
@@ -218,10 +219,17 @@ After Arshiya and the celebration, chapter 8 opens the West Road out of Sparkle 
 Chapter 9 (`storyFinal.ts`) is played in first person: Faizal holds the door, you meet
 Abhimanyu in his room and then Garv, Hakim, Faizal and Dev one by one with their own
 exact exchanges, the flat rearranges itself once everyone has been met, the evening
-plays as a slow camera orbit that ends with the conversation, and the goodbye leads to
-the hug. The hug plays as a camera pull-back, fades to black, shows THE END, rolls the
-credits with the ending track and returns to the title. Nothing loops back into the
-world.
+plays as a slow camera orbit that ends with the conversation. Then Riddhi turns up and
+everyone goes out onto the balcony (through the door at the back of Abhimanyu's room)
+for one last sutta: a mandatory step with drifting smoke, fairy lights and a camera that
+slides along the rail. Only after that does Abhimanyu wait by the door for the goodbye,
+which leads to the hug. The hug plays as a camera pull-back, fades to black, shows the
+ending card ("I love you Pala <3"), then a handwritten note (text in
+`src/data/endNote.ts`), then the credits with the ending track, and returns to the
+title. Nothing loops back into the world.
+
+Every time the story moves to a new step, a card shows the new objective with its first
+clue. Music ducks under dialogue, battle menus, gongs and sound effects.
 
 ## Testing the whole game
 
@@ -233,7 +241,10 @@ await import("/scripts/e2e.js?x=" + Date.now()); await window.__e2e.run();
 
 It plays from New Game to THE END through the real engine (movement, portals,
 encounters, dialogues, every battle, the final chapter) and returns `{ log, fails }`.
-It finds everything from map data (marker letters, tile characters, portals), so a map
+A second harness, `scripts/lineup.js` (see `scripts/README-lineup.md`), stands every
+character rig in a row and frames face, full-body and side shots for visual review.
+
+The playthrough finds everything from map data (marker letters, tile characters, portals), so a map
 redesign needs no script changes; it starts with a reachability audit of every portal
 and NPC on every map. Two things it learned the hard way: never edit `src/` while it
 runs (Vite reloads the page), and every synthetic key press must also be released, or
