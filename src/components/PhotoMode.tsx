@@ -60,11 +60,11 @@ export default function PhotoMode() {
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat) return;
       const k = e.key;
-      if (k === "Escape" || k === "x" || k === "X") { e.preventDefault(); e.stopPropagation(); exit(); }
-      else if (k === "s" || k === "S") { e.preventDefault(); e.stopPropagation(); snap(); }
-      else if (k === "c" || k === "C") { e.preventDefault(); e.stopPropagation(); toggleCaption(); }
-      else if (k === "r" || k === "R") { e.preventDefault(); e.stopPropagation(); recenter(); }
-      else if (k === "h" || k === "H") { e.preventDefault(); e.stopPropagation(); setHideUi((v) => !v); }
+      if (k === "Escape" || k === "x" || k === "X") { e.preventDefault(); e.stopImmediatePropagation(); exit(); }
+      else if (k === "s" || k === "S") { e.preventDefault(); e.stopImmediatePropagation(); snap(); }
+      else if (k === "c" || k === "C") { e.preventDefault(); e.stopImmediatePropagation(); toggleCaption(); }
+      else if (k === "r" || k === "R") { e.preventDefault(); e.stopImmediatePropagation(); recenter(); }
+      else if (k === "h" || k === "H") { e.preventDefault(); e.stopImmediatePropagation(); setHideUi((v) => !v); }
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);

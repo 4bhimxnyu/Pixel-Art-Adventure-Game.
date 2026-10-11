@@ -59,11 +59,11 @@ export default function HowToPlay({ onClose }: { onClose?: () => void }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const ti = TABS.findIndex((t) => t.id === tab);
-      if (["ArrowRight", "d", "D"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); setTab(TABS[(ti + 1) % TABS.length].id); questSfx.select(); }
-      else if (["ArrowLeft", "a", "A"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); setTab(TABS[(ti - 1 + TABS.length) % TABS.length].id); questSfx.select(); }
-      else if (["ArrowDown", "s", "S"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); setCursor(1); }
-      else if (["ArrowUp", "w", "W"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); setCursor(0); }
-      else if (["Enter", " ", "e", "E", "Escape"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); close(); }
+      if (["ArrowRight", "d", "D"].includes(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); setTab(TABS[(ti + 1) % TABS.length].id); questSfx.select(); }
+      else if (["ArrowLeft", "a", "A"].includes(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); setTab(TABS[(ti - 1 + TABS.length) % TABS.length].id); questSfx.select(); }
+      else if (["ArrowDown", "s", "S"].includes(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); setCursor(1); }
+      else if (["ArrowUp", "w", "W"].includes(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); setCursor(0); }
+      else if (["Enter", " ", "e", "E", "Escape"].includes(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); close(); }
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);

@@ -303,3 +303,16 @@ html.touch .dialogue-box { padding-bottom: 16px !important; }
 }
 /* Touch phones in portrait: the party cards shrink so the tracker keeps its column. */
 html.touch .interact-prompt-desktop { display: none; }
+
+/* ------------------------------------------------------------- title */
+.title-screen { --px: 0; --py: 0; }
+.title-layer { transition: transform .6s cubic-bezier(.2,.8,.3,1); will-change: transform; }
+.title-layer-far { transform: translate(calc(var(--px) * -6px), calc(var(--py) * -4px)); }
+.title-layer-mid { transform: translate(calc(var(--px) * -14px), calc(var(--py) * -9px)); }
+.title-layer-near { transform: translate(calc(var(--px) * 10px), calc(var(--py) * 6px)); }
+html.reduced-motion .title-layer { transform: none !important; }
+.ui-lantern { animation: ui-lantern-pulse 4.2s ease-in-out infinite; }
+html.reduced-motion .ui-lantern { animation: none; }
+@media (max-width: 760px) {
+  .title-grid { grid-template-columns: 1fr !important; }
+}
