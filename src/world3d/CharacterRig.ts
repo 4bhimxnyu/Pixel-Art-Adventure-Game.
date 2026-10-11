@@ -308,9 +308,13 @@ export class CharacterRig extends BaseRig {
       case "jacket":
       case "cardigan": {
         const longer = s.outfit === "cardigan" ? 0.14 : 0.02;
-        const panelW = torsoW * 0.36;
+        // an open jacket shows a full panel of tee between two narrow fronts; a cardigan hangs closer to closed
+        const jacket = s.outfit === "jacket";
+        const panelW = torsoW * (jacket ? 0.24 : 0.36);
+        const panelX = torsoW * (jacket ? 0.39 : 0.33);
+        if (jacket) torso.add(this.box(torsoW * 0.6, torsoH * 0.96, 0.03, top, 0, torsoH / 2, torsoD / 2 - 0.004));
         for (const side of [-1, 1]) {
-          torso.add(this.box(panelW, torsoH + longer, 0.05, topAlt, side * torsoW * 0.33, (torsoH - longer) / 2 + 0.02, torsoD / 2 + 0.01));
+          torso.add(this.box(panelW, torsoH + longer, 0.05, topAlt, side * panelX, (torsoH - longer) / 2 + 0.02, torsoD / 2 + 0.01));
           torso.add(this.box(0.05, torsoH + longer, torsoD + 0.04, topAlt, side * (torsoW / 2 + 0.01), (torsoH - longer) / 2 + 0.02, 0));
         }
         torso.add(this.box(torsoW + 0.06, torsoH + longer, 0.05, topAlt, 0, (torsoH - longer) / 2 + 0.02, -torsoD / 2 - 0.01));
@@ -324,12 +328,12 @@ export class CharacterRig extends BaseRig {
           }
           for (let i = 0; i < 3; i++) torso.add(this.sphere(0.015, mat("#2a2020"), 0, torsoH * 0.6 - i * 0.12, torsoD / 2 + 0.05, 5));
         } else {
-          // denim: collar flaps, a chest pocket each side, a dark hem band
+          // denim: small collar points, a chest pocket on each front, a dark hem band
           for (const side of [-1, 1]) {
-            const flap = this.box(0.1, 0.07, 0.03, trim, side * torsoW * 0.28, torsoH - 0.02, torsoD / 2 + 0.035);
-            flap.rotation.z = side * 0.45;
+            const flap = this.box(0.065, 0.045, 0.03, trim, side * torsoW * 0.31, torsoH - 0.012, torsoD / 2 + 0.035);
+            flap.rotation.z = side * 0.5;
             torso.add(flap);
-            torso.add(this.box(0.08, 0.07, 0.012, mat(shade(s.topAlt, 0.88)), side * torsoW * 0.33, torsoH * 0.62, torsoD / 2 + 0.04));
+            torso.add(this.box(0.055, 0.06, 0.012, mat(shade(s.topAlt, 0.88)), side * panelX, torsoH * 0.62, torsoD / 2 + 0.04));
           }
           torso.add(this.box(torsoW * 0.72, 0.012, 0.04, trim, 0, torsoH + 0.02, torsoD / 2 - 0.01)); // collar stand
         }
@@ -808,8 +812,10 @@ export class CharacterRig extends BaseRig {
         }
         for (const side of [-1, 1]) head.add(this.box(0.09, 0.22, 0.18, hair, side * 0.2, 0.3, -0.05));
         back(0.24, 0.38);
-        for (const [x, y, z, rz] of [[-0.12, 0.5, -0.06, 0.5], [0.1, 0.51, -0.1, -0.45], [0, 0.53, 0.0, 0.1], [-0.04, 0.5, -0.14, 0.2]] as const) {
-          const tuft = this.mesh(G.cone(0.045, 0.12, 5), hair, x, y, z);
+        // rounded tufts that ride just over the crown, inside the hair silhouette
+        for (const [x, y, z, rz, m] of [[-0.12, 0.465, -0.06, 0.35, hair], [0.1, 0.465, -0.1, -0.3, hi], [0.0, 0.498, 0.0, 0.1, hair], [-0.04, 0.465, -0.14, 0.2, hair], [0.11, 0.47, 0.04, -0.25, hair]] as const) {
+          const tuft = this.sphere(0.06, m, x, y, z, 8);
+          tuft.scale.set(1.25, 0.6, 1.1);
           tuft.rotation.z = rz;
           head.add(tuft);
         }
@@ -1031,9 +1037,16 @@ export class CharacterRig extends BaseRig {
       front.rotation.set(0.15, 0.1, 1.25);
       front.visible = false;
       torso.add(front);
-      const strap = this.box(0.05, torsoH * 1.1, 0.02, mat("#2a2024"), 0, torsoH * 0.5, torsoD / 2 + 0.03);
-      strap.rotation.z = 0.6;
+      // the strap runs over the right shoulder (+x), down across the chest to the left hip, and back up the back
+      const strapMat = mat("#2a2024");
+      const { torsoW } = this.d;
+      const strap = this.box(0.05, torsoH * 1.1, 0.02, strapMat, 0, torsoH * 0.5, torsoD / 2 + 0.03);
+      strap.rotation.z = -0.55;
       torso.add(strap);
+      torso.add(this.box(0.05, 0.02, torsoD + 0.1, strapMat, torsoW * 0.42, torsoH + 0.012, 0));
+      const strapBack = this.box(0.05, torsoH * 0.95, 0.02, strapMat, 0.05, torsoH * 0.52, -torsoD / 2 - 0.03);
+      strapBack.rotation.z = 0.35;
+      torso.add(strapBack);
       this.p.guitar = back;
       this.p.guitarFront = front;
     }
