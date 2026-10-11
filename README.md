@@ -100,9 +100,10 @@ Do not remove `at()`.
 
 ## The game's soundtrack
 
-`public/audio/` ships four tracks: `game 1.mp3`, `game 2.mp3`, `game 3.mp3` and
-`ending.mp4`. When they are present the music manager in `sound.ts` plays the three
-game tracks in rotation through the whole adventure (one player, persistent across
+`public/audio/` ships the tracks `game 1.mp3`, `game 2.mp3`, `game 3.mp3` and
+`ending.mp4`; any `game N.mp3` up to 6 dropped in is picked up too, and `game 4.mp3`
+leads the rotation when present. The music manager in `sound.ts` plays the game
+tracks in rotation through the whole adventure (one player, persistent across
 regions and battles, crossfading from one track to the next, never two at once) and
 reserves `ending` for THE END and the credits (`bgm_end` / `bgm_credits`). Autoplay
 restrictions are handled by resuming on the first click, key or touch. If the files
@@ -222,10 +223,13 @@ exact exchanges, the flat rearranges itself once everyone has been met, the even
 plays as a slow camera orbit that ends with the conversation. Then Riddhi turns up and
 everyone goes out onto the balcony (through the door at the back of Abhimanyu's room)
 for one last sutta: a mandatory step with drifting smoke, fairy lights and a camera that
-slides along the rail. Only after that does Abhimanyu wait by the door for the goodbye,
+slides along the rail. The flat is a long hallway from the front door: Faizal and
+Hakim's room first, Abhimanyu's room second (its door stays locked until the other four
+have been met), Garv and Dev's room last, with the living room and kitchen across the
+hall; the balcony runs the full width with a railing and a twelfth-floor night view. Only after that does Abhimanyu wait by the door for the goodbye,
 which leads to the hug. The hug plays as a camera pull-back, fades to black, shows the
-ending card ("I love you Pala <3"), then a handwritten note (text in
-`src/data/endNote.ts`), then the credits with the ending track, and returns to the
+ending card ("I love you Pala <3"), then a handwritten note (a photo dropped in as
+`public/note.jpg` or `.png`, otherwise the text in `src/data/endNote.ts`), then the credits with the ending track, and returns to the
 title. Nothing loops back into the world.
 
 Every time the story moves to a new step, a card shows the new objective with its first
