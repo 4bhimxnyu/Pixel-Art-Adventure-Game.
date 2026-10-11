@@ -888,20 +888,27 @@ export class CharacterRig extends BaseRig {
         break;
       }
       case "wavy": {
-        // wavy, messy hair with volume on top, pushed back off the forehead
+        // wavy, messy hair with volume on top, pushed back off the forehead: a sweep
+        // rising off the hairline and three large overlapping waves over the crown
         cap.scale.set(1.04, 1.0, 1.03);
-        const sweep = this.box(0.26, 0.07, 0.06, hair, 0, 0.43, 0.11);
-        sweep.rotation.x = -0.55;
+        const sweep = this.sphere(0.13, hair, 0, 0.43, 0.1, 12);
+        sweep.scale.set(1.1, 0.45, 0.6);
+        sweep.rotation.x = -0.5;
         head.add(sweep);
-        const waves: [number, number, number, THREE.Material][] = [
-          [-0.09, 0.5, 0.0, hair], [0.07, 0.52, -0.04, hi], [0.0, 0.5, -0.12, hair], [-0.15, 0.44, -0.1, hair], [0.16, 0.45, -0.06, hair], [0.12, 0.47, 0.06, hair],
+        const waves: [number, number, number, number, number, THREE.Material][] = [
+          [-0.05, 0.47, 0.0, 0.12, 0.25, hair], [0.09, 0.48, -0.06, 0.11, -0.3, hi], [0.0, 0.46, -0.14, 0.1, 0.1, hair],
         ];
-        for (const [x, y, z, m] of waves) {
-          const w = this.sphere(0.065, m, x, y, z, 7);
-          w.scale.set(1.1, 0.8, 1.1);
+        for (const [x, y, z, r, rz, m] of waves) {
+          const w = this.sphere(r, m, x, y, z, 12);
+          w.scale.set(1.3, 0.7, 1.1);
+          w.rotation.z = rz;
           head.add(w);
         }
-        for (const side of [-1, 1]) head.add(this.box(0.07, 0.16, 0.16, hair, side * 0.205, 0.31, -0.06));
+        for (const side of [-1, 1]) {
+          const s1 = this.sphere(0.085, hair, side * 0.2, 0.31, -0.06, 10);
+          s1.scale.set(0.8, 1.0, 1.0);
+          head.add(s1);
+        }
         back(0.2, 0.36, 0.09);
         break;
       }
@@ -1346,18 +1353,18 @@ export class CharacterRig extends BaseRig {
         break;
       }
       case "stretch": {
-        // a lazy stretch: arms up and folded behind the head, a slight lean back, chin up
+        // a lazy stretch: upper arms out to the sides and up at about 55 degrees, pulled
+        // back so the elbows sit beside and slightly behind the head; forearms fold back
+        // behind the head with the hands at the nape. The face stays clear from every angle.
         const k = 1 + Math.sin(t * 1.1) * 0.04;
-        p.armR.rotation.x += -0.35 * idleW;
-        p.armR.rotation.z += 2.75 * k * idleW;
-        p.foreR.rotation.x += 0.12 * idleW;
-        p.foreR.rotation.y = 0.05 * idleW;
-        p.foreR.rotation.z = 1.65 * idleW;
-        p.armL.rotation.x += -0.35 * idleW;
-        p.armL.rotation.z += -2.75 * k * idleW;
-        p.foreL.rotation.x += 0.12 * idleW;
-        p.foreL.rotation.y = -0.05 * idleW;
-        p.foreL.rotation.z = -1.65 * idleW;
+        p.armR.rotation.x += -0.6 * idleW;
+        p.armR.rotation.z += 2.5 * k * idleW;
+        p.foreR.rotation.x += 0.3 * idleW;
+        p.foreR.rotation.z = 2.23 * idleW;
+        p.armL.rotation.x += -0.6 * idleW;
+        p.armL.rotation.z += -2.5 * k * idleW;
+        p.foreL.rotation.x += 0.3 * idleW;
+        p.foreL.rotation.z = -2.23 * idleW;
         p.torso.rotation.x += -0.08 * idleW;
         p.head.rotation.x = (-0.18 + Math.sin(t * 1.1) * 0.03) * idleW;
         break;
