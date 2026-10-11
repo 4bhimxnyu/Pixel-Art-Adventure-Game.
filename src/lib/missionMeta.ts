@@ -130,9 +130,9 @@ export const MAIN_MISSIONS: MissionDef[] = [
   },
   {
     id: "m_f1205", title: "F-1205", region: "f1205", icon: "home", code: "9",
-    blurb: "Abhimanyu's flat, seen through Palakshi's own eyes. Five flatmates, each somewhere in the house with something to say. One last evening, and one goodbye, for now.",
-    steps: ["f1205", "evening", "goodbye"],
-    cast: ["palakshi", "abhimanyu", "faizal", "garv", "hakim", "dev"],
+    blurb: "Abhimanyu's flat, seen through Palakshi's own eyes. Five flatmates, each somewhere in the house with something to say. One last evening, one sutta on the balcony with Riddhi, and one goodbye, for now.",
+    steps: ["f1205", "evening", "smoke", "goodbye"],
+    cast: ["palakshi", "abhimanyu", "faizal", "garv", "hakim", "dev", "riddhi"],
     rewards: [{ kind: "lore", label: "Goodbye, for now" }],
     finale: true,
   },

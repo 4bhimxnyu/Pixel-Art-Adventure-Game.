@@ -262,6 +262,17 @@ export const STEP_GUIDE: Record<string, Guide> = {
     ],
     chain: ["F-1205", "Abhimanyu"],
   },
+  smoke: {
+    objective: "Join everyone on the balcony",
+    place: "F-1205",
+    region: "f1205",
+    hints: [
+      "Someone is shouting from the balcony. Riddhi has arrived.",
+      "The balcony is through the door at the back of Abhimanyu's room.",
+      "Go out through Abhimanyu's room, find Riddhi on the balcony and talk to her.",
+    ],
+    chain: ["Abhimanyu's room", "Balcony", "Riddhi"],
+  },
   goodbye: {
     objective: "Say goodbye to Abhimanyu",
     place: "F-1205",

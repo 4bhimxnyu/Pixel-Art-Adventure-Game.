@@ -61,8 +61,17 @@ export function handleFinalChapterInteract(story: StoryController, kind: string)
       else npc("faizal", "metFaizal");
       return true;
     }
+    case "npc_riddhi_flat": {
+      if (!f.smokeDone) {
+        // the balcony: everyone is out here, Riddhi included, and this is not optional
+        story.fx.cinematic?.("smoke-scene");
+        story.fx.delay(story.fx.cinematic ? 3600 : 400, () => useGameStore.getState().openDialogue("f1205_smoke"));
+      } else D("riddhi_flat_after");
+      return true;
+    }
     case "npc_abhimanyu_home": {
-      if (f.eveningDone) D("f1205_goodbye");
+      if (f.eveningDone && !f.smokeDone) D("abhi_balcony_wait");
+      else if (f.smokeDone) D("f1205_goodbye");
       else if (!f.metAbhiHome) D("abhi_home_first");
       else if (allMet()) D("abhi_home_evening");
       else D("abhi_home_wait");
@@ -141,10 +150,18 @@ export function handleFinalChapterDialogue(
     case "evening_done":
       store.setFlag("eveningDone", true);
       fx.cinematic?.("evening-end");
+      adv("smoke");
+      bus.emit("toast", { text: "Someone's shouting from the balcony. It can only be Riddhi.", tone: "info" });
+      fx.refresh();
+      return true;
+
+    case "smoke_done":
+      store.setFlag("smokeDone", true);
+      fx.cinematic?.("smoke-end");
       playBgm("bgm_goodbye", 2.0);
       adv("goodbye");
-      bus.emit("toast", { text: "The evening winds down. Abhimanyu is by the door.", tone: "info" });
-      fx.refresh();
+      bus.emit("toast", { text: "Abhimanyu went back in. He's by the door.", tone: "info" });
+      fx.delay(900, () => fx.refresh());
       return true;
 
     case "final_hug": {

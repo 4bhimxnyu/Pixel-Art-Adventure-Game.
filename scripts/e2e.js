@@ -437,8 +437,15 @@ async function run() {
   await until(() => S().overlay?.kind === "dialogue", 9000, "evening conversation");
   await dialogueThrough();
   expect(S().flags.eveningDone, "evening done");
-  await sleep(600);
-  { const a = W().entities.find((e) => e.kind === "npc_abhimanyu_home"); await standBy({ x: a.x, y: a.y }); await interact(); }
+  await sleep(1200);
+  // the balcony: through the door at the back of Abhimanyu's room; Riddhi is waiting and the sutta is not optional
+  { const a = W().entities.find((e) => e.kind === "npc_abhimanyu_home"); expect(a && a.y >= 15, "Abhimanyu is out on the balcony"); }
+  await walkTo(4, 13); await walkTo(4, 15);
+  await talk("R");
+  expect(S().flags.smokeDone, "balcony scene with Riddhi done");
+  await sleep(2200); // the flat rebuilds: Riddhi leaves, Abhimanyu goes back in
+  expect(!W().entities.some((e) => e.kind === "npc_riddhi_flat"), "Riddhi has left the balcony");
+  { const a = W().entities.find((e) => e.kind === "npc_abhimanyu_home"); expect(a && a.y === 7, "Abhimanyu is back by the door"); await standBy({ x: a.x, y: a.y }); await interact(); }
   await until(() => S().flags.hugDone, 4000, "hug");
   await until(() => S().screen === "end", 25000, "THE END");
   expect(S().screen === "end", "the game ends with THE END");

@@ -21,6 +21,13 @@ import { DOG, ABHIMANYU, QUEST_PRAKRITI, QUEST_HIDDEN, ITEMS, type ItemId } from
 import { playBgm, sfx, gong } from "./sound";
 import { questSfx } from "../lib/questSfx";
 import { handleFinalChapterDialogue, handleFinalChapterInteract, FINAL_CHAPTER_PROMPTS } from "./storyFinal";
+import { guideFor } from "../lib/guidance";
+
+/** When the last chapter card went up, so the next-objective card never replaces it. */
+let lastChapterCard = -1e9;
+bus.on("cinematic", (p: { kind?: string }) => {
+  if (p?.kind === "mission-start" || p?.kind === "mission-complete") lastChapterCard = performance.now();
+});
 
 /** What the story needs from whichever renderer is active. */
 export interface WorldFx {
@@ -68,6 +75,8 @@ export function shouldSkipEntity(kind: string, partyId: string | undefined, flag
     case "npc_miniboss3": return flags.miniboss3Done;
     case "npc_guardian": return flags.guardianDone;
     case "npc_boss": return flags.bossDefeated;
+    // Riddhi only appears at the flat for the balcony scene
+    case "npc_riddhi_flat": return !flags.eveningDone || flags.smokeDone;
     default: return false;
   }
 }
@@ -456,6 +465,15 @@ export class StoryController {
       store.advanceQuest("main", step);
       questSfx.objective();
       bus.emit("objective:done");
+      // a card with the new objective and its first clue, once any chapter card has had its moment
+      const g = guideFor(step);
+      if (!g) return;
+      const show = () => {
+        if (performance.now() - lastChapterCard < 3600) { fx.delay(3200, show); return; }
+        if (useGameStore.getState().screen !== "playing") return;
+        bus.emit("cinematic", { kind: "objective", title: g.objective, subtitle: `Clue: ${g.hints[0]}` });
+      };
+      fx.delay(3000, show);
     };
 
     if (handleFinalChapterDialogue(this, evt, adv)) {

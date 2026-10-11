@@ -384,11 +384,22 @@ export function buildMap(def: MapDef, flags: Flags, quality: { shadows: boolean 
     base.position.set(W / 2, -0.2, -H / 2);
     group.add(base);
     if (def.theme === "flat") {
-      // a real ceiling: the flat is seen from inside, in first person
-      const ceil = new THREE.Mesh(G.plane(W, H), mat("#e6dccb"));
+      // a real ceiling: the flat is seen from inside, in first person. It stops
+      // where the balcony (stone 'k' tiles) begins, so that part is open to the night.
+      let ceilRows = H;
+      for (let y = 0; y < H; y++) if (def.rows[y].includes("k")) { ceilRows = y; break; }
+      const ceil = new THREE.Mesh(G.plane(W, ceilRows), mat("#e6dccb"));
       ceil.rotation.x = Math.PI / 2;
-      ceil.position.set(W / 2, 1.92, -H / 2);
+      ceil.position.set(W / 2, 1.92, -ceilRows / 2);
       group.add(ceil);
+      // a string of fairy lights along the balcony wall
+      if (ceilRows < H) {
+        for (let i = 0; i < 9; i++) {
+          const bulb = new THREE.Mesh(G.sphere(0.035, 6), glow(i % 2 ? "#ffd27a" : "#ff9a6a", 1.0));
+          bulb.position.set(1.2 + i * 0.85, 1.6 + (i % 2) * 0.12, -(H - 1) - 0.42);
+          group.add(bulb);
+        }
+      }
       for (let i = 0; i < 6; i++) {
         const lamp = new THREE.Mesh(G.cyl(0.18, 0.18, 0.05, 10), glow("#fff1d0", 0.95));
         lamp.position.set(3 + (i % 3) * 6.5, 1.88, -(i < 3 ? 3 : 11.5));

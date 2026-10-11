@@ -592,12 +592,17 @@ export const MAPS: Record<MapId, MapDef> = {
       "#.b...D..#..b...x..#",
       "#...A..6.#...N..V..#",
       "#....a...#....B.6..#",
+      "####d###############",
+      "#kkkkkkkk###########",
+      "#kkkkRkkk###########",
       "####################",
     ],
     portals: [
       { x: 0, y: 8, to: "road", tx: 11, ty: 12, dir: "up" },
     ],
     interacts: {
+      // the balcony (rows 15-16, off Abhimanyu's room): Riddhi turns up here after the evening
+      R: { kind: "npc_riddhi_flat", sprite: "riddhi", name: "Riddhi" },
       A: { kind: "npc_abhimanyu_home", sprite: "abhimanyu", name: "Abhimanyu" },
       Z: { kind: "npc_faizal", sprite: "faizal", name: "Faizal" },
       N: { kind: "npc_garv", sprite: "garv", name: "Garv" },

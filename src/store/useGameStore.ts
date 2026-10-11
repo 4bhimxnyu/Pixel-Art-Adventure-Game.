@@ -68,6 +68,8 @@ export type Flags = {
   metHakim: boolean;
   metDev: boolean;
   eveningDone: boolean;
+  /** The balcony sutta with Riddhi, after the evening and before the goodbye. */
+  smokeDone: boolean;
   hugDone: boolean;
   seenRoad: boolean;
   seenF1205: boolean;
@@ -93,7 +95,7 @@ export const INITIAL_FLAGS: Flags = {
   guardianDone: false, gateOpen: false, flameMountain: false, flameGarden: false,
   flameCave: false, lanternRestored: false,
   finaleDone: false, f1205Arrived: false, metAbhiHome: false, metFaizal: false, metGarv: false, metHakim: false,
-  metDev: false, eveningDone: false, hugDone: false, seenRoad: false, seenF1205: false,
+  metDev: false, eveningDone: false, smokeDone: false, hugDone: false, seenRoad: false, seenF1205: false,
   plates: {}, statues: {}, digs: {}, chests: {}, lore: {}, hidden: {}, npcSpoken: {},
   tutorialSeen: {},
 };

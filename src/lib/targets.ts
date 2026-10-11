@@ -75,6 +75,7 @@ export const STEP_TARGET: Record<string, Resolver> = {
     return next ? { map: "f1205", kind: next[1] } : { map: "f1205", kind: "npc_abhimanyu_home" };
   },
   evening: () => ({ map: "f1205", kind: "npc_abhimanyu_home" }),
+  smoke: () => ({ map: "f1205", kind: "npc_riddhi_flat" }),
   goodbye: () => ({ map: "f1205", kind: "npc_abhimanyu_home" }),
 };
 

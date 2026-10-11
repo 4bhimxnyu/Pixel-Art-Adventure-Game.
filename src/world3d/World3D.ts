@@ -726,7 +726,15 @@ export class World3D {
   /** A few NPCs move with the story (Abhimanyu waits by the door after the evening). */
   private entityOverride(def: MapDef, kind: string, pos: { x: number; y: number }, flags: Flags) {
     if (def.id !== "f1205") return pos;
-    if (kind === "npc_abhimanyu_home" && flags.eveningDone) return { x: 2, y: 7 };
+    // after the evening everyone is out on the balcony until the sutta is done
+    if (flags.eveningDone && !flags.smokeDone) {
+      const spot: Record<string, { x: number; y: number }> = {
+        npc_dev: { x: 1, y: 16 }, npc_garv: { x: 2, y: 15 }, npc_hakim: { x: 3, y: 16 },
+        npc_faizal: { x: 7, y: 15 }, npc_abhimanyu_home: { x: 8, y: 16 },
+      };
+      if (spot[kind]) return spot[kind];
+    }
+    if (kind === "npc_abhimanyu_home" && flags.smokeDone) return { x: 2, y: 7 };
     // once everyone has said hello the flat rearranges itself: Abhimanyu drifts to the
     // living room with the bass, Garv wanders over to heckle Faizal in the kitchen
     const allMet = flags.metAbhiHome && flags.metFaizal && flags.metGarv && flags.metHakim && flags.metDev;
@@ -1665,6 +1673,14 @@ export class World3D {
         break;
       }
       case "evening-gather": this.eveningGather(); break;
+      case "smoke-scene": this.smokeScene(); break;
+      case "smoke-end": {
+        this.smokeOn = false;
+        if (this.cam.cinematicActive) this.cam.stopCinematic();
+        this.inputLocked = false;
+        this.cam.snapBehind(this.playerPos, this.heading);
+        break;
+      }
       case "evening-end": {
         // the conversation is over: hand the camera back at once instead of
         // finishing the slow orbit (a quick reader would otherwise wait ~30 s)
@@ -1720,6 +1736,80 @@ export class World3D {
         { pos: ring(-0.5, 4.0, 2.2), look, dur: 14 },
         { pos: ring(0.6, 3.6, 2.0), look, dur: 14 },
         { pos: ring(-0.2, 4.4, 2.6), look, dur: 14 },
+      ],
+      onDone: () => { this.inputLocked = false; },
+    });
+    this.delay(60000, () => { if (this.cam.cinematicActive) this.cam.stopCinematic(); });
+  }
+
+  /** The balcony: everyone leans on the rail with a sutta, Riddhi loudest, smoke drifting up. */
+  private smokeOn = false;
+  private smokeScene() {
+    const H = mapHeight(this.mapDef);
+    const railZ = -(H - 1) - 0.1; // just inside the balcony's outer wall
+    const stand: Record<string, number> = { npc_dev: 1.4, npc_garv: 2.3, npc_hakim: 3.2, npc_riddhi_flat: 5.0, npc_faizal: 6.6, npc_abhimanyu_home: 7.6 };
+    const smokers: THREE.Object3D[] = [];
+    for (const e of this.entities) {
+      const x = stand[e.kind];
+      if (x == null || !e.rig) continue;
+      e.x = Math.floor(x);
+      e.y = H - 2;
+      this.walkEntity(e, new THREE.Vector3(x, 0, railZ + 0.55), Math.PI);
+      if (e.kind !== "npc_hakim") smokers.push(e.object);
+    }
+    this.playerPos.set(4.2, 0, railZ + 0.6);
+    this.heading = Math.PI;
+    this.player.setHeading(Math.PI, true);
+    if (this.companion) {
+      this.companion.group.position.set(4.9, 0, railZ + 1.3);
+      this.companion.setHeading(Math.PI, true);
+    }
+    this.inputLocked = true;
+    this.smokeOn = true;
+    // drifting smoke: small grey puffs rise from each person and thin out
+    const puffMat = new THREE.MeshBasicMaterial({ color: "#d8d2cc", transparent: true, opacity: 0.35, depthWrite: false });
+    const puffs: { m: THREE.Mesh; t: number; vx: number }[] = [];
+    let acc = 0;
+    let last = performance.now();
+    const tick = () => {
+      if (!this.running) return;
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      if (this.smokeOn) {
+        acc += dt;
+        if (acc > 0.35 && smokers.length) {
+          acc = 0;
+          const who = smokers[Math.floor(Math.random() * smokers.length)];
+          const m = new THREE.Mesh(G.sphere(0.07, 6), puffMat);
+          m.position.copy(who.position).add(new THREE.Vector3((Math.random() - 0.5) * 0.2, 1.45, -0.25));
+          this.scene.add(m);
+          puffs.push({ m, t: 0, vx: (Math.random() - 0.5) * 0.15 });
+        }
+      }
+      for (let i = puffs.length - 1; i >= 0; i--) {
+        const p = puffs[i];
+        p.t += dt;
+        p.m.position.y += dt * 0.42;
+        p.m.position.x += p.vx * dt;
+        p.m.position.z -= dt * 0.12;
+        const k = Math.min(1, p.t / 2.6);
+        p.m.scale.setScalar(0.6 + k * 2.2);
+        (p.m.material as THREE.MeshBasicMaterial).opacity = 0.32 * (1 - k);
+        if (k >= 1) { this.scene.remove(p.m); puffs.splice(i, 1); }
+      }
+      if (this.smokeOn || puffs.length) requestAnimationFrame(tick);
+      else puffMat.dispose();
+    };
+    tick();
+    // camera: from behind the row, drifting slowly along the rail, then settling on the group
+    const look = new THREE.Vector3(4.5, 1.1, railZ + 0.4);
+    this.cam.playCinematic({
+      frames: [
+        { pos: new THREE.Vector3(1.5, 1.6, railZ + 3.4), look, dur: 1.2 },
+        { pos: new THREE.Vector3(7.5, 1.5, railZ + 3.2), look, dur: 16 },
+        { pos: new THREE.Vector3(4.5, 1.3, railZ + 2.6), look, dur: 14 },
+        { pos: new THREE.Vector3(2.5, 1.7, railZ + 3.6), look, dur: 14 },
       ],
       onDone: () => { this.inputLocked = false; },
     });

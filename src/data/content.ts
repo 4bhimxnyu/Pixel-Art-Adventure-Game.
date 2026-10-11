@@ -178,6 +178,7 @@ export const QUEST_MAIN: Quest = {
     { id: "find_abhi", label: "Find Abhimanyu and Faizal" },
     { id: "f1205",     label: "Meet everyone at F-1205" },
     { id: "evening",   label: "Spend the evening with the flatmates" },
+    { id: "smoke",     label: "One last sutta on the balcony" },
     { id: "goodbye",   label: "Say goodbye to Abhimanyu" },
   ],
 };
@@ -377,15 +378,41 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
     { who: "Palakshi", portrait: "palakshi", text: "…" },
     { who: "Elder Shu", portrait: "elder", text: "There. Fifty-one years running.", onEnd: "lantern_restored" },
   ],
+  // ------------------------------------------------------------ the balcony
+  f1205_smoke: [
+    { who: "Riddhi", portrait: "riddhi", text: "BHOSDE AZAAAAAD! Kya re ustad, mere bina evening? Tumhare building ka watchman mujhse zyada sad tha." },
+    { who: "Palakshi", portrait: "palakshi", text: "Tu yahan kaise?" },
+    { who: "Riddhi", portrait: "riddhi", text: "Bus. Phir auto. Phir seedhi. Twelve floors, lift band hai. Mujhe sutta chahiye, abhi." },
+    { who: "Garv", portrait: "garv", text: "Kya re laadli, sutta piyegi?" },
+    { who: "Riddhi", portrait: "riddhi", text: "Red hai toh haan. Nahi toh bhi haan." },
+    { who: "Garv", portrait: "garv", text: "Red." },
+    { who: "Dev", portrait: "dev", text: "Aur bhaiii. Balcony pe aake sab philosopher ban jaate hain." },
+    { who: "Hakim", portrait: "hakim", text: "Main nahi pi raha. Main sirf judge kar raha hoon. Cunt bro." },
+    { who: "Faizal", portrait: "faizal", text: "Lighter mera hai. Yaad rakhna. Sab yaad rakhna." },
+    { who: "Abhimanyu", portrait: "abhimanyu", text: "Whadup loser. Tu bhi aa gayi, matlab ab yeh officially party hai." },
+    { who: "Riddhi", portrait: "riddhi", text: "Kya re ustad, teri birthday hai aur sabse zyada main khush hoon. Yeh fair nahi hai." },
+    { who: "Palakshi", portrait: "palakshi", text: "Fair hai. Tu hi toh hai." },
+    { who: "Riddhi", portrait: "riddhi", text: "Chup. Ab photo. Nahi, mera photo. Smoke ke saath, cinematic." },
+    { who: "Mimo", portrait: "mimo", text: "...achoo." },
+    { who: "Abhimanyu", portrait: "abhimanyu", text: "Ek minute. Mujhe tujhse kuch kehna hai. Andar aa. Door ke paas.", onEnd: "smoke_done" },
+  ],
+  abhi_balcony_wait: [
+    { who: "Abhimanyu", portrait: "abhimanyu", text: "Balcony. Riddhi aa gayi hai aur woh chup nahi hogi jab tak sab bahar nahi aate. Mere room se bahar. Chal." },
+  ],
+  riddhi_flat_after: [
+    { who: "Riddhi", portrait: "riddhi", text: "Jaa. Woh door ke paas khada hai aur nervous hai. Mat bata ki maine bola." },
+    { who: "Riddhi", portrait: "riddhi", text: "Bhosde azaaaaad. Love you, ustad.", onEnd: "riddhi_chat" },
+  ],
+
   // ------------------------------------------------------------ Riddhi
   riddhi_town_1: [
-    { who: "Riddhi", portrait: "riddhi", text: "Oye. Birthday girl. Tu itni subah uth gayi? Kaun mar gaya?" },
+    { who: "Riddhi", portrait: "riddhi", text: "BHOSDE AZAAAAAD! Kya re ustad. Birthday girl itni subah? Kaun mar gaya?" },
     { who: "Palakshi", portrait: "palakshi", text: "Mimo gaayab hai." },
     { who: "Riddhi", portrait: "riddhi", text: "Toh dhoondh na. Aur jacket pehen, mausam mat dekh." },
     { who: "Riddhi", portrait: "riddhi", text: "Mazaak. Main bhi aa rahi hoon... nahi aa rahi. Tu jaa, main yahan se cheer karungi.", onEnd: "riddhi_chat" },
   ],
   riddhi_town_2: [
-    { who: "Riddhi", portrait: "riddhi", text: "Abhi tak yahin hai? Kutta khud aa jayega kya tere liye." },
+    { who: "Riddhi", portrait: "riddhi", text: "Kya re ustad, abhi tak yahin? Kutta khud aa jayega kya tere liye." },
     { who: "Palakshi", portrait: "palakshi", text: "Jaa rahi hoon." },
     { who: "Riddhi", portrait: "riddhi", text: "Road pe east. Woh bachcha jo chillata rehta hai, usne kuch dekha hai.", onEnd: "riddhi_chat" },
   ],
@@ -393,7 +420,7 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
     { who: "Riddhi", portrait: "riddhi", text: "Photo bhej jab mil jaye. Kutte ki. Teri nahi.", onEnd: "riddhi_chat" },
   ],
   riddhi_village_1: [
-    { who: "Riddhi", portrait: "riddhi", text: "Tu yahan bhi? Festival cancel ho gaya aur tu nahi. Nice." },
+    { who: "Riddhi", portrait: "riddhi", text: "Bhosde azaaaaad! Tu yahan bhi? Festival cancel ho gaya aur tu nahi. Nice." },
     { who: "Palakshi", portrait: "palakshi", text: "Tu kaise pahunchi?" },
     { who: "Riddhi", portrait: "riddhi", text: "Bus hai yaar. Tum log pahaad chadh rahe ho, main chai pi rahi hoon." },
     { who: "Riddhi", portrait: "riddhi", text: "Woh musician uncle kuch bol raha tha, sound-vound. Sun le, kaam ka lagta hai.", onEnd: "riddhi_chat" },
@@ -406,7 +433,7 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
     { who: "Riddhi", portrait: "riddhi", text: "Bamboo wala gate upar hai. Lanterns follow kar, nahi toh tu ghoomti rahegi.", onEnd: "riddhi_chat" },
   ],
   riddhi_garden_1: [
-    { who: "Riddhi", portrait: "riddhi", text: "Yeh garden dekh. Photo le. Nahi, mera photo le." },
+    { who: "Riddhi", portrait: "riddhi", text: "Kya re ustad! Yeh garden dekh. Photo le. Nahi, mera photo le." },
     { who: "Palakshi", portrait: "palakshi", text: "Prakriti kahan hai?" },
     { who: "Riddhi", portrait: "riddhi", text: "Pond ke paas attitude leke khadi hai. Pehle woh udne wali cheez nipta, phir jaa dikha de.", onEnd: "riddhi_chat" },
   ],
@@ -421,7 +448,7 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
 
   finale: [
     { who: "Bidisha", portrait: "bidisha", text: "You're late, you're filthy, and the whole village came." },
-    { who: "Riddhi", portrait: "riddhi", text: "Bhai tu sach mein ek teacher se lad ke aayi? Bata na kaise." },
+    { who: "Riddhi", portrait: "riddhi", text: "BHOSDE AZAAAAAD! Bhai tu sach mein ek teacher se lad ke aayi? Bata na kaise." },
     { who: "Abhimanyu", portrait: "abhimanyu", text: "I wrote the song after all." },
     { who: "Prakriti", portrait: "prakriti", text: "It's a passable song." },
     { who: "Mimo", portrait: "mimo", text: "!!!" },
