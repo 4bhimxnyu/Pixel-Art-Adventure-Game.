@@ -148,6 +148,8 @@ export const G = {
     cachedGeo(`cyl${rt},${rb},${h},${seg}`, () => new THREE.CylinderGeometry(rt, rb, h, seg)),
   cone: (r: number, h: number, seg = 6) => cachedGeo(`cone${r},${h},${seg}`, () => new THREE.ConeGeometry(r, h, seg)),
   sphere: (r: number, seg = 8) => cachedGeo(`sph${r},${seg}`, () => new THREE.SphereGeometry(r, seg, Math.max(4, seg - 2))),
+  /** Ring in the XY plane (bracelets, hoops, necklines, round glasses). */
+  torus: (r: number, tube: number, seg = 6, rad = 14) => cachedGeo(`tor${r},${tube},${seg},${rad}`, () => new THREE.TorusGeometry(r, tube, seg, rad)),
   ico: (r: number, detail = 0) => cachedGeo(`ico${r},${detail}`, () => new THREE.IcosahedronGeometry(r, detail)),
   plane: (w: number, h: number) => cachedGeo(`pl${w},${h}`, () => new THREE.PlaneGeometry(w, h)),
   /** Hexagonal prism, a nicer low-poly rock/pillar than a box. */

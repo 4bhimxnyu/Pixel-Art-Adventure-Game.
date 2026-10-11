@@ -13,10 +13,20 @@
 // without touching code.
 // ---------------------------------------------------------------------------
 
+/**
+ * Every style is built from the same base (a scalp cap that clears the brows,
+ * temples and cheeks, plus a curved hairline band) and adds volume on top:
+ * - quiff: thick hair swept back and up off the forehead, falling to the ears and nape (Garv)
+ * - sidepart: medium hair with a side parting and a soft sweep across the forehead (Hakim)
+ * - wavy: messy, slightly wavy hair with volume on top, pushed back off the forehead (Dev)
+ * - lowbun: pulled back tight with a centre parting into a low bun at the nape (Riddhi)
+ */
 export type HairStyle =
-  | "long" | "ponytail" | "braid" | "bun" | "messybun" | "headdress" | "short" | "spiky" | "messy" | "shoulder" | "curly" | "crop" | "bald" | "grey";
+  | "long" | "ponytail" | "braid" | "bun" | "messybun" | "lowbun" | "headdress" | "short" | "spiky" | "messy" | "shoulder" | "curly" | "crop" | "bald" | "grey"
+  | "quiff" | "sidepart" | "wavy";
 
-export type Outfit = "robe" | "dress" | "tee" | "jacket" | "tank" | "cardigan" | "vest" | "hoodie";
+/** "polo" = knitted collared polo / sweater with a three-button placket. "hoodie" is a zip-up worn open over the `top` tee. */
+export type Outfit = "robe" | "dress" | "tee" | "jacket" | "tank" | "cardigan" | "vest" | "hoodie" | "polo";
 
 export type CharSpec = {
   id: string;
@@ -53,24 +63,62 @@ export type CharSpec = {
   /** Overall scale, 1 = adult. */
   height?: number;
   eyes?: "almond" | "round";
+  /** Half-lidded, relaxed eyes (Dev). */
+  sleepy?: boolean;
+  /** Dark lash line along the upper lid. Defaults to `female`. */
+  lashes?: boolean;
+  /** Brow weight: "strong" = thick, heavy brows; "thin" = fine brows. */
+  brows?: "strong" | "thin";
+  /** Full beard colour (boxes over the lower face). */
   beard?: string;
-  /** true = thin round frames; "large" = big black rounded-rectangular frames. */
-  glasses?: boolean | "large";
+  /** A long beard hanging below the chin (elder). Needs `beard`. */
+  beardLong?: boolean;
+  /** Light stubble along the jaw and chin: the colour of the shadow. */
+  stubble?: string;
+  /** Moustache colour. */
+  moustache?: string;
+  /** true = thin round frames; "large" = big black rounded-rectangular frames; "rect" = slim black rectangular frames. */
+  glasses?: boolean | "large" | "rect";
+  /** Eye colour (iris). Defaults to dark brown. */
+  iris?: string;
+  /** A closed-mouth, slightly lopsided smile. */
+  smirk?: boolean;
+  /** A closed-mouth smile with both corners lifted. */
+  smile?: boolean;
+  /** Bracelet colour on the left wrist. */
+  bracelet?: string;
+  /** "beads" (default) = chunky bead bracelet; "thread" = a thin string bracelet. */
+  braceletStyle?: "beads" | "thread";
+  /** A wrist watch on the left wrist. */
+  watch?: boolean;
+  /** A small patch on the left upper sleeve (Hakim's "3"). The colour of the patch. */
+  patch?: string;
+  /** V-neck on a tee / tank. */
+  vneck?: boolean;
+  /** Wide horizontal stripes across the top and sleeves, in this colour (Garv's polo). */
+  stripes?: string;
+  /** A drawstring hanging from the waistband (Dev's trousers). */
+  drawstring?: boolean;
   /** Trouser cloth. "checker" = green-and-white checks on loose, flared legs. */
   bottomPattern?: "checker";
   /** Trouser width multiplier (loose fits > 1). */
   legWidth?: number;
+  /** Footwear. Defaults to dark shoes (or sneakers when `sneakers` is set). */
+  footwear?: "sneakers" | "shoes" | "sandals" | "boots";
   /** Only Abhimanyu may carry an instrument. */
   props?: ("bass" | "ipad" | "staff" | "fan" | "phone")[];
-  /** Idle behaviour. */
-  idle?: "default" | "ipad" | "lift" | "crossed" | "lean" | "strum" | "sway" | "phone";
+  /**
+   * Idle behaviour. "hips" = both hands on the hips, weight on one leg, chin
+   * up (Riddhi). "stretch" = arms folded behind the head, a lazy stretch (Dev).
+   */
+  idle?: "default" | "ipad" | "lift" | "crossed" | "lean" | "strum" | "sway" | "phone" | "hips" | "stretch";
   /** Walk-cycle bob multiplier (1 = normal; Riddhi bounces). */
   bounce?: number;
   /** Hoop earring colour. */
   earrings?: string;
   /** A wide grin instead of the small mouth. */
   grin?: boolean;
-  /** Chunky white sneakers instead of dark shoes. */
+  /** Chunky white sneakers instead of dark shoes (alias for footwear: "sneakers"). */
   sneakers?: boolean;
   /** Hair ornament colour (Palakshi's gold tie, Prakriti's teal ribbon). */
   ornament?: string;
@@ -79,15 +127,17 @@ export type CharSpec = {
 
 export const CHARACTERS: Record<string, CharSpec> = {
   // ------------------------------------------------------------ friends
-  // Riddhi: Palakshi's chaotic best friend. No reference yet; this is a
-  // deliberately distinctive stand-in (drop public/models/riddhi.glb to replace).
+  // Riddhi: Palakshi's chaotic best friend. From her photo: dark hair pulled
+  // back into a low bun, slim black rectangular glasses, small gold hoops, a
+  // white V-neck tank, light-wash wide-leg jeans, a bead bracelet, hands on
+  // hips and a lopsided smirk. (public/models/riddhi.glb still overrides.)
   riddhi: {
-    id: "riddhi", skin: "#e0a77e", hair: "#2b1a16", hairHi: "#4a2e26", hairStyle: "messybun",
-    top: "#d9a63a", topAlt: "#c4932f", bottom: "#1a1a1e", trim: "#f2e2a8",
-    outfit: "hoodie", sleeves: "long", female: true,
-    build: "slim", shoulders: 1.08, hips: 1.0, headSize: 1.04, legs: 0.98, height: 0.97,
-    eyes: "round", grin: true, earrings: "#e8c35a", sneakers: true, bounce: 1.7,
-    props: ["phone"], idle: "phone", ornament: "#ff5c8a", accent: "#ff5c8a",
+    id: "riddhi", skin: "#c98f66", hair: "#1c120f", hairHi: "#2e1f1a", hairStyle: "lowbun",
+    top: "#f4f1e8", topAlt: "#e9e4d6", bottom: "#8fb0cf", trim: "#f4f1e8",
+    outfit: "tank", sleeves: "none", vneck: true, legWidth: 1.5, female: true,
+    build: "slim", shoulders: 1.06, hips: 1.02, legs: 1.02, height: 0.99,
+    eyes: "almond", glasses: "rect", smirk: true, earrings: "#d4af37", bracelet: "#f2ece0", sneakers: true, bounce: 1.4,
+    props: ["phone"], idle: "phone", ornament: "#1c120f", accent: "#ff5c8a",
   },
 
   // ------------------------------------------------------------ protagonist
