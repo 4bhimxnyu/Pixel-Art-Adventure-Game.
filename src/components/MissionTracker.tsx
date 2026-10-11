@@ -20,12 +20,13 @@ export default function MissionTracker() {
   const flames = flameCount(state);
   const compass = compassLine(state);
 
-  const [hintLevel, setHintLevel] = useState(0);
+  // The first clue is always shown; H (or the button) reveals the clearer ones.
+  const [hintLevel, setHintLevel] = useState(1);
   const [flash, setFlash] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
   // The ladder resets whenever the objective itself changes.
-  useEffect(() => { setHintLevel(0); setCollapsed(false); }, [cur?.stepId]);
+  useEffect(() => { setHintLevel(1); setCollapsed(false); }, [cur?.stepId]);
 
   useEffect(() => bus.on("objective:done", () => {
     setFlash(true);
@@ -122,7 +123,7 @@ export default function MissionTracker() {
               disabled={hintLevel >= 3}
               className="text-[10px] font-semibold tracking-[.12em] text-[#d9b45b] transition-colors hover:text-[#f2dfa6] disabled:text-[var(--ink-4)]"
             >
-              {hintLevel >= 3 ? "NO MORE HINTS" : `HINT ${hintLevel + 1} / 3  ·  H`}
+              {hintLevel >= 3 ? "NO MORE HINTS" : `MORE HELP (${hintLevel} / 3)  ·  H`}
             </button>
 
             {flames > 0 && (

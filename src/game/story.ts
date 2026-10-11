@@ -475,7 +475,8 @@ export class StoryController {
       const show = () => {
         if (performance.now() - lastChapterCard < 3600) { fx.delay(3200, show); return; }
         if (useGameStore.getState().screen !== "playing") return;
-        bus.emit("cinematic", { kind: "objective", title: g.objective, subtitle: `Clue: ${g.hints[0]}` });
+        const route = g.chain?.length ? g.chain.join("  \u2192  ") : g.place;
+        bus.emit("cinematic", { kind: "objective", title: g.objective, subtitle: g.hints[0], detail: `${g.place}  \u00b7  ${route}` });
       };
       fx.delay(3000, show);
     };

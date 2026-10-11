@@ -13,6 +13,8 @@ type Payload = {
   kind: "mission-start" | "mission-complete" | "region" | "objective" | "location";
   title: string;
   subtitle: string;
+  /** Optional small line under the subtitle (where to go, as a route). */
+  detail?: string;
 };
 
 export default function MissionCinematic() {
@@ -75,6 +77,9 @@ export default function MissionCinematic() {
         </div>
 
         <div className="mt-3 text-[14px] text-[var(--ink-2)]">{card.subtitle}</div>
+        {card.detail && (
+          <div className="mt-2 text-[11px] tracking-[.1em] text-[#d9b45b]">{card.detail}</div>
+        )}
       </div>
     </div>
   );
