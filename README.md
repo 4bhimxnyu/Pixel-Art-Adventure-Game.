@@ -208,8 +208,11 @@ calls and 85-130k triangles. The engine also watches its own frame rate: if a re
 averages under ~42 fps for five seconds it drops to pixel ratio 1 with a smaller
 shadow map, and if that is still not enough it switches shadows off.
 
-Getting around: the gold beacon marks the objective (or the gate toward it), the
-tracker hints name landmarks, Mimo looks toward the goal when you stand still and
+Getting around: the gold beacon marks the objective (or the gate toward it), a
+trail of gold lights on the ground (and a dotted route on the minimap) shows the
+walking route to it (Settings > Guide trail), the tracker always shows the first
+clue as a plain instruction (H for the clearer ones), every new objective raises a
+card with its clue and route, Mimo looks toward the goal when you stand still and
 barks when you walk past something hidden (press F / RB / the paw button and he
 sniffs it out), and after a long idle or pushing against a wall a "Need help?" panel
 offers Show direction, Show objective and Reset position (never touches progress).
