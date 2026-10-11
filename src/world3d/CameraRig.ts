@@ -50,6 +50,11 @@ export class CameraRig {
   private fppPitch = 0;
   private bobT = 0;
   private holdT = 0;
+  /** Over-the-shoulder offset while running (world units to the right); eases toward shoulderTarget. */
+  shoulderTarget = 0;
+  private shoulder = 0;
+  /** Seconds since the player last touched the look input; auto-recenter waits for 2.5 s. */
+  sinceLook = 10;
 
   constructor(aspect: number) {
     this.camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 120);
@@ -175,7 +180,10 @@ export class CameraRig {
     }
 
     // --- soft auto-align behind the player while walking without look input
-    if (moving && !lookInputActive) {
+    // (after the player has looked around, the camera waits 2.5 s before it
+    // starts drifting back, so a deliberate glance is never fought)
+    this.sinceLook = lookInputActive ? 0 : this.sinceLook + dt;
+    if (moving && !lookInputActive && this.sinceLook > 2.5) {
       this.autoAlign = Math.min(1, this.autoAlign + dt * 0.5);
       const want = heading + Math.PI;
       let d = want - this.yaw;
@@ -225,10 +233,18 @@ export class CameraRig {
     this.distance += (d - this.distance) * (d < this.distance ? Math.min(1, dt * 14) : Math.min(1, dt * 2.5));
     this.lift += (wantLift - this.lift) * Math.min(1, dt * 7);
 
+    // over-the-shoulder offset while running: eases in slowly, out a little faster
+    this.shoulder += (this.shoulderTarget - this.shoulder) * Math.min(1, dt * (this.shoulderTarget > this.shoulder ? 2.2 : 3.5));
     const want = this.desiredPos(target);
     want.y += this.lift;
-    this.pos.lerp(want, Math.min(1, dt * 9));
     const lookWant = new THREE.Vector3(target.x, target.y + this.lookHeight, target.z);
+    if (Math.abs(this.shoulder) > 0.001) {
+      const rx = Math.cos(this.yaw) * this.shoulder;
+      const rz = -Math.sin(this.yaw) * this.shoulder;
+      want.x += rx; want.z += rz;
+      lookWant.x += rx; lookWant.z += rz;
+    }
+    this.pos.lerp(want, Math.min(1, dt * 9));
     this.look.lerp(lookWant, Math.min(1, dt * 12));
 
     this.camera.position.copy(this.pos);

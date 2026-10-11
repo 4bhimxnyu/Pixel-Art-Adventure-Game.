@@ -37,6 +37,9 @@ export abstract class BaseRig {
   /** Scale factor applied to the whole body. */
   protected bodyScale = 1;
   private targetHeading: number | null = null;
+  /** Body roll into turns (radians, +ve = right shoulder down) and forward tilt (dash). Added after pose(). */
+  lean = 0;
+  tilt = 0;
 
   constructor() {
     this.group.add(this.body);
@@ -117,6 +120,10 @@ export abstract class BaseRig {
       }
     }
     this.pose(dt);
+    if (this.lean || this.tilt) {
+      this.body.rotation.z += this.lean;
+      this.body.rotation.x += this.tilt;
+    }
   }
 
   /** Action progress 0..1 or -1 when idle. */

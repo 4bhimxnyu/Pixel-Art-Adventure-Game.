@@ -150,7 +150,7 @@ const FLOOR_COLORS: Record<string, [string, string]> = {
   void: ["#000000", "#000000"],
 };
 
-function floorFor(def: MapDef, ch: string): string {
+export function floorFor(def: MapDef, ch: string): string {
   const t = def.theme;
   if (ch === "_") return "void";
   if (ch === "," ) return t === "mountain" ? "gravel" : t === "village" ? "plaza" : "dirt";

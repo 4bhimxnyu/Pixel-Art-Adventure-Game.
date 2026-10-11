@@ -36,7 +36,14 @@ import type { BaseRig } from "./BaseRig";
 import { CameraRig, type Keyframe } from "./CameraRig";
 import { AmbientParticles, Burst } from "./Particles";
 import { PawTrail } from "./PawTrail";
-import { FxPool, FocusRing, NameLabels, type LabelTarget } from "./Fx";
+import { FxPool, FocusRing, NameLabels, DashStreak, type LabelTarget } from "./Fx";
+import { floorFor } from "./MapBuilder";
+
+/** Dust colour kicked up per floor kind; floors that do not puff are missing. */
+const DUST: Record<string, string> = {
+  grass: "#9fcf7a", darkGrass: "#86b86c", dirt: "#c2a47c", gravel: "#c9bda8",
+  stone: "#c4bfc8", plaza: "#c4bfc8", cave: "#8a7da8", temple: "#9a8078",
+};
 import { G, glow, mat, disposeObject, skyMaterial } from "./materials";
 import { input, isTouchDevice } from "../input/InputManager";
 import { currentStepId } from "../store/useGameStore";
@@ -156,6 +163,11 @@ export class World3D {
   private pawTrail: PawTrail | null = null;
   /** Pooled feel effects (see Fx.ts); rebuilt with every map. */
   private fx: FxPool | null = null;
+  private dash: DashStreak | null = null;
+  private dashLineT = 0;
+  private prevHeading = 0;
+  private leanV = 0;
+  private stepSide = 1;
   private focus: FocusRing | null = null;
   private labels: NameLabels | null = null;
   private labelTargets: { t: LabelTarget; fade: number }[] = [];
@@ -324,6 +336,8 @@ export class World3D {
     this.trail = [];
     this.fx?.dispose();
     this.fx = null;
+    this.dash?.dispose();
+    this.dash = null;
     this.focus?.dispose();
     this.focus = null;
     this.labels?.dispose();
@@ -394,6 +408,8 @@ export class World3D {
     this.fx = new FxPool();
     this.fx.setViewport(this.renderer.domElement.height);
     this.scene.add(this.fx.points);
+    this.dash = new DashStreak();
+    this.scene.add(this.dash.mesh);
     this.focus = new FocusRing();
     this.scene.add(this.focus.group);
     this.labels = new NameLabels();
@@ -468,6 +484,8 @@ export class World3D {
     }
     palakshi.group.position.copy(this.playerPos);
     palakshi.setHeading(this.heading, true);
+    this.prevHeading = this.heading;
+    this.leanV = 0;
     this.lastCell = { x: Math.floor(this.playerPos.x), y: ROW(this.playerPos.z) };
 
     // --- companion (never a duplicate of an NPC: shouldSkipEntity handled that above)
@@ -954,10 +972,20 @@ export class World3D {
         this.dashDir.copy(dir).normalize();
         this.player.play("jump", 0.4);
         sfx("step");
+        const h = Math.atan2(this.dashDir.x, this.dashDir.z);
+        this.dash?.burst(this.playerPos.x, this.playerPos.z, h, 8);
+        this.dashLineT = 0;
       }
       if (this.dashT > 0) {
         this.dashT -= dt;
         want.copy(this.dashDir).multiplyScalar(DASH);
+        // a few more wind lines mid-dash, then a landing puff where the feet come down
+        this.dashLineT += dt;
+        if (this.dashLineT > 0.07 && this.dashT > 0.08) {
+          this.dashLineT = 0;
+          this.dash?.burst(this.playerPos.x, this.playerPos.z, Math.atan2(this.dashDir.x, this.dashDir.z), 2);
+        }
+        if (this.dashT <= 0) this.landingPuff();
       } else if (len > 0.06) {
         const k = Math.min(1, len);
         want.copy(dir).normalize().multiplyScalar(WALK * k * (st.held.has("dodge") ? 1.45 : 1));
@@ -1006,15 +1034,29 @@ export class World3D {
       else if (st.pressed.has("quests") || st.pressed.has("map")) { questSfx.panelOpen(); store.setOverlay({ kind: "quests" }); }
       else if (st.pressed.has("hint")) bus.emit("hint:next");
     }
+    // lean into turns: body rolls toward the inside of the turn, tilts forward on a dash
+    {
+      let dh = this.heading - this.prevHeading;
+      dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+      this.prevHeading = this.heading;
+      const turnRate = dt > 0 ? dh / dt : 0;
+      const wantLean = moving && !this.firstPerson ? THREE.MathUtils.clamp(turnRate * 0.045 * Math.min(1, speed01), -0.14, 0.14) : 0;
+      this.leanV += (wantLean - this.leanV) * Math.min(1, dt * 7);
+      this.player.lean = this.leanV;
+      this.player.tilt += (((this.dashT > 0 ? 0.16 : speed01 > 1.05 ? 0.05 : 0)) - this.player.tilt) * Math.min(1, dt * 8);
+    }
     this.player.setMoving(speed01);
     this.player.group.position.copy(this.playerPos);
     this.player.update(dt);
+    // the camera slides over the shoulder while running, and settles back when the pace drops
+    this.cam.shoulderTarget = !this.firstPerson && this.mode === "explore" && speed01 > 1.05 ? 0.42 : 0;
 
     // footsteps
     this.stepAccum += speed01 * dt;
     if (this.stepAccum > 0.33) {
       this.stepAccum = 0;
       sfx("step");
+      if (speed01 > 0.3 && !this.firstPerson) this.footPuff(speed01);
     }
 
     // --- cell change → portals, clues, encounters
@@ -1062,6 +1104,7 @@ export class World3D {
     if (this.water) ((this.water.material as THREE.ShaderMaterial).uniforms.uTime.value as number) = this.timer.getElapsed();
     this.particles?.update(dt);
     this.fx?.update(dt);
+    this.dash?.update(dt);
     this.bursts = this.bursts.filter((b) => b.update(dt));
     const now = this.timer.getElapsed();
     const pulse = 0.25 + Math.abs(Math.sin(now * 2.2)) * 0.3;
@@ -1443,6 +1486,30 @@ export class World3D {
         }
       }
     }
+  }
+
+  /** The colour of dust the floor under the player kicks up, or null for floors that do not puff. */
+  private dustHere() {
+    const kind = floorFor(this.mapDef, tileAt(this.mapDef, Math.floor(this.playerPos.x), ROW(this.playerPos.z)));
+    return DUST[kind] ?? null;
+  }
+
+  private footPuff(speed01: number) {
+    const c = this.fx && this.dustHere();
+    if (!c || !this.fx) return;
+    this.stepSide = -this.stepSide;
+    const fx = Math.sin(this.heading);
+    const fz = Math.cos(this.heading);
+    const x = this.playerPos.x - fx * 0.12 + fz * 0.09 * this.stepSide;
+    const z = this.playerPos.z - fz * 0.12 - fx * 0.09 * this.stepSide;
+    const run = speed01 > 1.05;
+    this.fx.puff(x, 0.03, z, c, run ? 4 : 2, run ? 0.16 : 0.1, run ? 0.5 : 0.3, run ? 0.17 : 0.13, 0.5);
+  }
+
+  private landingPuff() {
+    const c = this.fx && this.dustHere();
+    if (!c || !this.fx) return;
+    this.fx.puff(this.playerPos.x, 0.03, this.playerPos.z, c, 9, 0.3, 0.7, 0.2, 0.6);
   }
 
   private flourish(x: number, y: number) {
