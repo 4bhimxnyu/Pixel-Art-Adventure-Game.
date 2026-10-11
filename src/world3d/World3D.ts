@@ -205,7 +205,7 @@ export class World3D {
   private sparkleScanT = 0;
   private lockedBefore = new Map<MapId, string>();
   private promptSeenAt = 0;
-  private quality: { shadows: boolean; mobile: boolean; particles: number };
+  private qual: { shadows: boolean; mobile: boolean; particles: number };
   private timers: number[] = [];
   private hugDone = false;
 
@@ -215,11 +215,11 @@ export class World3D {
     this.parent = parent;
 
     const mobile = isTouchDevice() || Math.min(window.innerWidth, window.innerHeight) < 600;
-    this.quality = { shadows: !mobile, mobile, particles: mobile ? 0.5 : 1 };
+    this.qual = { shadows: !mobile, mobile, particles: mobile ? 0.5 : 1 };
 
     this.renderer = new THREE.WebGLRenderer({ antialias: !mobile, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2));
-    this.renderer.shadowMap.enabled = this.quality.shadows;
+    this.renderer.shadowMap.enabled = this.qual.shadows;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -233,7 +233,7 @@ export class World3D {
     this.cam = new CameraRig(parent.clientWidth / Math.max(1, parent.clientHeight));
     this.cam.obstacle = (x, z) => this.cameraObstacle(x, z);
 
-    this.sun.castShadow = this.quality.shadows;
+    this.sun.castShadow = this.qual.shadows;
     this.sun.shadow.mapSize.set(2048, 2048);
     this.sun.shadow.bias = -0.0008;
     this.sun.shadow.normalBias = 0.02;
@@ -287,12 +287,20 @@ export class World3D {
           this.reducedMotion = rm;
           if (this.mapDef) this.buildAtmosphere(this.mapDef, mapWidth(this.mapDef), mapHeight(this.mapDef));
         }
+        this.applyQualitySetting();
       }
       if (s.quests !== prev.quests || s.flags !== prev.flags || s.party !== prev.party) this.beaconDirty = true;
     });
     input.overlayOpen = !!useGameStore.getState().overlay;
 
     const s = useGameStore.getState();
+    // a pinned quality applies before the first region is built so its meshes get the right shadow flags
+    const pinned = World3D.tierOf(feelSettings().quality);
+    if (pinned !== null) {
+      this.forcedTier = pinned;
+      this.perfTier = pinned === 2 ? 1 : 2; // force applyTier to do its work
+      this.applyTier(pinned);
+    }
     this.loadMap(s.map, true);
     if (!s.flags.introDone) this.delay(420, () => useGameStore.getState().openDialogue("intro"));
 
@@ -402,7 +410,7 @@ export class World3D {
     this.mode = "explore";
 
     // --- region geometry + theme
-    this.built = buildMap(def, store.flags, { shadows: this.quality.shadows });
+    this.built = buildMap(def, store.flags, { shadows: this.qual.shadows });
     this.scene.add(this.built.group);
     const th = this.built.theme;
     this.scene.background = new THREE.Color(th.sky);
@@ -437,7 +445,7 @@ export class World3D {
     this.cam.indoor = th.indoor;
 
     if (th.particles) {
-      this.particles = new AmbientParticles(th.particles, W, H, this.quality.particles);
+      this.particles = new AmbientParticles(th.particles, W, H, this.qual.particles);
       this.particles.points.position.z = -H;
       this.scene.add(this.particles.points);
     }
@@ -482,7 +490,7 @@ export class World3D {
           : idef.sprite.startsWith("enemy:") ? makeEnemyRig(idef.sprite.slice(6), true)
           : new CharacterRig(idef.sprite);
         object = rig.group;
-        rig.setShadows(this.quality.shadows);
+        rig.setShadows(this.qual.shadows);
         rig.setHeading(this.npcHeading(def, idef.kind, pos), true);
         if (!idef.sprite.startsWith("enemy:")) this.tryOverride(rig, idef.sprite);
       } else {
@@ -512,7 +520,7 @@ export class World3D {
 
     // --- player
     const palakshi = new CharacterRig("palakshi");
-    palakshi.setShadows(this.quality.shadows);
+    palakshi.setShadows(this.qual.shadows);
     this.tryOverride(palakshi, "palakshi");
     this.rigs.set("palakshi", palakshi);
     this.player = palakshi;
@@ -534,7 +542,7 @@ export class World3D {
     const comp = store.party.find((p) => p.id !== "palakshi");
     if (comp) {
       const rig = comp.id === "mimo" ? new DogRig() : new CharacterRig(comp.id);
-      rig.setShadows(this.quality.shadows);
+      rig.setShadows(this.qual.shadows);
       if (comp.id !== "mimo") this.tryOverride(rig, comp.id);
       this.rigs.set(comp.id, rig);
       this.companion = rig;
@@ -1052,30 +1060,73 @@ export class World3D {
   /** Frame-rate watch: if a region runs slowly the renderer steps down (resolution, then shadows). */
   private fpsEma = 60;
   private perfT = -3;
+  /** 2 = full, 1 = native resolution + small shadow map, 0 = no shadows. */
   private perfTier = 2;
-  private watchPerformance(dt: number) {
-    this.fpsEma += (1 / Math.max(dt, 1 / 240) - this.fpsEma) * 0.04;
-    this.perfT += dt;
-    if (this.perfT < 5 || this.perfTier === 0) return;
-    if (this.fpsEma >= 42) return;
-    this.perfT = 0;
-    this.perfTier--;
-    if (this.perfTier === 1) {
-      this.renderer.setPixelRatio(1);
-      this.sun.shadow.mapSize.set(1024, 1024);
+  /** settings.quality other than "auto" pins the tier; the watch then stays out of it. */
+  private forcedTier: 0 | 1 | 2 | null = null;
+
+  /** What the renderer is doing right now (dev handle: window.__world.quality). */
+  get quality() {
+    return {
+      tier: this.perfTier,
+      forced: this.forcedTier,
+      shadows: this.qual.shadows,
+      pixelRatio: this.renderer.getPixelRatio(),
+      fpsEma: Math.round(this.fpsEma),
+      reducedMotion: this.reducedMotion,
+    };
+  }
+
+  private static tierOf(q: FeelSettings["quality"]): 0 | 1 | 2 | null {
+    return q === "high" ? 2 : q === "medium" ? 1 : q === "low" ? 0 : null;
+  }
+
+  /** Read settings.quality; a pinned tier applies at once, "auto" hands control back to the watch. */
+  private applyQualitySetting() {
+    const want = World3D.tierOf(feelSettings().quality);
+    if (want === this.forcedTier && (want === null || want === this.perfTier)) return;
+    this.forcedTier = want;
+    if (want !== null) this.applyTier(want);
+    else this.perfT = -3; // auto again: give the watch a moment before judging
+  }
+
+  /** @param announce emit "quality:tier" (the watch stepping down; a pinned setting is the player's own choice) */
+  private applyTier(tier: 0 | 1 | 2, announce = false) {
+    if (tier === this.perfTier) return;
+    this.perfTier = tier;
+    const dpr = window.devicePixelRatio || 1;
+    this.renderer.setPixelRatio(tier === 2 ? Math.min(dpr, this.qual.mobile ? 1.5 : 2) : 1);
+    const size = tier === 2 ? 2048 : 1024;
+    if (this.sun.shadow.mapSize.x !== size) {
+      this.sun.shadow.mapSize.set(size, size);
       this.sun.shadow.map?.dispose();
       this.sun.shadow.map = null;
-    } else {
-      this.quality.shadows = false;
-      this.renderer.shadowMap.enabled = false;
-      this.sun.castShadow = false;
+    }
+    const shadows = tier > 0 && (!this.qual.mobile || this.forcedTier === 2);
+    if (shadows !== this.qual.shadows) {
+      this.qual.shadows = shadows;
+      this.renderer.shadowMap.enabled = shadows;
+      this.sun.castShadow = shadows;
       this.scene.traverse((o) => {
         const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
         if (!m) return;
         for (const mm of Array.isArray(m) ? m : [m]) mm.needsUpdate = true;
       });
+      // meshes decide castShadow when they are built: rebuild the region so shadows actually come back
+      if (shadows && this.mapDef && this.mode === "explore" && !this.cam.cinematicActive && !this.inputLocked) this.refresh();
     }
     this.fpsEma = 60;
+    if (announce) bus.emit("quality:tier", tier);
+  }
+
+  private watchPerformance(dt: number) {
+    this.fpsEma += (1 / Math.max(dt, 1 / 240) - this.fpsEma) * 0.04;
+    this.perfT += dt;
+    if (this.forcedTier !== null) return;
+    if (this.perfT < 5 || this.perfTier === 0) return;
+    if (this.fpsEma >= 42) return;
+    this.perfT = 0;
+    this.applyTier((this.perfTier - 1) as 0 | 1, true);
   }
 
   private loop = () => {
@@ -1793,7 +1844,7 @@ export class World3D {
       this.scene.add(this.birds.group);
     }
     if (id === "route1" || id === "village") {
-      this.leaves = new AmbientParticles("leaves", W, H, 0.35 * this.quality.particles);
+      this.leaves = new AmbientParticles("leaves", W, H, 0.35 * this.qual.particles);
       this.leaves.points.position.z = -H;
       this.scene.add(this.leaves.points);
     }
@@ -1853,7 +1904,7 @@ export class World3D {
       }
       p.position.set(e.g.x, e.g.y, e.g.z);
       p.color.set(e.g.color);
-      p.intensity = e.g.intensity * (this.quality.mobile ? 0.8 : 1);
+      p.intensity = e.g.intensity * (this.qual.mobile ? 0.8 : 1);
       this.lightBase[i] = p.intensity;
       this.lightSeed[i] = e.g.x * 1.7 + e.g.z * 0.9;
     });
@@ -1907,7 +1958,7 @@ export class World3D {
       }
     }
     const rig = makeEnemyRig(enemy.portrait, boss);
-    rig.setShadows(this.quality.shadows);
+    rig.setShadows(this.qual.shadows);
     rig.group.position.copy(enemyPos);
     rig.faceToward(this.playerPos.x, this.playerPos.z, true);
     this.scene.add(rig.group);
