@@ -6,7 +6,7 @@
 
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { G, glow, toonGradient } from "./materials";
+import { G, glow, mat, toonGradient } from "./materials";
 
 let bakedMat: THREE.MeshToonMaterial | null = null;
 function bakedMaterial() {
@@ -78,9 +78,15 @@ export abstract class BaseRig {
     this.ko = v;
   }
 
+  /**
+   * Hit flash as a pulse: a flat burst of colour first, then a lit, emissive
+   * tint for the second half, then the original materials come back.
+   */
   flash(color = "#ff6a5a", ms = 140) {
     this.unflash();
     this.flashUntil = performance.now() + ms;
+    this.flashMid = performance.now() + ms * 0.45;
+    this.flashColor = color;
     const m = glow(color);
     this.body.traverse((o) => {
       const mesh = o as THREE.Mesh;
@@ -90,10 +96,13 @@ export abstract class BaseRig {
       }
     });
   }
+  private flashMid = 0;
+  private flashColor = "#ff6a5a";
 
   private unflash() {
     for (const f of this.flashed) f.mesh.material = f.mat;
     this.flashed = [];
+    this.flashMid = 0;
   }
 
   update(dt: number) {
@@ -110,7 +119,15 @@ export abstract class BaseRig {
         this.targetHeading = null;
       }
     }
-    if (this.flashed.length && performance.now() > this.flashUntil) this.unflash();
+    if (this.flashed.length) {
+      const now = performance.now();
+      if (now > this.flashUntil) this.unflash();
+      else if (this.flashMid && now > this.flashMid) {
+        this.flashMid = 0;
+        const m = mat(this.flashColor, { emissive: this.flashColor, emissiveIntensity: 0.55 });
+        for (const f of this.flashed) f.mesh.material = m;
+      }
+    }
     if (this.action) {
       this.action.t += dt;
       if (this.action.t >= this.action.dur) {

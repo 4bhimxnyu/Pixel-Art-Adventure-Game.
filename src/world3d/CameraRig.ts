@@ -21,6 +21,7 @@ export type Keyframe = {
 export type Cinematic = { frames: Keyframe[]; onDone?: () => void; onFrame?: (i: number) => void };
 
 const UP = new THREE.Vector3(0, 1, 0);
+const _fwd = new THREE.Vector3();
 
 export class CameraRig {
   readonly camera: THREE.PerspectiveCamera;
@@ -93,6 +94,25 @@ export class CameraRig {
   shake(ms: number, amp: number) {
     this.shakeT = ms / 1000;
     this.shakeAmp = amp;
+  }
+
+  private punchT = 0;
+  private punchDur = 0.16;
+  private punchAmp = 0;
+  /** A quick jab forward along the view (impacts), easing back over ~160 ms. */
+  punch(amp: number, ms = 160) {
+    this.punchDur = ms / 1000;
+    this.punchT = this.punchDur;
+    this.punchAmp = amp;
+  }
+
+  private applyPunch(dt: number) {
+    if (this.punchT <= 0) return;
+    this.punchT -= dt;
+    const k = Math.max(0, this.punchT / this.punchDur);
+    const a = this.punchAmp * Math.sin(k * Math.PI);
+    const fwd = _fwd.subVectors(this.look, this.camera.position).normalize();
+    this.camera.position.addScaledVector(fwd, a);
   }
 
   playCinematic(c: Cinematic) {
@@ -175,6 +195,7 @@ export class CameraRig {
         this.camera.position.x += (Math.random() - 0.5) * this.shakeAmp;
         this.camera.position.y += (Math.random() - 0.5) * this.shakeAmp;
       }
+      this.applyPunch(dt);
       this.camera.lookAt(this.look);
       return;
     }
@@ -254,6 +275,7 @@ export class CameraRig {
       this.camera.position.x += (Math.random() - 0.5) * a;
       this.camera.position.y += (Math.random() - 0.5) * a;
     }
+    this.applyPunch(dt);
     this.camera.lookAt(this.look);
     this.camera.up.copy(UP);
   }

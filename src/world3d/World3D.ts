@@ -36,7 +36,7 @@ import type { BaseRig } from "./BaseRig";
 import { CameraRig, type Keyframe } from "./CameraRig";
 import { AmbientParticles, Burst } from "./Particles";
 import { PawTrail } from "./PawTrail";
-import { FxPool, FocusRing, NameLabels, DashStreak, type LabelTarget } from "./Fx";
+import { FxPool, FocusRing, NameLabels, DashStreak, CrackDecal, type LabelTarget } from "./Fx";
 import { floorFor } from "./MapBuilder";
 import { FogPlanes, LightShafts, Birds } from "./Atmosphere";
 
@@ -179,6 +179,11 @@ export class World3D {
   private lightSeed: number[] = [0, 0, 0, 0];
   private emberT = 0;
   private dash: DashStreak | null = null;
+  private crack: CrackDecal | null = null;
+  /** Seconds of frozen simulation left (hit-stop on impacts). */
+  private hitStop = 0;
+  /** Heal spirals in flight: particles are spawned along a rising helix over ~0.9 s. */
+  private spirals: { x: number; z: number; t: number; color: string }[] = [];
   private dashLineT = 0;
   private prevHeading = 0;
   private leanV = 0;
@@ -360,6 +365,10 @@ export class World3D {
     this.clearAtmosphere();
     this.dash?.dispose();
     this.dash = null;
+    this.crack?.dispose();
+    this.crack = null;
+    this.spirals.length = 0;
+    this.hitStop = 0;
     this.focus?.dispose();
     this.focus = null;
     this.labels?.dispose();
@@ -433,6 +442,8 @@ export class World3D {
     this.scene.add(this.fx.points);
     this.dash = new DashStreak();
     this.scene.add(this.dash.mesh);
+    this.crack = new CrackDecal();
+    this.scene.add(this.crack.mesh);
     this.focus = new FocusRing();
     this.scene.add(this.focus.group);
     this.labels = new NameLabels();
@@ -964,6 +975,12 @@ export class World3D {
     this.timer.update();
     const dt = Math.min(0.05, this.timer.getDelta());
     this.watchPerformance(dt);
+    // hit-stop: the world holds its frame for a few dozen ms on a heavy impact
+    if (this.hitStop > 0) {
+      this.hitStop -= dt;
+      this.renderer.render(this.scene, this.cam.camera);
+      return;
+    }
     this.update(dt);
     this.renderer.render(this.scene, this.cam.camera);
   };
@@ -1128,8 +1145,10 @@ export class World3D {
     if (this.sky) this.sky.position.set(this.cam.camera.position.x, -8, this.cam.camera.position.z);
     if (this.water) ((this.water.material as THREE.ShaderMaterial).uniforms.uTime.value as number) = this.timer.getElapsed();
     this.particles?.update(dt);
+    this.updateSpirals(dt);
     this.fx?.update(dt);
     this.dash?.update(dt);
+    this.crack?.update(dt);
     this.updateAtmosphere(dt);
     this.bursts = this.bursts.filter((b) => b.update(dt));
     const now = this.timer.getElapsed();
@@ -1590,6 +1609,28 @@ export class World3D {
     this.fx.puff(this.playerPos.x, 0.03, this.playerPos.z, c, 9, 0.3, 0.7, 0.2, 0.6);
   }
 
+  /** Heal spirals: two motes a frame climbing a helix around the healed fighter. */
+  private updateSpirals(dt: number) {
+    if (!this.spirals.length || !this.fx) return;
+    for (let i = this.spirals.length - 1; i >= 0; i--) {
+      const s = this.spirals[i];
+      s.t += dt;
+      if (s.t > 0.9) {
+        this.spirals.splice(i, 1);
+        continue;
+      }
+      for (let k = 0; k < 2; k++) {
+        const a = s.t * 11 + k * Math.PI;
+        const r = 0.42 - s.t * 0.2;
+        this.fx.spawn({
+          x: s.x + Math.cos(a) * r, y: 0.15 + s.t * 1.5, z: s.z + Math.sin(a) * r,
+          vx: -Math.sin(a) * 0.4, vy: 0.9, vz: Math.cos(a) * 0.4,
+          life: 0.6, size: 0.1, color: k ? s.color : "#c8ffe0", shrink: 0.8, drag: 0.4, alpha: 0.95,
+        });
+      }
+    }
+  }
+
   private flourish(x: number, y: number) {
     const b = new Burst(x + 0.5, 0.6, Z(y), "#f2dfa6", 40, 0.9, 2.4);
     this.bursts.push(b);
@@ -1832,20 +1873,21 @@ export class World3D {
         this.delay(220, () => {
           target.flash(p.crit ? "#fff0a0" : "#ff6a5a", p.crit ? 220 : 140);
           target.play("hit", 0.4);
-          this.cam.shake(p.crit ? 260 : 140, p.crit ? 0.09 : 0.045);
           const tp = target.group.position;
-          const burst = new Burst(tp.x, target.height * 0.6, tp.z, p.crit ? "#fff0a0" : "#ff9a6a", p.crit ? 30 : 16, 0.5, 2.2);
-          this.bursts.push(burst);
-          this.scene.add(burst.points);
+          if (!this.reducedMotion) {
+            this.cam.shake(p.crit ? 260 : 140, p.crit ? 0.09 : 0.045);
+            this.cam.punch(p.crit ? 0.22 : 0.1, p.crit ? 190 : 140);
+            this.hitStop = p.crit ? 0.09 : 0.06;
+          }
+          this.fx?.sparks(tp.x, target.height * 0.6, tp.z, p.crit ? "#fff0a0" : "#ff9a6a", p.crit ? 26 : 12, p.crit ? 3.2 : 2.2, 0.5, p.crit ? 0.11 : 0.08);
+          if (p.crit) this.crack?.show(tp.x, tp.z);
         });
         break;
       }
       case "heal": {
         const target = p.side === "player" ? front : b.enemy;
         const tp = target.group.position;
-        const burst = new Burst(tp.x, 0.4, tp.z, "#7ddca4", 28, 0.9, 1.2);
-        this.bursts.push(burst);
-        this.scene.add(burst.points);
+        this.spirals.push({ x: tp.x, z: tp.z, t: 0, color: "#7ddca4" });
         target.play("cheer", 0.5);
         break;
       }
