@@ -233,7 +233,7 @@ export const CHARACTERS: Record<string, CharSpec> = {
     id: "merchant", skin: "#e0a67e", hair: "#2a2018", hairStyle: "crop",
     top: "#2f4a5c", topAlt: "#8fa3b5", bottom: "#243a48", trim: "#d9b45b",
     outfit: "vest", sleeves: "long",
-    build: "heavy", belly: 1.1, eyes: "almond", moustache: "#2a2018", smile: true,
+    build: "heavy", belly: 1.1, headSize: 0.98, eyes: "almond", moustache: "#2a2018", smile: true,
   },
   musician: {
     // sings; the only instrument in the game is Abhimanyu's bass

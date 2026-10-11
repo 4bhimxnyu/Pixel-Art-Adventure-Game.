@@ -438,9 +438,20 @@ export class CharacterRig extends BaseRig {
       const capeH = torsoH + legLen * 0.9;
       capeJ.add(this.mesh(G.box(torsoW * 1.25, capeH, 0.05), bottom, 0, -capeH / 2, -0.03));
       capeJ.add(this.box(torsoW * 1.3, 0.06, 0.06, trim, 0, -capeH + 0.03, -0.03));
-      capeJ.add(this.box(torsoW * 1.3, 0.06, 0.06, trim, 0, -0.03, -0.03));
       capeJ.rotation.x = 0.1;
       this.capeJoint = capeJ;
+      // a rounded standing collar: a thick ring around the neck base, tilted so it rises
+      // behind the head and dips into the chest in front, with a gold rim under it
+      // (the torus lies in its local XY plane; local y becomes world z once it is laid
+      // flat, so the ring is squashed on y and tilted past flat so the back rises)
+      const collar = this.mesh(G.torus(torsoW * 0.42, 0.035, 8, 20), bottom, 0, torsoH - 0.01, -0.04);
+      collar.scale.y = 0.6;
+      collar.rotation.set(Math.PI / 2 + 0.35, 0, 0);
+      torso.add(collar);
+      const rim = this.mesh(G.torus(torsoW * 0.42 + 0.03, 0.012, 6, 20), trim, 0, torsoH - 0.025, -0.045);
+      rim.scale.y = 0.6;
+      rim.rotation.set(Math.PI / 2 + 0.35, 0, 0);
+      torso.add(rim);
     }
   }
 
@@ -492,17 +503,20 @@ export class CharacterRig extends BaseRig {
     }
 
     // --- hand: a palm about three quarters of the arm's thickness, thumb toward the
-    // body, four thin fingers fanned below the palm
-    const palmW = armT * 0.58;
-    const palmH = armT * 0.68;
-    hand.add(this.box(palmW, palmH, armT * 0.3, skin, 0, -palmH / 2 - 0.005, 0));
+    // body, four thin fingers fanned below the palm. Wide sleeves swallow a small
+    // hand, so the hand grows with the sleeve and hangs clear of its hem.
+    const hk = s.sleeves === "wide" ? 1.15 + 0.15 * (s.sleeveScale ?? 1) : 1;
+    const palmW = armT * 0.58 * hk;
+    const palmH = armT * 0.68 * hk;
+    const hy = s.sleeves === "wide" ? -0.03 : 0;
+    hand.add(this.box(palmW, palmH, armT * 0.3 * hk, skin, 0, hy - palmH / 2 - 0.005, 0));
     const inward = -side; // thumbs point toward the body
-    const thumb = this.box(armT * 0.18, armT * 0.36, armT * 0.2, skin, inward * armT * 0.35, -armT * 0.28, armT * 0.08);
+    const thumb = this.box(armT * 0.18 * hk, armT * 0.36 * hk, armT * 0.2 * hk, skin, inward * armT * 0.35 * hk, hy - armT * 0.28 * hk, armT * 0.08 * hk);
     thumb.rotation.z = -inward * 0.55;
     hand.add(thumb);
     for (let i = 0; i < 4; i++) {
-      const fx = (i - 1.5) * armT * 0.145;
-      const f = this.box(armT * 0.115, armT * 0.4, armT * 0.22, skin, fx, -palmH - armT * 0.17, 0);
+      const fx = (i - 1.5) * armT * 0.145 * hk;
+      const f = this.box(armT * 0.115 * hk, armT * 0.4 * hk, armT * 0.22 * hk, skin, fx, hy - palmH - armT * 0.17 * hk, 0);
       f.rotation.z = (i - 1.5) * 0.06;
       f.rotation.x = 0.12;
       hand.add(f);
