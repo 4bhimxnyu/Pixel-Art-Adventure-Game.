@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
 // Arrival card: place name, the current objective, and hint 1. Auto-fades
-// after 3.6s so it never becomes furniture.
+// after 3.6s so it never becomes furniture. Styled like the other cards: an
+// eyebrow, a title, a growing gold rule, then the objective.
 // ---------------------------------------------------------------------------
 
 import { useEffect, useRef, useState } from "react";
@@ -44,15 +45,17 @@ export default function LocationCard() {
 
   return (
     <div
-      className="pointer-events-none absolute left-1/2 top-16 z-30 w-[380px] -translate-x-1/2 transition-all duration-700"
+      className="location-card ui-motion-long pointer-events-none absolute left-1/2 top-16 z-30 w-[min(400px,calc(100vw-32px))] -translate-x-1/2 transition-all duration-700"
       style={{ opacity: visible ? 1 : 0, transform: `translateX(-50%) translateY(${visible ? 0 : -10}px)` }}
     >
-      <div className="surface sb-pop px-5 py-4">
+      <div className="surface sb-pop relative overflow-hidden px-5 py-4">
+        <div className="absolute inset-x-0 top-0 h-px ui-rule-grow" style={{ background: "linear-gradient(90deg, transparent, rgba(242,223,166,.85), transparent)" }} />
+        <div className="eyebrow mb-1">Now entering</div>
         <div className="flex items-center gap-3">
           <PixelIcon name={card.icon} size={18} />
           <span className="title-lg text-[17px] text-[#f2dfa6] glow-gold">{card.place}</span>
         </div>
-        <div className="rule my-3" />
+        <div className="rule ui-rule-grow my-3" style={{ animationDelay: ".15s" }} />
         {card.objective && (
           <div className="flex gap-2 text-[13px] leading-snug text-[var(--ink-1)]">
             <span className="text-[#d9b45b]">◆</span>
