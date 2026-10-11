@@ -127,6 +127,8 @@ export function handleFinalChapterDialogue(
       fx.delay(2600, () =>
         bus.emit("cinematic", { kind: "mission-start", title: "FINAL CHAPTER", subtitle: "F-1205" })
       );
+      // Faizal lets go of the door and heads back to his room (first door on the right)
+      fx.delay(3000, () => { bus.emit("toast", { text: "Faizal wanders off to his room. First door down the hall.", tone: "info" }); fx.refresh(); });
       return true;
 
     case "met_abhi_home":
