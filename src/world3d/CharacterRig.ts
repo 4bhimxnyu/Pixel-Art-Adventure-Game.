@@ -228,17 +228,19 @@ export class CharacterRig extends BaseRig {
     const chestZ = torsoD / (torsoW * 1.1);
     const trousers = !(s.outfit === "robe" || s.outfit === "dress");
 
-    // core body: wider at the shoulders than the waist; V-shape for the athlete
+    // core body: wider at the shoulders than the waist; V-shape for the athlete.
+    // Under a vest the body is the shirt (topAlt), so the vest reads as a layer over it.
+    const bodyMat = s.outfit === "vest" ? topAlt : top;
     if (b === "muscular") {
-      torso.add(this.box(torsoW + 0.08, torsoH * 0.55, torsoD, top, 0, torsoH * 0.72, 0));
-      torso.add(this.box(waistW, torsoH * 0.5, torsoD - 0.06, top, 0, torsoH * 0.25, 0));
+      torso.add(this.box(torsoW + 0.08, torsoH * 0.55, torsoD, bodyMat, 0, torsoH * 0.72, 0));
+      torso.add(this.box(waistW, torsoH * 0.5, torsoD - 0.06, bodyMat, 0, torsoH * 0.25, 0));
       // chest plates read as "built" even in silhouette
-      torso.add(this.box(torsoW * 0.42, 0.1, 0.05, top, -torsoW * 0.22, torsoH * 0.78, torsoD / 2));
-      torso.add(this.box(torsoW * 0.42, 0.1, 0.05, top, torsoW * 0.22, torsoH * 0.78, torsoD / 2));
+      torso.add(this.box(torsoW * 0.42, 0.1, 0.05, bodyMat, -torsoW * 0.22, torsoH * 0.78, torsoD / 2));
+      torso.add(this.box(torsoW * 0.42, 0.1, 0.05, bodyMat, torsoW * 0.22, torsoH * 0.78, torsoD / 2));
     } else {
       // with a belly the chest flares toward the waist so the shirt drapes over the gut
       const flare = belly > 0 ? 1 + 0.06 * Math.min(belly, 1.4) : 1;
-      const chest = this.mesh(G.cyl(torsoW * 0.56, waistW * 0.56 * flare, torsoH, 12), top, 0, torsoH / 2, 0);
+      const chest = this.mesh(G.cyl(torsoW * 0.56, waistW * 0.56 * flare, torsoH, 12), bodyMat, 0, torsoH / 2, 0);
       chest.scale.z = chestZ;
       torso.add(chest);
     }
@@ -247,7 +249,7 @@ export class CharacterRig extends BaseRig {
       // the chest so only a smooth bulge comes through the front, 0.035 proud of it
       const br = Math.min(waistW * 0.42 * Math.min(belly, 1.4), torsoH * 0.36);
       const chestFront = waistW * 0.56 * chestZ;
-      const bl = this.sphere(br, top, 0, torsoH * 0.3, 0, 14);
+      const bl = this.sphere(br, bodyMat, 0, torsoH * 0.3, 0, 14);
       bl.scale.set(1.0, 0.8, (chestFront + 0.035) / br);
       torso.add(bl);
     }
@@ -355,9 +357,24 @@ export class CharacterRig extends BaseRig {
         break;
       }
       case "vest": {
-        torso.add(this.box(torsoW * 0.9, torsoH * 0.9, torsoD + 0.06, top, 0, torsoH * 0.45, 0));
+        // a vest over the shirt: a lighter piped edge down each front opening and
+        // around the armholes so it reads as its own layer; a sash with a knot and
+        // tails on the left hip
+        const vw = torsoW * 0.9;
+        const vh = torsoH * 0.9;
+        const vd = torsoD + 0.06;
+        const edge = mat(s.accent ?? shade(s.top, 1.7));
+        torso.add(this.box(vw, vh, vd, top, 0, torsoH * 0.45, 0));
+        for (const side of [-1, 1]) {
+          torso.add(this.box(0.028, vh, 0.012, edge, side * torsoW * 0.2, torsoH * 0.45, vd / 2 + 0.004));
+          torso.add(this.box(0.02, vh * 0.55, vd + 0.008, edge, side * (vw / 2 - 0.006), torsoH * 0.65, 0));
+        }
         torso.add(this.box(torsoW * 0.5, 0.06, torsoD * 0.6, topAlt, 0, torsoH - 0.01, 0.03)); // shirt collar
-        torso.add(this.box(waistW * 1.05, 0.06, torsoD + 0.08, trim, 0, 0.05, 0));
+        torso.add(this.box(waistW * 1.05, 0.075, torsoD + 0.08, trim, 0, 0.05, 0)); // sash
+        torso.add(this.sphere(0.03, trim, -waistW * 0.5, 0.05, torsoD * 0.3, 6)); // knot
+        const tail = this.box(0.04, 0.14, 0.02, trim, -waistW * 0.52, -0.04, torsoD * 0.3);
+        tail.rotation.z = 0.15;
+        torso.add(tail);
         break;
       }
       case "hoodie": {

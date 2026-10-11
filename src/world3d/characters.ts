@@ -242,10 +242,11 @@ export const CHARACTERS: Record<string, CharSpec> = {
     outfit: "robe", sleeves: "long", skirt: 0.9, footwear: "boots",
     build: "slim", eyes: "almond", smile: true, idle: "sway", ornament: "#f2dfa6",
   },
-  // Gatekeeper: the muscular guard: cropped hair, stubble, heavy brows, a dark vest with red trim.
+  // Gatekeeper: the muscular guard: cropped hair, stubble, heavy brows, a near-black
+  // vest with a lighter piped edge over a charcoal shirt, black trousers, the red sash.
   gatekeeper: {
     id: "gatekeeper", skin: "#c98f68", hair: "#1c1c1c", hairStyle: "crop",
-    top: "#1a0f12", topAlt: "#2a2028", bottom: "#141014", trim: "#b3252f",
+    top: "#15101a", topAlt: "#3b3b44", bottom: "#141014", trim: "#b3252f", accent: "#6a5c66",
     outfit: "vest", sleeves: "long", footwear: "boots",
     build: "muscular", eyes: "almond", brows: "strong", stubble: "#5a4238", props: ["staff"],
   },
