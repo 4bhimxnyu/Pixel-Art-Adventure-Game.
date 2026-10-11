@@ -222,6 +222,9 @@ export function waterMaterial(deep: string, shallow: string) {
         float line = sin((vXZ.x + vXZ.y * 0.6) * 5.0 + uTime * 1.6 + sin(vXZ.y * 3.0 + uTime) * 0.8);
         float hi = smoothstep(0.82, 0.97, line);
         col += vec3(0.55, 0.65, 0.7) * hi * 0.55;
+        // sun glints: two fast interference patterns, only their peaks show
+        float sp = sin(vXZ.x * 23.0 + uTime * 2.1) * sin(vXZ.y * 19.0 - uTime * 1.7 + vXZ.x * 3.0);
+        col += vec3(1.0, 0.97, 0.9) * smoothstep(0.90, 1.0, sp) * 0.6;
         gl_FragColor = vec4(col, 0.88);
         #include <fog_fragment>
       }

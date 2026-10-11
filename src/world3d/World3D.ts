@@ -38,6 +38,11 @@ import { AmbientParticles, Burst } from "./Particles";
 import { PawTrail } from "./PawTrail";
 import { FxPool, FocusRing, NameLabels, DashStreak, type LabelTarget } from "./Fx";
 import { floorFor } from "./MapBuilder";
+import { FogPlanes, LightShafts, Birds } from "./Atmosphere";
+
+/** Settings the UI may add later; read defensively so an old save never breaks the world. */
+type FeelSettings = { quality?: "auto" | "high" | "medium" | "low"; reducedMotion?: boolean };
+const feelSettings = () => useGameStore.getState().settings as FeelSettings;
 
 /** Dust colour kicked up per floor kind; floors that do not puff are missing. */
 const DUST: Record<string, string> = {
@@ -163,6 +168,16 @@ export class World3D {
   private pawTrail: PawTrail | null = null;
   /** Pooled feel effects (see Fx.ts); rebuilt with every map. */
   private fx: FxPool | null = null;
+  /** Atmosphere extras; null when the region has none or reducedMotion is on. */
+  private fog: FogPlanes | null = null;
+  private shafts: LightShafts | null = null;
+  private birds: Birds | null = null;
+  private leaves: AmbientParticles | null = null;
+  private reducedMotion = false;
+  /** Base intensity of each point light, so the flicker has something to flicker around. */
+  private lightBase: number[] = [0, 0, 0, 0];
+  private lightSeed: number[] = [0, 0, 0, 0];
+  private emberT = 0;
   private dash: DashStreak | null = null;
   private dashLineT = 0;
   private prevHeading = 0;
@@ -249,11 +264,17 @@ export class World3D {
     this.busUnsubs.push(bus.on("mimo:ping", () => this.mimoSniff()));
     this.busUnsubs.push(bus.on("unstuck", () => this.resetPosition()));
     this.busUnsubs.push(bus.on("help:direction", () => this.showDirection()));
+    this.reducedMotion = !!feelSettings().reducedMotion;
     this.unsubStore = useGameStore.subscribe((s, prev) => {
       input.overlayOpen = !!s.overlay;
       if (s.settings !== prev.settings) {
         input.lookSens = s.settings.lookSens ?? 1;
         input.invertY = !!s.settings.invertY;
+        const rm = !!(s.settings as FeelSettings).reducedMotion;
+        if (rm !== this.reducedMotion) {
+          this.reducedMotion = rm;
+          if (this.mapDef) this.buildAtmosphere(this.mapDef, mapWidth(this.mapDef), mapHeight(this.mapDef));
+        }
       }
       if (s.quests !== prev.quests || s.flags !== prev.flags || s.party !== prev.party) this.beaconDirty = true;
     });
@@ -336,6 +357,7 @@ export class World3D {
     this.trail = [];
     this.fx?.dispose();
     this.fx = null;
+    this.clearAtmosphere();
     this.dash?.dispose();
     this.dash = null;
     this.focus?.dispose();
@@ -403,6 +425,7 @@ export class World3D {
       this.scene.add(this.particles.points);
     }
     this.buildHighlights();
+    this.buildAtmosphere(def, W, H);
     this.pawTrail = new PawTrail();
     this.scene.add(this.pawTrail.mesh);
     this.fx = new FxPool();
@@ -1105,6 +1128,7 @@ export class World3D {
     this.particles?.update(dt);
     this.fx?.update(dt);
     this.dash?.update(dt);
+    this.updateAtmosphere(dt);
     this.bursts = this.bursts.filter((b) => b.update(dt));
     const now = this.timer.getElapsed();
     const pulse = 0.25 + Math.abs(Math.sin(now * 2.2)) * 0.3;
@@ -1519,6 +1543,80 @@ export class World3D {
     bus.emit("fade", { flash: true, ms: 260, color: "rgba(242,223,166,0.6)" });
   }
 
+  // ============================================================ atmosphere
+
+  private clearAtmosphere() {
+    this.fog?.dispose();
+    this.fog = null;
+    this.shafts?.dispose();
+    this.shafts = null;
+    this.birds?.dispose();
+    this.birds = null;
+    this.leaves?.dispose();
+    this.leaves = null;
+  }
+
+  /** Region-specific extras: ground mist, temple light, birds, drifting leaves. */
+  private buildAtmosphere(def: MapDef, W: number, H: number) {
+    this.clearAtmosphere();
+    if (this.reducedMotion || !this.built) return;
+    const th = this.built.theme;
+    const id = def.id;
+    if (id === "forest" || id === "cave" || id === "mountain") {
+      const tint = id === "cave" ? "#8e80b8" : id === "mountain" ? "#e8eef6" : "#d6e6d0";
+      this.fog = new FogPlanes(W, H, tint, 3, id === "cave" ? 0.12 : 0.15);
+      this.scene.add(this.fog.mesh);
+    }
+    if (id === "temple") {
+      const spots: { x: number; z: number }[] = [];
+      for (let i = 0; i < 4; i++) spots.push({ x: W * (0.2 + 0.2 * i) + (i % 2) * 0.7, z: -H * (0.3 + 0.12 * i) });
+      this.shafts = new LightShafts(spots, "#ffd9a0", 0.07);
+      this.scene.add(this.shafts.mesh);
+    }
+    if (id === "route1" || id === "village" || id === "town") {
+      this.birds = new Birds(W, H, th.indoor ? "#2a2024" : "#2e2630");
+      this.scene.add(this.birds.group);
+    }
+    if (id === "route1" || id === "village") {
+      this.leaves = new AmbientParticles("leaves", W, H, 0.35 * this.quality.particles);
+      this.leaves.points.position.z = -H;
+      this.scene.add(this.leaves.points);
+    }
+  }
+
+  private updateAtmosphere(dt: number) {
+    this.fog?.update(dt);
+    this.shafts?.update(dt);
+    this.birds?.update(dt);
+    this.leaves?.update(dt);
+    if (this.reducedMotion) return;
+    // lantern / brazier flicker: a sum of two sines per light, never dropping far
+    const t = this.timer.getElapsed();
+    for (let i = 0; i < this.points.length; i++) {
+      const base = this.lightBase[i];
+      if (!base) continue;
+      const s = this.lightSeed[i];
+      this.points[i].intensity = base * (0.9 + Math.sin(t * 7.3 + s) * 0.05 + Math.sin(t * 13.1 + s * 2.1) * 0.05);
+    }
+    // embers: the braziers and the sacred lantern near the player throw the odd spark
+    if (this.fx && this.built && this.mode === "explore") {
+      this.emberT -= dt;
+      if (this.emberT <= 0) {
+        this.emberT = 0.09;
+        const gp = this.built.glowPoints;
+        // pick one at random; cheap and it reads as random anyway
+        const g = gp[Math.floor(Math.random() * gp.length)];
+        if (g && (g.color === "#ff8a3c" || g.color === "#ffb060") && Math.hypot(g.x - this.playerPos.x, g.z - this.playerPos.z) < 14) {
+          this.fx.spawn({
+            x: g.x + (Math.random() - 0.5) * 0.2, y: g.y - 0.1, z: g.z + (Math.random() - 0.5) * 0.2,
+            vx: (Math.random() - 0.5) * 0.3, vy: 0.9 + Math.random() * 0.6, vz: (Math.random() - 0.5) * 0.3,
+            life: 0.7 + Math.random() * 0.5, size: 0.05, color: Math.random() < 0.5 ? "#ffb060" : "#ff7a3c", shrink: 1, drag: 0.8, gravity: -0.3, alpha: 1,
+          });
+        }
+      }
+    }
+  }
+
   // ================================================================ lights
 
   private lightTimer = 0;
@@ -1535,11 +1633,14 @@ export class World3D {
       const e = pts[i];
       if (!e) {
         p.intensity = 0;
+        this.lightBase[i] = 0;
         return;
       }
       p.position.set(e.g.x, e.g.y, e.g.z);
       p.color.set(e.g.color);
       p.intensity = e.g.intensity * (this.quality.mobile ? 0.8 : 1);
+      this.lightBase[i] = p.intensity;
+      this.lightSeed[i] = e.g.x * 1.7 + e.g.z * 0.9;
     });
   }
 
