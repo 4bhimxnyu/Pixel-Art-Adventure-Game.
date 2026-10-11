@@ -134,6 +134,13 @@ export function gatesOf(def: MapDef, flags: Flags): GateInfo[] {
   return out;
 }
 
+/** Yaw of a gate's props: entrances on the north/south edge face along the map, the others across it. */
+export function gateYaw(def: MapDef, g: GateInfo) {
+  const H0 = mapHeight(def);
+  const onNS = g.cells.every((c) => c.y === 0 || c.y === H0 - 1) || (g.cells.length === 2 && g.cells[0].y === g.cells[1].y);
+  return onNS ? 0 : Math.PI / 2;
+}
+
 type Instance = { def: PropDef; mats: THREE.Matrix4[] };
 
 const FLOOR_COLORS: Record<string, [string, string]> = {
@@ -416,10 +423,7 @@ export function buildMap(def: MapDef, flags: Flags, quality: { shadows: boolean 
     if (def.id === "road" && g.to === "f1205") {
       // the flat's own door carries the plaque; nothing to build on the road's floor
     }
-    const W0 = mapWidth(def);
-    const H0 = mapHeight(def);
-    const onNS = g.cells.every((c) => c.y === 0 || c.y === H0 - 1) || (g.cells.length === 2 && g.cells[0].y === g.cells[1].y);
-    const ry = onNS ? 0 : Math.PI / 2;
+    const ry = gateYaw(def, g);
     const add = (k: string) => {
       const d = prop(k);
       if (!d) return;
@@ -437,7 +441,6 @@ export function buildMap(def: MapDef, flags: Flags, quality: { shadows: boolean 
     add(key);
     if (g.locked) add("gateBars");
     else if (key !== "gatePlaque") glowPoints.push({ x: g.x, z: g.z, y: 2.1, color: key === "gateMoon" ? "#ffb4c8" : "#ffb060", intensity: 1.4 });
-    void W0;
   }
 
   // --- instanced props

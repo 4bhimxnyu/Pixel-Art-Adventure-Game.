@@ -32,12 +32,12 @@ import { buildMap, propObject, type BuiltMap } from "./MapBuilder";
 import { CharacterRig } from "./CharacterRig";
 import { DogRig } from "./DogRig";
 import { makeEnemyRig } from "./EnemyRig";
-import type { BaseRig } from "./BaseRig";
+import { ease, type BaseRig } from "./BaseRig";
 import { CameraRig, type Keyframe } from "./CameraRig";
 import { AmbientParticles, Burst } from "./Particles";
 import { PawTrail } from "./PawTrail";
 import { FxPool, FocusRing, NameLabels, DashStreak, CrackDecal, type LabelTarget } from "./Fx";
-import { floorFor } from "./MapBuilder";
+import { floorFor, gateYaw, type GateInfo } from "./MapBuilder";
 import { FogPlanes, LightShafts, Birds } from "./Atmosphere";
 
 /** Settings the UI may add later; read defensively so an old save never breaks the world. */
@@ -180,6 +180,10 @@ export class World3D {
   private emberT = 0;
   private dash: DashStreak | null = null;
   private crack: CrackDecal | null = null;
+  /** Gate bars coming apart: a copy of the bars prop whose pieces fall and fade while sparks fly. */
+  private dissolves: { g: THREE.Group; t: number; seeds: number[] }[] = [];
+  /** The beacon's own materials (not the shared cache) so it can dim and pulse by distance. */
+  private beaconMats: THREE.MeshBasicMaterial[] = [];
   /** Seconds of frozen simulation left (hit-stop on impacts). */
   private hitStop = 0;
   /** Heal spirals in flight: particles are spawned along a rising helix over ~0.9 s. */
@@ -358,8 +362,9 @@ export class World3D {
     this.highlightDiscs = [];
     if (this.pingMarker) disposeObject(this.pingMarker);
     this.pingMarker = null;
-    if (this.beacon) disposeObject(this.beacon);
-    this.beacon = null;
+    this.removeBeacon();
+    for (const d of this.dissolves) disposeObject(d.g);
+    this.dissolves = [];
     this.pawTrail?.dispose();
     this.pawTrail = null;
     this.trail = [];
@@ -568,12 +573,16 @@ export class World3D {
   // ================================================================ guidance
 
   /** A gold column + floating diamond over the current objective (or the exit toward it). */
+  private removeBeacon() {
+    if (this.beacon) disposeObject(this.beacon);
+    this.beacon = null;
+    for (const m of this.beaconMats) m.dispose();
+    this.beaconMats = [];
+  }
+
   private updateBeacon() {
     this.beaconDirty = false;
-    if (this.beacon) {
-      disposeObject(this.beacon);
-      this.beacon = null;
-    }
+    this.removeBeacon();
     const s = useGameStore.getState();
     const main = s.quests.find((q) => q.id === "main");
     if (!main || main.done) return;
@@ -600,11 +609,18 @@ export class World3D {
     if (!pos) return;
     const g = new THREE.Group();
     const color = exit ? "#9fe3ff" : "#f2dfa6";
-    const column = new THREE.Mesh(G.cyl(0.14, 0.22, 3.2, 10), glow(color, 0.16));
+    const own = (opacity: number) => {
+      const m = new THREE.MeshBasicMaterial({ color: new THREE.Color(color), transparent: true, opacity, depthWrite: false });
+      m.userData.base = opacity;
+      this.beaconMats.push(m);
+      return m;
+    };
+    const column = new THREE.Mesh(G.cyl(0.14, 0.22, 3.2, 10), own(0.16));
     column.position.y = 1.6;
-    const ring = new THREE.Mesh(G.cyl(0.6, 0.6, 0.03, 20), glow(color, 0.35));
+    const ring = new THREE.Mesh(G.cyl(0.6, 0.6, 0.03, 20), own(0.35));
     ring.position.y = 0.03;
-    const gem = new THREE.Mesh(G.ico(0.17, 0), glow(color, 0.95));
+    ring.name = "ring";
+    const gem = new THREE.Mesh(G.ico(0.17, 0), own(0.95));
     gem.position.y = exit ? 3.0 : 2.4;
     gem.name = "gem";
     g.add(column, ring, gem);
@@ -638,7 +654,37 @@ export class World3D {
     return best;
   }
 
-  private gateOpensCinematic(gate: { to: MapId; x: number; z: number }) {
+  /** Gate bars falling apart: each piece drops, drifts and shrinks on its own timing, sparks all the while. */
+  private updateDissolves(dt: number) {
+    if (!this.dissolves.length) return;
+    for (let i = this.dissolves.length - 1; i >= 0; i--) {
+      const d = this.dissolves[i];
+      d.t += dt;
+      if (d.t < 0) continue; // still standing, the camera is on its way
+      const DUR = 1.25;
+      const k = Math.min(1, d.t / DUR);
+      d.g.children.forEach((c, j) => {
+        const s = d.seeds[j];
+        const start = s * 0.35;
+        const kk = THREE.MathUtils.clamp((k - start) / (1 - start), 0, 1);
+        const e = kk * kk;
+        c.position.y -= e * dt * (1.5 + s * 1.5);
+        c.position.x += (s - 0.5) * dt * 0.8 * kk;
+        c.rotation.z += (s - 0.5) * dt * 3 * kk;
+        c.scale.setScalar(Math.max(0.001, 1 - e));
+      });
+      if (this.fx && Math.random() < 0.8) {
+        const p = d.g.position;
+        this.fx.sparks(p.x + (Math.random() - 0.5) * 1.6, 0.4 + Math.random() * 1.3, p.z + (Math.random() - 0.5) * 0.2, Math.random() < 0.5 ? "#ffd27a" : "#f2dfa6", 2, 1.8, 0.5, 0.08);
+      }
+      if (k >= 1) {
+        disposeObject(d.g);
+        this.dissolves.splice(i, 1);
+      }
+    }
+  }
+
+  private gateOpensCinematic(gate: GateInfo) {
     if (this.cam.cinematicActive || this.mode !== "explore") return;
     const from = this.cam.camera.position.clone();
     const look = new THREE.Vector3(gate.x, 1.4, gate.z);
@@ -650,7 +696,13 @@ export class World3D {
     this.inputLocked = true;
     gong();
     bus.emit("toast", { text: `The way to ${MAP_PLACE[gate.to]} is open.`, tone: "good" });
-    this.flourish(Math.floor(gate.x), Math.floor(-gate.z));
+    // the bars are back for a moment, then come apart in sparks as the camera arrives
+    const bars = propObject("gateBars");
+    bars.position.set(gate.x, 0, gate.z);
+    bars.rotation.y = gateYaw(this.mapDef, gate);
+    this.scene.add(bars);
+    this.dissolves.push({ g: bars, t: -0.7, seeds: bars.children.map(() => Math.random()) });
+    this.delay(900, () => this.flourish(Math.floor(gate.x), Math.floor(-gate.z)));
     this.cam.playCinematic({
       frames: [
         { pos, look, dur: 1.0, hold: 1.4 },
@@ -1179,11 +1231,21 @@ export class World3D {
     }
     if (this.beaconDirty && this.mode === "explore") this.updateBeacon();
     if (this.beacon) {
+      // the beacon calls louder the further away it is and settles down once you are close
+      const bd = Math.hypot(this.beacon.position.x - this.playerPos.x, this.beacon.position.z - this.playerPos.z);
+      const far = THREE.MathUtils.clamp((bd - 3) / 9, 0, 1);
+      const now = this.timer.getElapsed();
+      const pulse = 0.5 + 0.5 * Math.sin(now * (2.2 + far * 1.6));
       const gem = this.beacon.getObjectByName("gem");
       if (gem) {
-        gem.rotation.y += dt * 1.4;
-        gem.position.y += Math.sin(this.timer.getElapsed() * 2.2) * 0.004;
+        gem.rotation.y += dt * (1.4 + far);
+        gem.position.y += Math.sin(now * 2.2) * 0.004;
+        gem.scale.setScalar(1 + pulse * (0.08 + far * 0.3));
       }
+      const ring = this.beacon.getObjectByName("ring");
+      if (ring) ring.scale.setScalar(1 + pulse * far * 0.35);
+      const dim = 0.35 + 0.65 * far;
+      for (const m of this.beaconMats) m.opacity = (m.userData.base as number) * dim * (0.8 + pulse * 0.2 * (0.5 + far));
       this.beacon.visible = this.mode === "explore";
     }
     for (const e of this.entities) {
@@ -1203,6 +1265,7 @@ export class World3D {
     if (this.water) ((this.water.material as THREE.ShaderMaterial).uniforms.uTime.value as number) = this.timer.getElapsed();
     this.particles?.update(dt);
     this.updateSpirals(dt);
+    this.updateDissolves(dt);
     this.fx?.update(dt);
     this.dash?.update(dt);
     this.crack?.update(dt);
@@ -2023,12 +2086,16 @@ export class World3D {
     const H = mapHeight(this.mapDef);
     const p = this.playerPos.clone();
     const high = new THREE.Vector3(W / 2 + 6, 11, -H / 2 + 10);
+    // a slow dolly in from further out while the title shows, instead of a hard cut
+    const wide = new THREE.Vector3(W / 2 + 9.5, 13.5, -H / 2 + 15);
     const mid = p.clone().add(new THREE.Vector3(-Math.sin(this.heading) * 4 + 3, 4.5, -Math.cos(this.heading) * 4 + 3));
-    this.cam.camera.position.copy(high);
+    const centre = new THREE.Vector3(W / 2, 0.5, -H / 2);
+    this.cam.camera.position.copy(wide);
     this.cam.playCinematic({
       frames: [
-        { pos: high, look: new THREE.Vector3(W / 2, 0.5, -H / 2), dur: 0.01, hold: 0.9 },
-        { pos: mid, look: p.clone().setY(1), dur: 2.0 },
+        { pos: wide, look: centre, dur: 0.01 },
+        { pos: high, look: centre, dur: 1.9, ease: ease.out },
+        { pos: mid, look: p.clone().setY(1), dur: 1.9 },
       ],
       onDone: () => {
         this.cam.snapBehind(this.playerPos, this.heading);
