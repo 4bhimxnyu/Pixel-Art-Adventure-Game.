@@ -736,6 +736,28 @@ const defs: Record<string, () => PropDef> = {
       P(G.box(0.14, 0.08, 0.1), mat("#d9b45b"), 0.05, 0.49, -0.15, { ry: 0.5, shadow: false }),
     ],
   }),
+  /** Balcony railing: a low rail on posts, so the view past it stays open. */
+  railing: () => ({
+    parts: [
+      P(G.box(0.06, 1.0, 0.06), mat("#2a2a30"), -0.47, 0.5, 0),
+      P(G.box(0.06, 1.0, 0.06), mat("#2a2a30"), 0.47, 0.5, 0),
+      P(G.box(1.0, 0.05, 0.1), mat("#6b5a4a"), 0, 1.0, 0),
+      P(G.box(1.0, 0.03, 0.03), mat("#2a2a30"), 0, 0.55, 0),
+      P(G.box(0.02, 0.9, 0.02), mat("#2a2a30"), -0.16, 0.47, 0),
+      P(G.box(0.02, 0.9, 0.02), mat("#2a2a30"), 0.16, 0.47, 0),
+    ],
+  }),
+  /** A closed door with a small red lock light: Abhimanyu's room until everyone else is met. */
+  doorLocked: () => ({
+    parts: [
+      P(G.box(0.12, 1.6, 0.9), mat(C.wood1), -0.44, 0.8, 0),
+      P(G.box(0.12, 1.6, 0.9), mat(C.wood1), 0.44, 0.8, 0),
+      P(G.box(1, 0.12, 0.9), mat(C.wood1), 0, 1.66, 0),
+      P(G.box(0.76, 1.55, 0.08), mat("#5a3a26"), 0, 0.78, 0),
+      P(G.box(0.08, 0.08, 0.04), mat("#d9b45b"), 0.25, 0.8, 0.06, { shadow: false }),
+      P(G.box(0.05, 0.05, 0.03), glow("#ff4a4a", 0.9), 0.25, 0.95, 0.06, { shadow: false }),
+    ],
+  }),
   flatWall: () => ({
     parts: [
       P(G.box(1, 1.7, 1), mat("#ead9c3"), 0, 0.85, 0),

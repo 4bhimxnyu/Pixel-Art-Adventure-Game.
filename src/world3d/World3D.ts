@@ -930,11 +930,13 @@ export class World3D {
   /** A few NPCs move with the story (Abhimanyu waits by the door after the evening). */
   private entityOverride(def: MapDef, kind: string, pos: { x: number; y: number }, flags: Flags) {
     if (def.id !== "f1205") return pos;
+    // Faizal holds the front door until you have been let in
+    if (kind === "npc_faizal" && !flags.f1205Arrived) return { x: 2, y: 7 };
     // after the evening everyone is out on the balcony until the sutta is done
     if (flags.eveningDone && !flags.smokeDone) {
       const spot: Record<string, { x: number; y: number }> = {
-        npc_dev: { x: 1, y: 16 }, npc_garv: { x: 2, y: 15 }, npc_hakim: { x: 3, y: 16 },
-        npc_faizal: { x: 7, y: 15 }, npc_abhimanyu_home: { x: 8, y: 16 },
+        npc_dev: { x: 8, y: 17 }, npc_garv: { x: 9, y: 16 }, npc_hakim: { x: 10, y: 17 },
+        npc_faizal: { x: 14, y: 16 }, npc_abhimanyu_home: { x: 15, y: 17 },
       };
       if (spot[kind]) return spot[kind];
     }
@@ -944,7 +946,7 @@ export class World3D {
     const allMet = flags.metAbhiHome && flags.metFaizal && flags.metGarv && flags.metHakim && flags.metDev;
     if (allMet && !flags.eveningDone) {
       if (kind === "npc_abhimanyu_home") return { x: 6, y: 4 };
-      if (kind === "npc_garv") return { x: 11, y: 3 };
+      if (kind === "npc_garv") return { x: 18, y: 3 };
     }
     return pos;
   }
@@ -2303,22 +2305,22 @@ export class World3D {
   private smokeOn = false;
   private smokeScene() {
     const H = mapHeight(this.mapDef);
-    const railZ = -(H - 1) - 0.1; // just inside the balcony's outer wall
-    const stand: Record<string, number> = { npc_dev: 1.9, npc_garv: 2.8, npc_hakim: 3.7, npc_riddhi_flat: 5.5, npc_faizal: 6.5, npc_abhimanyu_home: 7.5 };
+    const railZ = -(H - 2) - 0.1; // just inside the balcony railing (the last row is the drop)
+    const stand: Record<string, number> = { npc_dev: 9.4, npc_garv: 10.3, npc_hakim: 11.2, npc_riddhi_flat: 13.0, npc_faizal: 14.0, npc_abhimanyu_home: 15.0 };
     const smokers: THREE.Object3D[] = [];
     for (const e of this.entities) {
       const x = stand[e.kind];
       if (x == null || !e.rig) continue;
       e.x = Math.floor(x);
-      e.y = H - 2;
+      e.y = H - 3;
       this.walkEntity(e, new THREE.Vector3(x, 0, railZ + 0.55), Math.PI);
       if (e.kind !== "npc_hakim") smokers.push(e.object);
     }
-    this.playerPos.set(4.6, 0, railZ + 0.6);
+    this.playerPos.set(12.1, 0, railZ + 0.6);
     this.heading = Math.PI;
     this.player.setHeading(Math.PI, true);
     if (this.companion) {
-      this.companion.group.position.set(5.0, 0, railZ + 1.25);
+      this.companion.group.position.set(12.6, 0, railZ + 1.25);
       this.companion.setHeading(Math.PI, true);
     }
     this.inputLocked = true;
@@ -2361,13 +2363,13 @@ export class World3D {
     tick();
     // camera: on the balcony itself (the room wall is right behind the row), sliding
     // along the rail past everyone's faces, then settling a little above the group
-    const mid = new THREE.Vector3(4.6, 1.15, railZ + 0.5);
+    const mid = new THREE.Vector3(12.1, 1.15, railZ + 0.5);
     this.cam.playCinematic({
       frames: [
-        { pos: new THREE.Vector3(0.8, 1.5, railZ + 1.7), look: new THREE.Vector3(3.6, 1.2, railZ + 0.5), dur: 1.2 },
-        { pos: new THREE.Vector3(8.9, 1.45, railZ + 1.7), look: new THREE.Vector3(6.0, 1.2, railZ + 0.5), dur: 18 },
-        { pos: new THREE.Vector3(4.6, 2.2, railZ + 1.75), look: mid, dur: 12 },
-        { pos: new THREE.Vector3(1.0, 1.6, railZ + 1.5), look: mid, dur: 14 },
+        { pos: new THREE.Vector3(7.9, 1.5, railZ + 1.7), look: new THREE.Vector3(10.8, 1.2, railZ + 0.5), dur: 1.2 },
+        { pos: new THREE.Vector3(16.6, 1.45, railZ + 1.7), look: new THREE.Vector3(13.6, 1.2, railZ + 0.5), dur: 18 },
+        { pos: new THREE.Vector3(12.1, 2.3, railZ + 1.8), look: new THREE.Vector3(12.1, 0.9, railZ - 6), dur: 12 },
+        { pos: new THREE.Vector3(8.4, 1.6, railZ + 1.5), look: mid, dur: 14 },
       ],
       onDone: () => { this.inputLocked = false; },
     });

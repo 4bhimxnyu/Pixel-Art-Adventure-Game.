@@ -246,8 +246,8 @@ export const STEP_GUIDE: Record<string, Guide> = {
     region: "f1205",
     hints: [
       "Five flatmates. One of them will not look up.",
-      "Abhimanyu's room is at the end of the hall on the left. The others are around the flat.",
-      "Abhimanyu in his room, Faizal in the kitchen, Hakim on the sofa, Garv and Dev in the room across the hall. Talk to each of them.",
+      "Down the hall: Faizal and Hakim's room first, then Abhimanyu's (locked for now), then Garv and Dev's at the end.",
+      "Talk to Faizal and Hakim in the first room and Garv and Dev in the last. Abhimanyu's door opens once all four are met.",
     ],
     chain: ["Abhimanyu's room", "Kitchen", "Sofa", "Back room"],
   },
@@ -268,7 +268,7 @@ export const STEP_GUIDE: Record<string, Guide> = {
     region: "f1205",
     hints: [
       "Someone is shouting from the balcony. Riddhi has arrived.",
-      "The balcony is through the door at the back of Abhimanyu's room.",
+      "The balcony is through the door at the back of Abhimanyu's room, the middle room off the hall.",
       "Go out through Abhimanyu's room, find Riddhi on the balcony and talk to her.",
     ],
     chain: ["Abhimanyu's room", "Balcony", "Riddhi"],

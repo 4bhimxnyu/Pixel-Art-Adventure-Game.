@@ -50,7 +50,7 @@ export const INTERACT_TILE: Record<string, string> = {
   i: "inscription", "*": "chest", "+": "viewpoint", "~": "dig", I: "incense",
   h: "hidden", y: "clue_toy", "%": "banner",
   // final chapter props
-  S: "sofa", l: "guitar_stand", "@": "poster", "0": "window", "[": "counter", "]": "fridge", x: "weights", "7": "table",
+  S: "sofa", l: "guitar_stand", "@": "poster", "0": "window", "[": "counter", "]": "fridge", x: "weights", "7": "table", ">": "locked_door",
   "6": "clutter", "8": "chair", "9": "snacks",
 };
 
@@ -104,6 +104,10 @@ export function cellBlocked(def: MapDef, x: number, y: number, flags: Flags) {
   if (ch === "=") {
     const f = BARRIER_FLAG[def.id];
     return f ? !(flags as any)[f] : true;
+  }
+  if (ch === ">") {
+    // Abhimanyu's door at F-1205: locked until the other four flatmates have been met
+    return !(flags.metFaizal && flags.metHakim && flags.metGarv && flags.metDev);
   }
   if (SOLID.has(ch)) {
     if ("$&*!y".includes(ch) && isHidden(def, ch, x, y, flags)) return false;

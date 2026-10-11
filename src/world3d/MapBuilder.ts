@@ -82,7 +82,7 @@ export const THEMES: Record<MapDef["theme"] | "road", Theme> = {
     sunDir: [1, 6, 1], ambient: 0.5, particles: "sparks", indoor: true,
   },
   flat: {
-    sky: "#1a1420", fog: "#1a1420", fogNear: 14, fogFar: 30, ground: "#8a6a4a",
+    sky: "#1a1420", fog: "#1a1420", fogNear: 24, fogFar: 120, ground: "#8a6a4a",
     hemiSky: "#ffe6c0", hemiGround: "#3a2a2a", hemi: 0.95, sun: "#ffd2a0", sunIntensity: 1.3,
     sunDir: [-2, 6, 3], ambient: 0.3, indoor: true,
   },
@@ -203,6 +203,8 @@ function propsFor(def: MapDef, ch: string, x: number, y: number, flags: Flags): 
     case "^": return ["boulder"];
     case "c": return hash01(x, y, 2) < 0.18 ? ["caveWall", "crystal"] : ["caveWall"];
     case "#": return t === "flat" ? ["flatWall"] : ["wall"];
+    case "|": return ["railing"];
+    case ">": return flags.metFaizal && flags.metHakim && flags.metGarv && flags.metDev ? ["doorway"] : ["doorLocked"];
     case "K": return t === "temple" ? ["templeWall"] : ["stoneWall"];
     case "H": {
       if (def.id === "road") return ["flatBlock"];
@@ -262,6 +264,54 @@ const _q = new THREE.Quaternion();
 const _p = new THREE.Vector3();
 const _s = new THREE.Vector3();
 const _e = new THREE.Euler();
+
+/**
+ * What you see past the balcony railing of F-1205: the valley far below at night,
+ * hills, a scatter of town lights, a moon, stars, and one gold point where the
+ * Sacred Lantern burns. Everything is cheap (a few meshes, two instanced sets).
+ */
+function buildVista(group: THREE.Group, W: number, dropRow: number) {
+  const edge = -dropRow; // z of the drop
+  const far = new THREE.Mesh(G.plane(320, 220), mat("#0d0f1c"));
+  far.rotation.x = -Math.PI / 2;
+  far.position.set(W / 2, -26, edge - 95);
+  group.add(far);
+  // hills on the horizon
+  const hill = mat("#15132a");
+  for (let i = 0; i < 9; i++) {
+    const r = hash01(i, 3, 11);
+    const h = new THREE.Mesh(G.cone(18 + r * 16, 14 + hash01(i, 5, 12) * 12, 7), hill);
+    h.position.set(W / 2 - 90 + i * 22 + r * 8, -26 + (14 + hash01(i, 5, 12) * 12) / 2, edge - 70 - hash01(i, 7, 13) * 40);
+    group.add(h);
+  }
+  // town lights scattered over the valley floor
+  const lights = new THREE.InstancedMesh(G.sphere(0.22, 5), glow("#ffd9a0", 1.0), 160);
+  const m = new THREE.Matrix4();
+  for (let i = 0; i < 160; i++) {
+    const x = W / 2 - 70 + hash01(i, 1, 21) * 140;
+    const z = edge - 12 - hash01(i, 2, 22) * 90;
+    const y = -25.6 + hash01(i, 3, 23) * 2.4;
+    m.makeTranslation(x, y, z);
+    lights.setMatrixAt(i, m);
+  }
+  lights.instanceMatrix.needsUpdate = true;
+  group.add(lights);
+  // stars
+  const stars = new THREE.InstancedMesh(G.sphere(0.16, 4), glow("#f4f1ff", 0.9), 140);
+  for (let i = 0; i < 140; i++) {
+    m.makeTranslation(W / 2 - 110 + hash01(i, 4, 31) * 220, 14 + hash01(i, 5, 32) * 34, edge - 40 - hash01(i, 6, 33) * 100);
+    stars.setMatrixAt(i, m);
+  }
+  stars.instanceMatrix.needsUpdate = true;
+  group.add(stars);
+  // the moon, and the lantern's gold light somewhere down in the valley
+  const moon = new THREE.Mesh(G.sphere(3.2, 12), glow("#fff6d8", 1.0));
+  moon.position.set(W / 2 + 26, 24, edge - 110);
+  group.add(moon);
+  const lantern = new THREE.Mesh(G.sphere(0.5, 8), glow("#f2dfa6", 1.0));
+  lantern.position.set(W / 2 - 14, -24.6, edge - 48);
+  group.add(lantern);
+}
 
 export function buildMap(def: MapDef, flags: Flags, quality: { shadows: boolean }): BuiltMap {
   const theme = THEMES[def.id === "road" ? "road" : def.theme];
@@ -386,10 +436,14 @@ export function buildMap(def: MapDef, flags: Flags, quality: { shadows: boolean 
       }
     }
   } else {
-    const base = new THREE.Mesh(G.plane(W + 8, H + 8), mat(theme.sky));
+    // the flat's floor stops at the balcony's edge: past the railing is the drop
+    const dropRow = def.theme === "flat" ? def.rows.findIndex((r) => r.includes("_")) : -1;
+    const baseH = dropRow > 0 ? dropRow : H + 8;
+    const base = new THREE.Mesh(G.plane(W + 8, baseH), mat(theme.sky));
     base.rotation.x = -Math.PI / 2;
-    base.position.set(W / 2, -0.2, -H / 2);
+    base.position.set(W / 2, -0.2, dropRow > 0 ? -dropRow / 2 : -H / 2);
     group.add(base);
+    if (def.theme === "flat" && dropRow > 0) buildVista(group, W, dropRow);
     if (def.theme === "flat") {
       // a real ceiling: the flat is seen from inside, in first person. It stops
       // where the balcony (stone 'k' tiles) begins, so that part is open to the night.
@@ -399,17 +453,20 @@ export function buildMap(def: MapDef, flags: Flags, quality: { shadows: boolean 
       ceil.rotation.x = Math.PI / 2;
       ceil.position.set(W / 2, 1.92, -ceilRows / 2);
       group.add(ceil);
-      // a string of fairy lights along the balcony wall
-      if (ceilRows < H) {
-        for (let i = 0; i < 9; i++) {
+      // a string of fairy lights along the balcony railing
+      const railRow = def.rows.findIndex((r) => r.includes("|"));
+      if (railRow > 0) {
+        const n = Math.floor((W - 3) / 1.1);
+        for (let i = 0; i < n; i++) {
           const bulb = new THREE.Mesh(G.sphere(0.035, 6), glow(i % 2 ? "#ffd27a" : "#ff9a6a", 1.0));
-          bulb.position.set(1.2 + i * 0.85, 1.6 + (i % 2) * 0.12, -(H - 1) + 0.07);
+          bulb.position.set(1.6 + i * 1.1, 1.12 + (i % 2) * 0.1, -railRow - 0.5 + 0.14);
           group.add(bulb);
         }
       }
-      for (let i = 0; i < 6; i++) {
+      const lampsPerRow = Math.max(3, Math.round(W / 7));
+      for (let i = 0; i < lampsPerRow * 2; i++) {
         const lamp = new THREE.Mesh(G.cyl(0.18, 0.18, 0.05, 10), glow("#fff1d0", 0.95));
-        lamp.position.set(3 + (i % 3) * 6.5, 1.88, -(i < 3 ? 3 : 11.5));
+        lamp.position.set(2.5 + (i % lampsPerRow) * ((W - 5) / Math.max(1, lampsPerRow - 1)), 1.88, -(i < lampsPerRow ? 3 : 11.5));
         group.add(lamp);
       }
     }

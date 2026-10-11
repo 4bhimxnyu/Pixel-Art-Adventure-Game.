@@ -425,13 +425,16 @@ async function run() {
   expect(W().cam.firstPerson === true, "F-1205 is first-person");
 
   // --- Chapter 9: F-1205
-  await talk("Z"); // Faizal holds the door
+  { const z = W().entities.find((e) => e.kind === "npc_faizal"); expect(z && z.y === 7, "Faizal holds the front door"); await standBy({ x: z.x, y: z.y }); await interact(); }
   expect(S().flags.f1205Arrived, "arrived at F-1205");
   await sleep(2800);
-  await talk("A");
-  expect(S().flags.metAbhiHome, "met Abhimanyu in his room");
-  await talk("Q"); await talk("N"); await talk("V"); await talk("Z");
+  { const story = await import("/src/game/story.ts"); const d = await def("f1205"); expect(story.cellBlocked(d, 13, 9, S().flags), "Abhimanyu's door is locked until everyone is met"); }
+  await talk("Q"); await talk("Z"); await talk("N"); await talk("V");
   expect(["metFaizal", "metGarv", "metHakim", "metDev"].every((k) => S().flags[k]), "met all four flatmates");
+  await sleep(1200);
+  { const story = await import("/src/game/story.ts"); const d = await def("f1205"); expect(!story.cellBlocked(d, 13, 9, S().flags), "Abhimanyu's door unlocked"); }
+  await talk("A");
+  expect(S().flags.metAbhiHome, "met Abhimanyu in his room, last");
   await sleep(3400); // the flat rearranges
   { const a = W().entities.find((e) => e.kind === "npc_abhimanyu_home"); expect(a && a.y <= 5, "Abhimanyu moved to the living room"); await standBy({ x: a.x, y: a.y }); await interact(); }
   await until(() => S().overlay?.kind === "dialogue", 9000, "evening conversation");
@@ -440,7 +443,7 @@ async function run() {
   await sleep(1200);
   // the balcony: through the door at the back of Abhimanyu's room; Riddhi is waiting and the sutta is not optional
   { const a = W().entities.find((e) => e.kind === "npc_abhimanyu_home"); expect(a && a.y >= 15, "Abhimanyu is out on the balcony"); }
-  await walkTo(4, 13); await walkTo(4, 15);
+  await walkTo(12, 14); await walkTo(12, 16);
   await talk("R");
   expect(S().flags.smokeDone, "balcony scene with Riddhi done");
   await sleep(2200); // the flat rebuilds: Riddhi leaves, Abhimanyu goes back in

@@ -26,6 +26,7 @@ export const FINAL_CHAPTER_PROMPTS: Record<string, string> = {
   chair: "Look",
   snacks: "Look",
   npc_abhimanyu_home: "Talk to Abhimanyu",
+  locked_door: "Abhimanyu's door",
 };
 
 const FLATMATES = ["metFaizal", "metGarv", "metHakim", "metDev"] as const;
@@ -72,9 +73,18 @@ export function handleFinalChapterInteract(story: StoryController, kind: string)
     case "npc_abhimanyu_home": {
       if (f.eveningDone && !f.smokeDone) D("abhi_balcony_wait");
       else if (f.smokeDone) D("f1205_goodbye");
-      else if (!f.metAbhiHome) D("abhi_home_first");
+      else if (!f.metAbhiHome) D("abhi_home_first"); // his door only opens once the other four are met
       else if (allMet()) D("abhi_home_evening");
       else D("abhi_home_wait");
+      return true;
+    }
+    case "locked_door": {
+      const open = f.metFaizal && f.metHakim && f.metGarv && f.metDev;
+      if (open) story.say("Abhimanyu's door. Open now.");
+      else {
+        const left = ["metFaizal", "metHakim", "metGarv", "metDev"].filter((k) => !(f as any)[k]).length;
+        story.say(`Locked. From inside: "Pehle baaki sab se mil le, phir aa." (${left} to go.)`);
+      }
       return true;
     }
     case "sofa": story.say(f.eveningDone ? "Still warm. Everyone was here a minute ago." : "A sofa that has clearly lost every argument it has ever had."); return true;
@@ -122,6 +132,12 @@ export function handleFinalChapterDialogue(
     case "met_abhi_home":
       store.setFlag("metAbhiHome", true);
       questSfx.objective();
+      // he is met last (his door was locked until then), so this is usually the moment everyone is home
+      if (allMet()) {
+        bus.emit("cinematic", { kind: "objective", title: "EVERYONE'S HOME", subtitle: "Abhimanyu wants everyone together. Find him in the living room." });
+        adv("evening");
+        fx.delay(2600, () => fx.refresh());
+      }
       return true;
 
     case "met_faizal":
@@ -132,7 +148,8 @@ export function handleFinalChapterDialogue(
       store.setFlag(flag, true);
       questSfx.objective();
       const n = FLATMATES.filter((k) => useGameStore.getState().flags[k]).length;
-      bus.emit("toast", { text: `Met ${n}/4 flatmates.`, tone: "info" });
+      bus.emit("toast", { text: n === 4 ? "Met all four. Abhimanyu's door is open." : `Met ${n}/4 flatmates.`, tone: n === 4 ? "good" : "info" });
+      if (n === 4) fx.delay(400, () => fx.refresh()); // the locked door becomes a doorway
       if (allMet()) {
         bus.emit("cinematic", { kind: "objective", title: "EVERYONE'S HOME", subtitle: "Find Abhimanyu. It's time to sit down together." });
         adv("evening");

@@ -10,7 +10,7 @@
 //   L lantern post  m stall  % banner  e bridge  o pond  ^ boulder  u statue
 //   z pressure plate  = magic barrier  ! brazier  $ ancient scroll
 //   & sacred lantern  ~ diggable  i inscription  * chest  + viewpoint
-//   I incense   h hidden pickup  y toy  p paw print
+//   I incense   h hidden pickup  y toy  p paw print   | railing   > locked door (F-1205)
 // Entity markers (walkable, replaced by a sprite): M N A C P G X R W E Y V O J Q U 1 2 3 4 5
 // ---------------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ export type MapDef = {
 // Anything the player INTERACTS with must be solid, so they walk up to it and
 // face it. A walkable interactable is a trap: you step onto the tile, "E" then
 // targets whatever is past it, and the object becomes impossible to use.
-export const SOLID = new Set(["#","t","K","c","j","H","L","m","%","^","u","q","=","$","&","*","B","b","s","D","T","w","o","_","!","y",
+export const SOLID = new Set(["#","|",">","t","K","c","j","H","L","m","%","^","u","q","=","$","&","*","B","b","s","D","T","w","o","_","!","y",
   // F-1205 furniture: sofa, guitar stand, poster, window, counter, fridge, weights, table, plant
   "S","l","@","0","[","]","x","7","a","6","8","9"]);
 /** Tiles you can stand on but that trigger something under-foot. */
@@ -574,28 +574,32 @@ export const MAPS: Record<MapId, MapDef> = {
   f1205: {
     id: "f1205", name: "F-1205", indoor: true, theme: "flat", bgm: "bgm_f1205",
     cinematic: { title: "F-1205", subtitle: "Abhimanyu's place. Shoes optional.", flag: "seenF1205" },
-    // Living room (top-left) | kitchen (top-right); hallway across the middle with
-    // the front door on the left wall; Abhimanyu's room (bottom-left) and Garv &
-    // Dev's room (bottom-right). Explored in first person.
+    // A long hallway from the front door (west wall). North of it: living room
+    // (left) and kitchen (right). South of it, in order: Faizal & Hakim's room,
+    // Abhimanyu's room (its door '>' stays locked until the other four are met),
+    // Garv & Dev's room. Abhimanyu's room opens onto a twelfth-floor balcony
+    // ('k' floor, '|' railing, '_' the drop beyond). Explored in first person.
     rows: [
-      "####################",
-      "#0..@...0#..]..[[.0#",
-      "#..SQS...#.........#",
-      "#.9......d....7.8..#",
-      "#.l......#...Z.....#",
-      "#..T..a..#..6......#",
-      "####d#########d#####",
-      "#.......6..........#",
-      "d..r...............#",
-      "####d######d########",
-      "#......8.#.........#",
-      "#.b...D..#..b...x..#",
-      "#...A..6.#...N..V..#",
-      "#....a...#....B.6..#",
-      "####d###############",
-      "#kkkkkkkk###########",
-      "#kkkkRkkk###########",
-      "####################",
+      "############################",
+      "#0...@....0#..]..[[.....0..#",
+      "#..SS......#...............#",
+      "#.9........d......7.8......#",
+      "#.l........#...............#",
+      "#..T..a....#..6............#",
+      "#####d###########d##########",
+      "#..........................#",
+      "d..r.......................#",
+      "#####d#######>########d#####",
+      "#.....8....#.........#.....#",
+      "#.b..D..Q..#..b......#..b..#",
+      "#...Z..6...#...A..6..#.N.x.#",
+      "#....a..b..#....a....#..V..#",
+      "#..........#.........#..B.6#",
+      "############d###############",
+      "#kkkkkkkkkkkkkkkkkkkkkkkkkk#",
+      "#kkkkkkkkkkkkRkkkkkkkkkkkkk#",
+      "#||||||||||||||||||||||||||#",
+      "____________________________",
     ],
     portals: [
       { x: 0, y: 8, to: "road", tx: 11, ty: 12, dir: "up" },

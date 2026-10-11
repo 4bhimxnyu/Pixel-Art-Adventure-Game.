@@ -70,7 +70,7 @@ export const STEP_TARGET: Record<string, Resolver> = {
   finale: () => null,
   find_abhi: () => ({ map: "f1205", kind: "npc_faizal" }),
   f1205: (s) => {
-    if (!s.flags.metAbhiHome) return { map: "f1205", kind: "npc_abhimanyu_home" };
+    // the four flatmates first (Abhimanyu's door is locked until then), then Abhimanyu
     const next = FLATMATES.find(([flag]) => !s.flags[flag]);
     return next ? { map: "f1205", kind: next[1] } : { map: "f1205", kind: "npc_abhimanyu_home" };
   },
