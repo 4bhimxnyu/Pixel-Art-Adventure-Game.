@@ -13,7 +13,14 @@ import { bus } from "../game/bus";
 import { useGameStore } from "../store/useGameStore";
 import { useUi } from "./uiState";
 import { useDevice } from "../input/useDevice";
+import { input } from "../input/InputManager";
 import { questSfx } from "../lib/questSfx";
+
+/** The world zooms on wheel events over its canvas; touch zoom buttons and pinches send those. */
+function wheel(steps: number) {
+  const canvas = document.querySelector("canvas");
+  canvas?.dispatchEvent(new WheelEvent("wheel", { deltaY: steps * 100, bubbles: true }));
+}
 
 const CAPTIONS = ["mera photo le", "ek aur. is baar smile.", "yeh wala frame kar", "pose maar na", "aesthetic hai bro"];
 
@@ -94,6 +101,45 @@ export default function PhotoMode() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // touch: one finger orbits (written straight into the shared input state,
+  // since the on-screen controls are unmounted here), two fingers pinch-zoom
+  const fingers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef(0);
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") return;
+    fingers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* synthetic */ }
+    if (fingers.current.size === 1) input.touch.lookActive = true;
+    if (fingers.current.size === 2) {
+      const [a, b] = [...fingers.current.values()];
+      pinch.current = Math.hypot(a.x - b.x, a.y - b.y);
+    }
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const f = fingers.current.get(e.pointerId);
+    if (!f) return;
+    if (fingers.current.size === 1) {
+      input.touch.look.x += e.clientX - f.x;
+      input.touch.look.y += e.clientY - f.y;
+    }
+    f.x = e.clientX;
+    f.y = e.clientY;
+    if (fingers.current.size === 2) {
+      const [a, b] = [...fingers.current.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinch.current && Math.abs(d - pinch.current) > 24) {
+        wheel(d > pinch.current ? -1 : 1);
+        pinch.current = d;
+      }
+    }
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    fingers.current.delete(e.pointerId);
+    if (fingers.current.size === 0) input.touch.lookActive = false;
+    pinch.current = 0;
+  };
+  useEffect(() => () => { input.touch.lookActive = false; }, []);
+
   const k = device.kind;
   const help =
     k === "gamepad"
@@ -104,6 +150,17 @@ export default function PhotoMode() {
 
   return (
     <div className="photo-mode pointer-events-none absolute inset-0 z-[55]">
+      {/* touch orbit / pinch surface (mouse drags reach the canvas underneath) */}
+      {k === "touch" && (
+        <div
+          className="pointer-events-auto absolute inset-0"
+          style={{ touchAction: "none" }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+        />
+      )}
       {/* shutter flash */}
       {flash > 0 && <div key={flash} className="absolute inset-0 bg-white" style={{ animation: "sb-flash .35s ease-out forwards" }} />}
       <style>{`@keyframes sb-flash { from { opacity: .85 } to { opacity: 0 } }`}</style>
@@ -161,6 +218,10 @@ export default function PhotoMode() {
       {/* touch buttons */}
       {k === "touch" && (
         <div className="pointer-events-auto absolute bottom-20 right-4 flex flex-col items-end gap-2.5">
+          <div className="flex gap-2">
+            <PhotoBtn label="−" onPress={() => wheel(1)} />
+            <PhotoBtn label="+" onPress={() => wheel(-1)} />
+          </div>
           <PhotoBtn label="Save" onPress={snap} primary />
           <PhotoBtn label={caption ? "Caption off" : "Caption"} onPress={toggleCaption} />
           <PhotoBtn label="Recenter" onPress={recenter} />

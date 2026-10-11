@@ -157,6 +157,7 @@ export default function TouchControls() {
           <TouchBtn label="◆" small title="Missions" onPress={(e) => { e.preventDefault(); useGameStore.getState().setOverlay({ kind: "quests" }); }} />
           <TouchBtn label="▣" small title="Items" onPress={(e) => { e.preventDefault(); useGameStore.getState().setOverlay({ kind: "inventory" }); }} />
           <TouchBtn label="?" small title="Hint" onPress={(e) => { e.preventDefault(); bus.emit("hint:next"); }} />
+          <TouchBtn label="◉" small title="Photo mode" onPress={(e) => { e.preventDefault(); useUi.getState().setPhotoMode(true); }} />
         </div>
         <div className="flex items-end gap-3">
           {hasMimo && <TouchBtn label="🐾" title="Mimo sniffs" onPress={act("sniff")} />}
