@@ -23,6 +23,7 @@ import InteractPrompt from "./InteractPrompt";
 import FadeOverlay from "./FadeOverlay";
 import TouchControls from "./TouchControls";
 import { ThemeKeyframes } from "./pixel/decor";
+import { useUi, useReducedMotion } from "./uiState";
 
 // Dev-only handle so the game can be driven and inspected from the console.
 if (import.meta.env.DEV) {
@@ -143,18 +144,35 @@ export default function GameApp() {
     return () => window.removeEventListener("keydown", onKey);
   }, [screen]);
 
-  // --- autosave every 30s
+  // --- autosave every 30s; the session clock is flushed into the save with it
   useEffect(() => {
     if (screen !== "playing") return;
-    const t = window.setInterval(() => useGameStore.getState().save(), 30000);
-    return () => window.clearInterval(t);
+    useUi.getState().startSession();
+    const t = window.setInterval(() => {
+      useUi.getState().flushPlaytime();
+      useGameStore.getState().save();
+    }, 30000);
+    return () => {
+      window.clearInterval(t);
+      useUi.getState().flushPlaytime();
+    };
   }, [screen]);
 
-  // --- device class for responsive CSS
+  // --- world -> UI: what we face, and the adaptive quality tier
+  useEffect(() => {
+    const offNear = bus.on("near", (n) => useUi.getState().setNear(n ?? null));
+    const offTier = bus.on("quality:tier", (t: 0 | 1 | 2) => useUi.getState().setQualityTier(t));
+    return () => { offNear(); offTier(); };
+  }, []);
+
+  // --- device + accessibility classes for responsive CSS
+  const reducedMotion = useReducedMotion();
   useEffect(() => {
     document.documentElement.classList.toggle("touch", device.touch);
     document.documentElement.classList.toggle("gamepad", device.kind === "gamepad");
-  }, [device.touch, device.kind]);
+    document.documentElement.classList.toggle("reduced-motion", reducedMotion);
+    document.documentElement.classList.toggle("large-text", !!settings.largeText);
+  }, [device.touch, device.kind, reducedMotion, settings.largeText]);
 
   if (screen === "title") {
     return (

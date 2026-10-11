@@ -213,3 +213,76 @@ input[type="range"]::-moz-range-thumb {
   width: 16px; height: 16px; border-radius: 50%;
   background: #d9b45b; border: 1px solid rgba(0,0,0,.5); cursor: pointer;
 }
+
+/* ------------------------------------------------------------ motion system */
+/* Every UI animation is declared here once. `html.reduced-motion` turns the
+   decorative ones off and shortens the rest to a cut, so nothing blocks play. */
+
+@keyframes ui-slide-in-left { from { transform: translateX(-18px); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
+@keyframes ui-slide-in-right { from { transform: translateX(18px); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
+@keyframes ui-talk { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-2.5px) } }
+@keyframes ui-dmg { 0% { transform: translate(-50%, 0) scale(.7); opacity: 0 } 15% { transform: translate(-50%, -8px) scale(1.08); opacity: 1 } 100% { transform: translate(-50%, -54px) scale(1); opacity: 0 } }
+@keyframes ui-banner { 0% { transform: translateY(-14px) scaleX(.92); opacity: 0 } 18% { transform: translateY(0) scaleX(1); opacity: 1 } 80% { opacity: 1 } 100% { transform: translateY(-6px); opacity: 0 } }
+@keyframes ui-hp-flash { 0% { box-shadow: 0 0 0 2px rgba(224,97,107,.9), 0 0 24px rgba(224,97,107,.7) } 100% { box-shadow: 0 0 0 0 rgba(224,97,107,0), 0 0 0 rgba(224,97,107,0) } }
+@keyframes ui-rule-grow { from { transform: scaleX(0); opacity: 0 } to { transform: scaleX(1); opacity: 1 } }
+@keyframes ui-drift { 0% { transform: translate3d(0, -8vh, 0) rotate(0deg); opacity: 0 } 8% { opacity: .9 } 50% { transform: translate3d(6vw, 48vh, 0) rotate(160deg) } 100% { transform: translate3d(-3vw, 108vh, 0) rotate(340deg); opacity: 0 } }
+@keyframes ui-lantern-pulse { 0%,100% { filter: drop-shadow(0 0 10px rgba(179,37,47,.45)) brightness(.92) } 50% { filter: drop-shadow(0 0 24px rgba(255,170,90,.75)) brightness(1.12) } }
+@keyframes ui-tick { 0% { transform: scale(.6); opacity: 0 } 30% { transform: scale(1.05); opacity: 1 } 75% { opacity: 1 } 100% { transform: scale(1); opacity: 0 } }
+@keyframes ui-fade-in { from { opacity: 0 } to { opacity: 1 } }
+
+.ui-in-left { animation: ui-slide-in-left .28s cubic-bezier(.2,.8,.3,1) both }
+.ui-in-right { animation: ui-slide-in-right .28s cubic-bezier(.2,.8,.3,1) both }
+.ui-talk { animation: ui-talk .46s ease-in-out infinite }
+.ui-fade-in { animation: ui-fade-in .3s ease both }
+.ui-rule-grow { transform-origin: 50% 50%; animation: ui-rule-grow .7s cubic-bezier(.2,.8,.3,1) both }
+
+html.reduced-motion .sb-rise, html.reduced-motion .sb-pop, html.reduced-motion .ui-in-left,
+html.reduced-motion .ui-in-right, html.reduced-motion .ui-fade-in, html.reduced-motion .ui-rule-grow {
+  animation-duration: .01s !important;
+}
+html.reduced-motion .sb-blink, html.reduced-motion .sb-float, html.reduced-motion .ui-talk,
+html.reduced-motion .sb-shake, html.reduced-motion .ui-decor { animation: none !important; }
+html.reduced-motion .ui-motion-long { transition-duration: .01s !important; }
+
+/* ------------------------------------------------------------- large text */
+html.large-text .dialogue-text { font-size: 18px !important; line-height: 1.7 !important; }
+html.large-text .dialogue-name { font-size: 18px !important; }
+html.large-text .battle-log { font-size: 15px !important; }
+html.large-text .battle-ui .btn { font-size: 14px !important; }
+html.large-text .mission-tracker .tracker-objective { font-size: 15px !important; }
+html.large-text .toasts .toast-text { font-size: 14px !important; }
+html.large-text .panel-sheet { font-size: 1.08em; }
+
+/* ------------------------------------------------------------- dialogue */
+/* Hinglish lines carry long romanised words; break anywhere rather than overflow. */
+.dialogue-text { overflow-wrap: anywhere; word-break: normal; hyphens: none; }
+.dialogue-dots { display: flex; gap: 4px; align-items: center; }
+.dialogue-dots i { display: block; width: 5px; height: 5px; border-radius: 99px; background: rgba(217,180,91,.22); transition: background .2s, transform .2s; }
+.dialogue-dots i.on { background: #d9b45b; box-shadow: 0 0 8px rgba(217,180,91,.6); transform: scale(1.25); }
+.dialogue-dots i.past { background: rgba(217,180,91,.55); }
+.dialogue-portrait-dim { opacity: .42; filter: saturate(.55) brightness(.75); transform: scale(.94); transition: opacity .25s, filter .25s, transform .25s; }
+.dialogue-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 9px; border-radius: 99px;
+  border: 1px solid rgba(217,180,91,.22); background: rgba(0,0,0,.35);
+  font-size: 10.5px; font-weight: 600; letter-spacing: .04em; color: var(--ink-3);
+  transition: color .15s, border-color .15s, background .15s;
+  touch-action: none;
+}
+.dialogue-chip:hover { color: var(--ink-1); border-color: rgba(217,180,91,.45); }
+.dialogue-chip.on { color: #f2dfa6; border-color: rgba(217,180,91,.6); background: rgba(124,20,31,.55); }
+.dialogue-chip.holding { color: #f2dfa6; border-color: rgba(242,223,166,.7); }
+.dialogue-chip kbd { font-family: var(--font-body); font-size: 9px; padding: 1px 5px; border-radius: 4px; border: 1px solid rgba(217,180,91,.25); background: rgba(0,0,0,.4); color: var(--ink-3); }
+.dialogue-chip .chip-dot { width: 6px; height: 6px; border-radius: 99px; background: rgba(217,180,91,.3); }
+.dialogue-chip.on .chip-dot { background: #7ddca4; box-shadow: 0 0 8px #7ddca4; }
+@media (max-width: 760px), (max-height: 520px) {
+  .dialogue-box .dialogue-portrait-other { display: none; }
+  .dialogue-box .dialogue-mini-portrait { display: block !important; }
+  .dialogue-box .dialogue-nameplate { top: -17px; left: 12px; }
+  .dialogue-box .dialogue-body { padding: 22px 14px 8px !important; }
+  .dialogue-box .dialogue-footer { padding: 6px 12px !important; }
+  .dialogue-box .dialogue-continue span:first-child { display: none; }
+  .dialogue-box .dialogue-chip kbd { display: none; }
+}
+/* On touch the dialogue sits above where the thumb rests; the gradient covers the rest. */
+html.touch .dialogue-box { padding-bottom: 16px !important; }
