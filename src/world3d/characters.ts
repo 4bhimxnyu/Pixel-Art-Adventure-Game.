@@ -127,37 +127,43 @@ export type CharSpec = {
 
 export const CHARACTERS: Record<string, CharSpec> = {
   // ------------------------------------------------------------ friends
-  // Riddhi: Palakshi's chaotic best friend. From her photo: dark hair pulled
-  // back into a low bun, slim black rectangular glasses, small gold hoops, a
-  // white V-neck tank, light-wash wide-leg jeans, a bead bracelet, hands on
-  // hips and a lopsided smirk. (public/models/riddhi.glb still overrides.)
+  // Riddhi: Palakshi's chaotic best friend. From her photo: medium-warm brown
+  // skin, dark hair pulled back tight into a low bun at the nape with a centre
+  // parting, slim black rectangular glasses, small gold hoops, a white V-neck
+  // sleeveless tank, light-wash wide-leg jeans with a visible waistband, a
+  // white bead bracelet on the left wrist, hands on her hips, a closed-mouth
+  // confident smirk. Jolly and bouncy when she walks. No phone.
+  // (public/models/riddhi.glb still overrides.)
   riddhi: {
-    id: "riddhi", skin: "#c98f66", hair: "#1c120f", hairHi: "#2e1f1a", hairStyle: "lowbun",
-    top: "#f4f1e8", topAlt: "#e9e4d6", bottom: "#8fb0cf", trim: "#f4f1e8",
+    id: "riddhi", skin: "#c48860", hair: "#1c120f", hairHi: "#30201a", hairStyle: "lowbun",
+    top: "#f4f1e8", topAlt: "#e9e4d6", bottom: "#93b3d0", trim: "#f4f1e8",
     outfit: "tank", sleeves: "none", vneck: true, legWidth: 1.5, female: true,
     build: "slim", shoulders: 1.06, hips: 1.02, legs: 1.02, height: 0.99,
-    eyes: "almond", glasses: "rect", smirk: true, earrings: "#d4af37", bracelet: "#f2ece0", sneakers: true, bounce: 1.4,
-    props: ["phone"], idle: "phone", ornament: "#1c120f", accent: "#ff5c8a",
+    eyes: "almond", iris: "#2a1810", glasses: "rect", smirk: true, lashes: true, earrings: "#d4af37",
+    bracelet: "#f2ece0", braceletStyle: "beads", footwear: "sneakers", bounce: 1.4,
+    props: [], idle: "hips", ornament: "#1c120f", accent: "#ff5c8a",
   },
 
   // ------------------------------------------------------------ protagonist
-  // Reference: young woman, shoulder-length dark hair, large black glasses,
-  // black top / cardigan, loose green-and-white checkered trousers.
+  // Reference: young woman, shoulder-length dark hair with a parted fringe
+  // above the brows, large black rounded-rectangular glasses, black top under
+  // a black cardigan, loose green-and-white checkered trousers, almond eyes.
   palakshi: {
     id: "palakshi", skin: "#e8b48c", hair: "#150d12", hairHi: "#2a1a24", hairStyle: "shoulder",
     top: "#141216", topAlt: "#1c1a1f", bottom: "#3f8a4f", trim: "#2a2a2e",
     outfit: "cardigan", sleeves: "long", bottomPattern: "checker", legWidth: 1.5, female: true,
-    build: "slim", shoulders: 0.95, legs: 1.05, eyes: "almond", glasses: "large",
+    build: "slim", shoulders: 0.95, legs: 1.05, eyes: "almond", iris: "#2e1a12", glasses: "large", footwear: "shoes",
   },
 
   // ---------------------------------------------------------------- party
-  // Reference: slim young man, dark medium-length messy hair with a fringe,
-  // light blue denim jacket open over a black T-shirt, loose black jeans.
+  // Reference: slim young man, dark medium-length messy hair with a fringe
+  // that stays above the eyes, light blue denim jacket open over a black
+  // T-shirt, loose black jeans, white sneakers, the white bass.
   abhimanyu: {
-    id: "abhimanyu", skin: "#d9a074", hair: "#1d1414", hairStyle: "messy",
+    id: "abhimanyu", skin: "#d9a074", hair: "#1d1414", hairHi: "#2c2020", hairStyle: "messy",
     top: "#17171a", topAlt: "#7fa3cf", bottom: "#1c1c20", trim: "#5f86b5",
-    outfit: "jacket", sleeves: "long", legWidth: 1.15,
-    build: "slim", shoulders: 1.0, eyes: "almond", props: ["bass"], idle: "strum",
+    outfit: "jacket", sleeves: "long", legWidth: 1.15, footwear: "sneakers",
+    build: "slim", shoulders: 1.0, eyes: "almond", props: ["bass"], idle: "strum", accent: "#5f86b5",
   },
 
   // ------------------------------------------------------------ rivals
@@ -240,23 +246,43 @@ export const CHARACTERS: Record<string, CharSpec> = {
     build: "heavy", shoulders: 1.05, hips: 1.25, belly: 1.3, headSize: 1.12, legs: 0.9, height: 0.85,
     eyes: "round", idle: "lean",
   },
+  // Garv: the oldest flatmate, but a young man. From his photo: thick,
+  // voluminous dark hair swept back and up from the forehead in a quiff that
+  // falls to the ears and nape; olive-tan skin; light stubble along the jaw;
+  // wide face, strong brows, calm serious expression; dark green knitted
+  // collared polo with wide horizontal beige stripes (collar + three-button
+  // placket); dark trousers; pink string bracelet. Arms crossed. Age shows in
+  // the average build and slightly broader shoulders, not grey hair.
   garv: {
-    id: "garv", skin: "#cfa079", hair: "#3a3236", hairHi: "#8a8290", hairStyle: "grey",
-    top: "#c9b48a", topAlt: "#5a4a3c", bottom: "#3a3236", trim: "#4a3e40",
-    outfit: "cardigan", sleeves: "long",
-    build: "elder", shoulders: 1.05, height: 1.03, eyes: "almond", beard: "#4a3e40", idle: "crossed",
+    id: "garv", skin: "#c9a076", hair: "#1a1412", hairHi: "#2e2622", hairStyle: "quiff",
+    top: "#1f3a2a", topAlt: "#1f3a2a", bottom: "#2a2a2e", trim: "#c9b58f", stripes: "#c9b58f",
+    outfit: "polo", sleeves: "long", footwear: "shoes",
+    build: "average", shoulders: 1.1, height: 1.03, headSize: 1.04, eyes: "almond", iris: "#2c1a10",
+    brows: "strong", stubble: "#8f6e52", bracelet: "#f0a0b8", braceletStyle: "thread", idle: "crossed",
   },
+  // Hakim: from his photo: slim young man, dark medium hair with a side
+  // parting and a soft sweep across the forehead, big bright smile with teeth,
+  // no glasses, navy zip-up hoodie worn open over a navy V-neck tee, a "3"
+  // patch on the left sleeve, khaki straight trousers, dark shoes, a watch on
+  // the left wrist. Always on his iPad.
   hakim: {
-    id: "hakim", skin: "#d4a07a", hair: "#1c1416", hairStyle: "short",
-    top: "#3a3f5a", topAlt: "#4d546f", bottom: "#2a2e40", trim: "#c9c4bb",
-    outfit: "hoodie", sleeves: "long",
-    build: "slim", eyes: "round", props: ["ipad"], idle: "ipad", glasses: true,
+    id: "hakim", skin: "#d4a07a", hair: "#1c1416", hairHi: "#2a2024", hairStyle: "sidepart",
+    top: "#1f2742", topAlt: "#232b4a", bottom: "#c8ad7a", trim: "#c9c4bb", patch: "#d8c08a",
+    outfit: "hoodie", sleeves: "long", vneck: true, watch: true, footwear: "shoes",
+    build: "slim", eyes: "round", iris: "#2e1c12", grin: true, props: ["ipad"], idle: "ipad",
   },
+  // Dev: from his photo: lean athletic young man (not a bodybuilder), warm
+  // tan skin, dark slightly wavy messy hair with volume pushed back off the
+  // forehead, light stubble, black sleeveless tank, charcoal drawstring
+  // trousers, a thin black thread bracelet, relaxed sleepy-cool expression
+  // (half-lidded eyes, slight smile). Idles with a lazy stretch, arms behind
+  // his head.
   dev: {
-    id: "dev", skin: "#d0946a", hair: "#121010", hairHi: "#2a2424", hairStyle: "crop",
-    top: "#1f1f24", topAlt: "#2e2e36", bottom: "#2a2a32", trim: "#e0616b",
-    outfit: "tank", sleeves: "none",
-    build: "muscular", shoulders: 1.5, hips: 0.9, height: 1.08, eyes: "almond", idle: "lift",
+    id: "dev", skin: "#c98a5e", hair: "#161210", hairHi: "#2a2220", hairStyle: "wavy",
+    top: "#1a1a1e", topAlt: "#1a1a1e", bottom: "#2b2a30", trim: "#e0616b", drawstring: true, accent: "#0e0e10",
+    outfit: "tank", sleeves: "none", footwear: "sandals",
+    build: "slim", shoulders: 1.15, hips: 0.95, height: 1.06, eyes: "almond", iris: "#2a1810",
+    sleepy: true, smile: true, stubble: "#8a5e42", bracelet: "#141414", braceletStyle: "thread", idle: "stretch",
   },
 };
 
