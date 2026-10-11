@@ -241,7 +241,7 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
 
   abhimanyu_meet: [
     { who: "Abhimanyu", portrait: "abhimanyu", text: "Palakshi! Happy birthday — I was going to sing it, but you look busy." },
-    { who: "Palakshi", portrait: "palakshi", text: "Mimo's gone." },
+    { who: "Palakshi", portrait: "palakshi", text: "Mimochi's gone." },
     { who: "Abhimanyu", portrait: "abhimanyu", text: "Then the song waits." },
     { who: "Abhimanyu", portrait: "abhimanyu", text: "I've got the guitar and no plans. I'm coming.", onEnd: "abhi_join" },
   ],
@@ -252,7 +252,7 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
   townie1: [{ who: "Townsfolk", portrait: "townie", text: "The festival's off. Fifty years running, and off." }],
   townie2: [{ who: "Townsfolk", portrait: "townie", text: "They say the flame in the village lantern just… stopped." }],
   clue_toy: [
-    { who: "Palakshi", portrait: "palakshi", text: "Mimo's red ball. Chewed exactly where she always chews it." },
+    { who: "Palakshi", portrait: "palakshi", text: "Mimochi's red ball. Chewed exactly where she always chews it." },
     { who: "Abhimanyu", portrait: "abhimanyu", text: "She came this way. Keep going.", onEnd: "clue_toy_found" },
   ],
   clue_paws: [
@@ -260,11 +260,11 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
     { who: "Abhimanyu", portrait: "abhimanyu", text: "She was running from something.", onEnd: "clue_paws_found" },
   ],
   mimo_bush: [
-    { who: "Palakshi", portrait: "palakshi", text: "Something's shaking in there. Mimo…?" },
+    { who: "Palakshi", portrait: "palakshi", text: "Something's shaking in there. Mimochi…?" },
     { who: "???", text: "GRRRRR—", onEnd: "start_mimo_battle" },
   ],
   mimo_recognize: [
-    { who: "Palakshi", portrait: "palakshi", text: "Mimo. Mimo, it's me. It's me." },
+    { who: "Palakshi", portrait: "palakshi", text: "Mimochi. Mimochi, it's me. It's me." },
     { who: "Mimo", portrait: "mimo", text: "…!" },
     { who: "Palakshi", portrait: "palakshi", text: "You're alright. You're alright. Come here." },
     { who: "Abhimanyu", portrait: "abhimanyu", text: "I'll take word to your mum. Go on — the two of you have a day to finish.", onEnd: "mimo_join" },
@@ -365,7 +365,7 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
     { who: "Arshiya", portrait: "arshiya", text: "I borrowed a light nobody was using properly." },
     { who: "Arshiya", portrait: "arshiya", text: "You came with a dog. I taught you better than that." },
     { who: "Palakshi", portrait: "palakshi", text: "You taught me that one fighter isn't a school." },
-    { who: "Palakshi", portrait: "palakshi", text: "Mimo. With me.", onEnd: "start_boss" },
+    { who: "Palakshi", portrait: "palakshi", text: "Mimochi. With me.", onEnd: "start_boss" },
   ],
   boss_defeat: [
     { who: "Arshiya", portrait: "arshiya", text: "…Enough. Enough." },
@@ -407,7 +407,7 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
   // ------------------------------------------------------------ Riddhi
   riddhi_town_1: [
     { who: "Riddhi", portrait: "riddhi", text: "BHOSDE AZAAAAAD! Kya re ustad. Birthday girl itni subah? Kaun mar gaya?" },
-    { who: "Palakshi", portrait: "palakshi", text: "Mimo gaayab hai." },
+    { who: "Palakshi", portrait: "palakshi", text: "Mimochi gaayab hai." },
     { who: "Riddhi", portrait: "riddhi", text: "Toh dhoondh na. Aur jacket pehen, mausam mat dekh." },
     { who: "Riddhi", portrait: "riddhi", text: "Mazaak. Main bhi aa rahi hoon... nahi aa rahi. Tu jaa, main yahan se cheer karungi.", onEnd: "riddhi_chat" },
   ],
@@ -508,7 +508,7 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
     { who: "Faizal", portrait: "faizal", text: "Toh ek teacher ne flame chura li. Seriously." },
     { who: "Palakshi", portrait: "palakshi", text: "Borrow, she said. Stage ke liye." },
     { who: "Dev", portrait: "dev", text: "Aur tune usko haraya? Properly?" },
-    { who: "Palakshi", portrait: "palakshi", text: "Mimo aur maine. Ek ek karke. Wahi trick tha." },
+    { who: "Palakshi", portrait: "palakshi", text: "Mimochi aur maine. Ek ek karke. Wahi trick tha." },
     { who: "Mimo", portrait: "mimo", text: "!" },
     { who: "Abhimanyu", portrait: "abhimanyu", text: "Last hit kutte ko lene diya. Main abhi tak recover nahi hua." },
     { who: "Garv", portrait: "garv", text: "Bamboo wala toh main hi tha wahan. Mentally." },
