@@ -1116,6 +1116,8 @@ export class World3D {
       if (e.rig) {
         const d = e.rig.group.position.distanceTo(this.playerPos);
         if (d < 2.4 && this.mode === "explore" && !this.cam.cinematicActive) e.rig.faceToward(this.playerPos.x, this.playerPos.z);
+        // a little further out they only turn their head
+        if (e.rig instanceof CharacterRig) e.rig.gaze = d < 4.5 && this.mode === "explore" ? this.playerPos : null;
         e.rig.update(dt);
       }
       e.update?.(dt);
@@ -1316,11 +1318,58 @@ export class World3D {
         this.mimoIdle += dt;
         // Mimo looks at you when you stop
         if (distToPlayer < 2) c.faceToward(this.playerPos.x, this.playerPos.z);
+        // ...then, left alone, he goes nosing at random spots nearby
+        if (this.companionId === "mimo" && this.mimoIdle > 3 && !c.currentAction && this.mode === "explore") {
+          this.mimoSniffT -= dt;
+          if (this.mimoSniffT <= 0) {
+            this.mimoSniffT = 6 + Math.random() * 6;
+            const a = c.heading + (Math.random() - 0.5) * 2.4;
+            c.setHeading(a);
+            c.play("sniff", 1.0 + Math.random() * 0.5);
+          }
+        }
       }
+      // Abhimanyu, waiting, keeps an eye on you
+      if (c instanceof CharacterRig) c.gaze = this.playerPos;
     }
     // teleport if hopelessly far (fell behind through a door)
     if (distToPlayer > 6) pos.copy(this.playerPos).add(new THREE.Vector3(-Math.sin(this.heading), 0, -Math.cos(this.heading)));
     c.update(dt);
+  }
+  private mimoSniffT = 5;
+
+  /** True when Mimo stands in front of the player, close enough to pet. */
+  private facingMimo() {
+    const c = this.companion;
+    if (!c || this.companionId !== "mimo") return false;
+    const dx = c.group.position.x - this.playerPos.x;
+    const dz = c.group.position.z - this.playerPos.z;
+    const d = Math.hypot(dx, dz);
+    if (d > 1.5 || d < 1e-3) return false;
+    const dot = (dx * Math.sin(this.heading) + dz * Math.cos(this.heading)) / d;
+    return dot > 0.55;
+  }
+
+  /** A pat on the head: Mimo spins, barks, and hearts go up. Story-free. */
+  private petMimo() {
+    const c = this.companion;
+    if (!c || !this.fx) return;
+    c.faceToward(this.playerPos.x, this.playerPos.z);
+    c.play("spin", 0.9);
+    sfx("bark");
+    const p = c.group.position;
+    const fx = this.fx;
+    for (let i = 0; i < 7; i++) {
+      this.delay(i * 70, () => {
+        const a = Math.random() * Math.PI * 2;
+        fx.spawn({
+          x: p.x + Math.cos(a) * 0.2, y: 0.55 + Math.random() * 0.15, z: p.z + Math.sin(a) * 0.2,
+          vx: Math.cos(a) * 0.25, vy: 0.9 + Math.random() * 0.4, vz: Math.sin(a) * 0.25,
+          life: 1.1, size: 0.16, color: i % 2 ? "#ff7fa6" : "#ffb3c8", shrink: 0.4, drag: 0.6, alpha: 0.95,
+        });
+      });
+    }
+    bus.emit("toast", { text: "Mimo wags.", tone: "good" });
   }
 
   private mimoWarn(text: string) {
@@ -1341,9 +1390,14 @@ export class World3D {
     }
     const c = this.companion;
     if (c.currentAction) return;
+    const best = this.nearestHidden();
+    // nothing to find right here and you are facing him: that is a pat, not a search
+    if (this.facingMimo() && !(best && best.d < 2.6)) {
+      this.petMimo();
+      return;
+    }
     c.play("sniff", 1.3);
     sfx("menu");
-    const best = this.nearestHidden();
     this.delay(1300, () => {
       if (!best) {
         bus.emit("toast", { text: "Mimo sniffs around. Nothing buried here.", tone: "info" });

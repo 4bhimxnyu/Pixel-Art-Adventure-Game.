@@ -180,7 +180,7 @@ export class DogRig extends BaseRig {
     // sit when idle for a while
     if (m < 0.05) this.idleTime += dt;
     else this.idleTime = 0;
-    this.sitting = this.idleTime > 4.5 && !this.action;
+    this.sitting = this.idleTime > 10 && !this.action;
 
     // walk / trot
     const freq = 13;
@@ -190,7 +190,9 @@ export class DogRig extends BaseRig {
     this.legs[1].rotation.x = -sw * 0.9;
     this.legs[2].rotation.x = -sw * 0.9;
     this.body.position.y = Math.abs(Math.cos(t * freq)) * 0.04 * m;
+    // a trotting head bob: the head dips a touch on each footfall
     this.head.rotation.x = -0.1 * m + Math.sin(t * freq * 2) * 0.05 * m;
+    this.head.position.y = 0.46 + Math.sin(t * freq * 2 + 0.6) * 0.012 * m;
     this.earL.rotation.x = -sw * 0.3;
     this.earR.rotation.x = sw * 0.3;
 
@@ -266,6 +268,19 @@ export class DogRig extends BaseRig {
       case "wave": {
         this.head.rotation.z = 0.3;
         this.legs[1].rotation.x = -1.2;
+        break;
+      }
+      case "spin": {
+        // the happy spin: one full turn with a hop in the middle, tail going wild
+        const k = ease.bump(ph);
+        this.body.rotation.y = ease.inOut(ph) * Math.PI * 2;
+        this.body.position.y += 0.22 * k;
+        this.body.rotation.x = -0.25 * k;
+        this.legs.forEach((l, i) => (l.rotation.x = (i < 2 ? -0.7 : 0.5) * k));
+        this.tail.rotation.y = Math.sin(t * 22) * 0.8;
+        this.earL.rotation.z = 0.18 + 0.5 * k;
+        this.earR.rotation.z = -0.18 - 0.5 * k;
+        this.jaw.position.y = -0.075 - 0.03 * k;
         break;
       }
       default:

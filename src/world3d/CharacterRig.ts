@@ -79,6 +79,9 @@ export class CharacterRig extends BaseRig {
   private lookUpTimer = 0;
   private laughTimer = 0;
   private lookingUp = false;
+  /** A world point the head turns toward while idle (the player, usually); null looks ahead. */
+  gaze: THREE.Vector3 | null = null;
+  private gazeYaw = 0;
   private override: { root: THREE.Object3D; mixer: THREE.AnimationMixer; clips: Record<string, THREE.AnimationAction> } | null = null;
 
   constructor(id: string) {
@@ -1429,6 +1432,19 @@ export class CharacterRig extends BaseRig {
       default:
         break;
     }
+
+    // --- gaze: while standing, the head turns a little toward whoever we are watching
+    if (this.gaze && m < 0.1 && !this.action) {
+      const dx = this.gaze.x - this.group.position.x;
+      const dz = this.gaze.z - this.group.position.z;
+      let rel = Math.atan2(dx, dz) - this.heading;
+      rel = Math.atan2(Math.sin(rel), Math.cos(rel));
+      const want = Math.abs(rel) < 1.25 ? THREE.MathUtils.clamp(rel, -0.75, 0.75) : 0;
+      this.gazeYaw += (want - this.gazeYaw) * Math.min(1, dt * 4);
+    } else {
+      this.gazeYaw += (0 - this.gazeYaw) * Math.min(1, dt * 4);
+    }
+    if (Math.abs(this.gazeYaw) > 0.002) p.head.rotation.y += this.gazeYaw;
 
     // --- one-shot actions
     const a = this.action;

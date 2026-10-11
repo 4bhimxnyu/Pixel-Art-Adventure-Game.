@@ -16,7 +16,7 @@ function bakedMaterial() {
   return bakedMat;
 }
 
-export type RigAction = "attack" | "hit" | "cheer" | "hug" | "bark" | "sniff" | "dig" | "jump" | "enrage" | "wave";
+export type RigAction = "attack" | "hit" | "cheer" | "hug" | "bark" | "sniff" | "dig" | "jump" | "enrage" | "wave" | "spin";
 
 export abstract class BaseRig {
   readonly group = new THREE.Group();
