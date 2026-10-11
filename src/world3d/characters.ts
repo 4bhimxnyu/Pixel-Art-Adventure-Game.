@@ -271,7 +271,7 @@ export const CHARACTERS: Record<string, CharSpec> = {
     top: "#1f3a2a", topAlt: "#1f3a2a", bottom: "#2a2a2e", trim: "#c9b58f", stripes: "#c9b58f",
     outfit: "polo", sleeves: "long", footwear: "shoes",
     build: "average", shoulders: 1.1, height: 1.03, headSize: 1.04, eyes: "almond", iris: "#2c1a10",
-    brows: "strong", stubble: "#8f6e52", bracelet: "#f0a0b8", braceletStyle: "thread", idle: "crossed",
+    brows: "strong", stubble: "#75563e", bracelet: "#f0a0b8", braceletStyle: "thread", idle: "crossed",
   },
   // Hakim: from his photo: slim young man, dark medium hair with a side
   // parting and a soft sweep across the forehead, big bright smile with teeth,
@@ -295,7 +295,7 @@ export const CHARACTERS: Record<string, CharSpec> = {
     top: "#1a1a1e", topAlt: "#1a1a1e", bottom: "#2b2a30", trim: "#e0616b", drawstring: true, accent: "#0e0e10",
     outfit: "tank", sleeves: "none", footwear: "sandals",
     build: "slim", shoulders: 1.15, hips: 0.95, height: 1.06, eyes: "almond", iris: "#2a1810",
-    sleepy: true, smile: true, stubble: "#8a5e42", bracelet: "#141414", braceletStyle: "thread", idle: "stretch",
+    sleepy: true, smile: true, stubble: "#6b4630", bracelet: "#141414", braceletStyle: "thread", idle: "stretch",
   },
 };
 

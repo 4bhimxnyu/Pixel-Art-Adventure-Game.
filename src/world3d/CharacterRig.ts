@@ -469,16 +469,18 @@ export class CharacterRig extends BaseRig {
       arm.add(this.box(0.012, 0.055, 0.045, mat(s.patch), side * (armT * 0.6 + 0.004), -U * 0.5, 0));
     }
 
-    // --- hand: palm, thumb toward the body, four fingers fanned below the palm
-    const palmH = armT * 0.9;
-    hand.add(this.box(armT * 0.78, palmH, armT * 0.4, skin, 0, -palmH / 2 - 0.005, 0));
+    // --- hand: a palm about three quarters of the arm's thickness, thumb toward the
+    // body, four thin fingers fanned below the palm
+    const palmW = armT * 0.58;
+    const palmH = armT * 0.68;
+    hand.add(this.box(palmW, palmH, armT * 0.3, skin, 0, -palmH / 2 - 0.005, 0));
     const inward = -side; // thumbs point toward the body
-    const thumb = this.box(armT * 0.24, armT * 0.46, armT * 0.28, skin, inward * armT * 0.46, -armT * 0.36, armT * 0.1);
+    const thumb = this.box(armT * 0.18, armT * 0.36, armT * 0.2, skin, inward * armT * 0.35, -armT * 0.28, armT * 0.08);
     thumb.rotation.z = -inward * 0.55;
     hand.add(thumb);
     for (let i = 0; i < 4; i++) {
-      const fx = (i - 1.5) * armT * 0.19;
-      const f = this.box(armT * 0.16, armT * 0.5, armT * 0.3, skin, fx, -palmH - armT * 0.22, 0);
+      const fx = (i - 1.5) * armT * 0.145;
+      const f = this.box(armT * 0.115, armT * 0.4, armT * 0.22, skin, fx, -palmH - armT * 0.17, 0);
       f.rotation.z = (i - 1.5) * 0.06;
       f.rotation.x = 0.12;
       hand.add(f);
@@ -864,24 +866,30 @@ export class CharacterRig extends BaseRig {
         break;
       }
       case "quiff": {
-        // thick hair swept back and up from the forehead, falling to the ears and the nape
-        const mass = this.sphere(0.17, hair, 0, 0.47, -0.03, 12);
-        mass.scale.set(1.15, 0.78, 1.1);
+        // thick hair swept back and up from the hairline: overlapping ellipsoids, a big
+        // volume tilting back over the crown, a swell rising off the forehead, a lighter
+        // crest, rounded sides falling to the ears and a soft nape mass. No boxes.
+        const mass = this.sphere(0.18, hair, 0, 0.45, -0.04, 14);
+        mass.scale.set(1.1, 0.85, 1.15);
+        mass.rotation.x = -0.3;
         head.add(mass);
-        const front = this.box(0.3, 0.1, 0.07, hair, 0, 0.44, 0.13);
-        front.rotation.x = -0.6;
+        const front = this.sphere(0.12, hair, 0, 0.46, 0.07, 12);
+        front.scale.set(1.3, 0.8, 0.9);
+        front.rotation.x = -0.35;
         head.add(front);
-        const crest = this.box(0.2, 0.08, 0.12, hi, 0.02, 0.53, 0.05);
+        const crest = this.sphere(0.09, hi, 0.02, 0.53, 0.02, 10);
+        crest.scale.set(1.2, 0.6, 1.0);
         crest.rotation.x = -0.4;
         crest.rotation.z = -0.15;
         head.add(crest);
         for (const side of [-1, 1]) {
-          head.add(this.box(0.08, 0.22, 0.2, hair, side * 0.21, 0.28, -0.05));
-          const flick = this.box(0.06, 0.12, 0.08, hair, side * 0.22, 0.2, -0.12);
-          flick.rotation.z = side * 0.25;
-          head.add(flick);
+          const s1 = this.sphere(0.1, hair, side * 0.19, 0.3, -0.05, 10);
+          s1.scale.set(0.7, 1.2, 1.0);
+          head.add(s1);
         }
-        head.add(this.box(0.32, 0.16, 0.09, hair, 0, 0.2, -0.2)); // nape
+        const nape = this.sphere(0.16, hair, 0, 0.22, -0.16, 12);
+        nape.scale.set(1.1, 0.6, 0.6);
+        head.add(nape);
         break;
       }
       case "sidepart": {
