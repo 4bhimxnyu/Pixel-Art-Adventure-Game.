@@ -286,3 +286,20 @@ html.large-text .panel-sheet { font-size: 1.08em; }
 }
 /* On touch the dialogue sits above where the thumb rests; the gradient covers the rest. */
 html.touch .dialogue-box { padding-bottom: 16px !important; }
+
+/* ------------------------------------------------------------- HUD */
+.mission-tracker.is-collapsed { width: 240px !important; }
+@media (max-width: 760px), (max-height: 520px) {
+  .minimap { width: 96px !important; height: 96px !important; }
+  .minimap span { font-size: 7px; }
+  .hud-right { gap: 8px !important; }
+  .mission-tracker .tracker-compass { font-size: 10px; }
+  .mission-tracker.is-collapsed { width: min(48vw, 200px) !important; }
+  .hud-party .surface { padding: 5px 8px !important; }
+  .save-tick { top: 8px !important; }
+}
+@media (max-height: 520px) {
+  .hud-party { flex-direction: row !important; }
+}
+/* Touch phones in portrait: the party cards shrink so the tracker keeps its column. */
+html.touch .interact-prompt-desktop { display: none; }

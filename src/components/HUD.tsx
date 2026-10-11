@@ -1,15 +1,19 @@
 import { useGameStore } from "../store/useGameStore";
 import { MAPS } from "../game/maps";
 import MissionTracker from "./MissionTracker";
+import Minimap from "./Minimap";
 import { HpBar } from "./pixel/decor";
 import { CharacterPortrait } from "./pixel/Portrait";
 import { useDevice, glyph } from "../input/useDevice";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { bus } from "../game/bus";
+import { useUi } from "./uiState";
 
 export default function HUD() {
   const map = useGameStore((s) => s.map);
   const party = useGameStore((s) => s.party);
+  const overlay = useGameStore((s) => s.overlay);
+  const showFps = useGameStore((s) => !!s.settings.showFps);
   const device = useDevice();
   const k = device.kind;
   const hasMimo = party.some((p) => p.id === "mimo");
@@ -30,7 +34,7 @@ export default function HUD() {
           </div>
 
           {/* party */}
-          <div className="flex flex-col gap-2">
+          <div className="hud-party flex flex-col gap-2">
             {party.map((p) => (
               <div key={p.id} className="surface flex w-fit items-center gap-3 px-3 py-2">
                 <div
@@ -48,8 +52,14 @@ export default function HUD() {
           </div>
         </div>
 
-        <MissionTracker />
+        <div className="hud-right flex flex-col items-end gap-3">
+          <MissionTracker />
+          <Minimap />
+        </div>
       </div>
+
+      <SaveTick />
+      {showFps && <FpsReadout />}
 
       {stuck && (
         <div className="pointer-events-auto absolute left-1/2 top-[26%] -translate-x-1/2 sb-pop">
@@ -70,7 +80,7 @@ export default function HUD() {
         </div>
       )}
 
-      {k !== "touch" && (
+      {k !== "touch" && !overlay && (
         <div className="hud-keys flex items-end justify-between">
           <div className="flex flex-wrap gap-x-3 gap-y-1 rounded-full bg-black/55 px-3 py-1.5 text-[10px] text-[var(--ink-2)] backdrop-blur-sm">
             {(
@@ -89,6 +99,50 @@ export default function HUD() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** A small "Saved" tick whenever the store writes the save (autosave, F5, map change). */
+function SaveTick() {
+  const last = useGameStore((s) => s.lastAutosave);
+  const [show, setShow] = useState(0);
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) { first.current = false; return; }
+    if (!last) return;
+    setShow(last);
+    const t = window.setTimeout(() => setShow(0), 1900);
+    return () => window.clearTimeout(t);
+  }, [last]);
+  if (!show) return null;
+  return (
+    <div key={show} className="save-tick pointer-events-none absolute left-1/2 top-4 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 text-[10.5px] font-semibold tracking-[.14em] text-[#7ddca4] backdrop-blur-sm"
+         style={{ animation: "ui-tick 1.9s ease-out both", border: "1px solid rgba(125,220,164,.35)" }}>
+      <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden>
+        <path d="M2 6.5l2.6 2.6L10 3.6" fill="none" stroke="#7ddca4" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      SAVED
+    </div>
+  );
+}
+
+/** Reads the world's smoothed frame rate when the setting is on; guarded, the handle is dev-only. */
+function FpsReadout() {
+  const [fps, setFps] = useState<number | null>(null);
+  const tier = useUi((s) => s.qualityTier);
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      const w = (window as unknown as { __world?: { fpsEma?: number } }).__world;
+      const v = w && typeof w.fpsEma === "number" ? w.fpsEma : null;
+      setFps(v);
+    }, 500);
+    return () => window.clearInterval(t);
+  }, []);
+  return (
+    <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-[10px] tabular-nums text-[var(--ink-2)] backdrop-blur-sm">
+      {fps === null ? "fps —" : `${Math.round(fps)} fps`}
+      {tier > 0 && <span className="ml-2 text-[var(--ink-4)]">· quality {tier === 1 ? "medium" : "low"}</span>}
     </div>
   );
 }

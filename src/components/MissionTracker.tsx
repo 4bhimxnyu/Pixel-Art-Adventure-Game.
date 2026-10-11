@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
-// ONE active objective, its location, the hint ladder, and the flame counter.
-// Locked or future objectives are never shown here — the full ladder lives in
-// the Journey panel.
+// ONE active objective, its location, a compass line to it, the hint ladder,
+// and the flame counter. Locked or future objectives are never shown here —
+// the full ladder lives in the Journey panel. Tapping the header collapses
+// the body (phones have little room).
 // ---------------------------------------------------------------------------
 
 import { useEffect, useState } from "react";
@@ -10,18 +11,21 @@ import { currentObjective, missionGuide } from "../lib/missionMeta";
 import { bus } from "../game/bus";
 import { questSfx } from "../lib/questSfx";
 import { PixelIcon } from "./pixel/MissionIcons";
+import { compassLine } from "./objective";
 
 export default function MissionTracker() {
   const state = useGameStore();
   const cur = currentObjective(state);
   const guide = missionGuide(state);
   const flames = flameCount(state);
+  const compass = compassLine(state);
 
   const [hintLevel, setHintLevel] = useState(0);
   const [flash, setFlash] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   // The ladder resets whenever the objective itself changes.
-  useEffect(() => { setHintLevel(0); }, [cur?.stepId]);
+  useEffect(() => { setHintLevel(0); setCollapsed(false); }, [cur?.stepId]);
 
   useEffect(() => bus.on("objective:done", () => {
     setFlash(true);
@@ -30,6 +34,7 @@ export default function MissionTracker() {
 
   // gamepad / touch "hint" button
   useEffect(() => bus.on("hint:next", () => {
+    setCollapsed(false);
     setHintLevel((l) => { if (l >= 3) return l; questSfx.hint(); return l + 1; });
   }), []);
 
@@ -38,6 +43,7 @@ export default function MissionTracker() {
       if (useGameStore.getState().overlay) return;
       if (e.key === "h" || e.key === "H") {
         e.preventDefault();
+        setCollapsed(false);
         setHintLevel((l) => { if (l >= 3) return l; questSfx.hint(); return l + 1; });
       }
     };
@@ -49,10 +55,15 @@ export default function MissionTracker() {
 
   return (
     <div
-      className="mission-tracker surface pointer-events-auto w-[330px] overflow-hidden transition-shadow duration-500"
+      className={`mission-tracker surface pointer-events-auto w-[330px] overflow-hidden transition-shadow duration-500 ${collapsed ? "is-collapsed" : ""}`}
       style={flash ? { boxShadow: "0 0 0 1px rgba(217,180,91,.8), 0 0 40px -4px rgba(217,180,91,.6)" } : undefined}
     >
-      <div className="flex items-center gap-2.5 border-b border-[rgba(217,180,91,.15)] px-4 py-2.5">
+      <button
+        className="flex w-full items-center gap-2.5 border-b border-[rgba(217,180,91,.15)] px-4 py-2.5 text-left"
+        onClick={() => { setCollapsed((c) => !c); questSfx.select(); }}
+        aria-expanded={!collapsed}
+        title={collapsed ? "Show the objective" : "Collapse"}
+      >
         <PixelIcon name={cur.mission.icon} size={16} />
         <span className="title-lg flex-1 truncate text-[12px] text-[#f2dfa6]">{cur.mission.title}</span>
         {cur.mission.boss && (
@@ -60,58 +71,73 @@ export default function MissionTracker() {
             BOSS
           </span>
         )}
-      </div>
+        <span className="text-[10px] text-[var(--ink-4)] transition-transform" style={{ transform: collapsed ? "rotate(-90deg)" : "none" }}>▾</span>
+      </button>
 
-      <div className="tracker-body px-4 py-3">
-        <div className="flex items-start gap-2">
-          <span className="mt-[3px] text-[11px] text-[#d9b45b]">◆</span>
-          <span className="text-[13px] font-medium leading-snug text-[var(--ink-1)]">
-            {guide?.objective ?? cur.label}
-          </span>
-        </div>
-
-        {guide && (
-          <div className="tracker-place mt-2 flex items-center gap-1.5 pl-5 text-[11px] text-[var(--ink-3)]">
-            <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden>
-              <circle cx="6" cy="5" r="2.6" fill="none" stroke="currentColor" strokeWidth="1.2" />
-              <path d="M6 7.6V11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            </svg>
-            {guide.place}
-          </div>
-        )}
-
-        {guide && hintLevel > 0 && (
-          <div className="mt-3 space-y-1.5 rounded-lg border border-[rgba(217,180,91,.16)] bg-black/30 p-2.5">
-            {guide.hints.slice(0, hintLevel).map((h, i) => (
-              <div key={i} className="sb-rise flex gap-2 text-[11px] leading-relaxed">
-                <span className="text-[var(--ink-4)]">{i + 1}</span>
-                <span className="text-[var(--ink-2)]">{h}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between border-t border-[rgba(217,180,91,.15)] px-4 py-2">
-        <button
-          onClick={() => { if (hintLevel >= 3) return; questSfx.hint(); setHintLevel((l) => l + 1); }}
-          disabled={hintLevel >= 3}
-          className="text-[10px] font-semibold tracking-[.12em] text-[#d9b45b] transition-colors hover:text-[#f2dfa6] disabled:text-[var(--ink-4)]"
-        >
-          {hintLevel >= 3 ? "NO MORE HINTS" : `HINT ${hintLevel + 1} / 3  ·  H`}
-        </button>
-
-        {flames > 0 && (
-          <div className="flex items-center gap-1.5" title="Sacred Flames gathered">
-            {[0, 1, 2].map((i) => (
-              <span key={i} style={{ opacity: i < flames ? 1 : 0.2 }}>
-                <PixelIcon name="flame" size={11} />
+      {!collapsed && (
+        <>
+          <div className="tracker-body px-4 py-3">
+            <div className="flex items-start gap-2">
+              <span className="mt-[3px] text-[11px] text-[#d9b45b]">◆</span>
+              <span className="tracker-objective text-[13px] font-medium leading-snug text-[var(--ink-1)]">
+                {guide?.objective ?? cur.label}
               </span>
-            ))}
-            <span className="text-[10px] font-semibold text-[#d9b45b]">{flames}/3</span>
+            </div>
+
+            {guide && (
+              <div className="tracker-place mt-2 flex items-center gap-1.5 pl-5 text-[11px] text-[var(--ink-3)]">
+                <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden>
+                  <circle cx="6" cy="5" r="2.6" fill="none" stroke="currentColor" strokeWidth="1.2" />
+                  <path d="M6 7.6V11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                </svg>
+                {guide.place}
+              </div>
+            )}
+
+            {compass && (
+              <div className="tracker-compass mt-1.5 flex items-center gap-1.5 pl-5 text-[11px] text-[#d9b45b]">
+                <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden>
+                  <circle cx="6" cy="6" r="5" fill="none" stroke="currentColor" strokeWidth="1" opacity=".6" />
+                  <path d="M6 2.2l1.8 4.6L6 6l-1.8.8z" fill="currentColor" />
+                </svg>
+                <span className="truncate">Objective: {compass}</span>
+              </div>
+            )}
+
+            {guide && hintLevel > 0 && (
+              <div className="mt-3 space-y-1.5 rounded-lg border border-[rgba(217,180,91,.16)] bg-black/30 p-2.5">
+                {guide.hints.slice(0, hintLevel).map((h, i) => (
+                  <div key={i} className="sb-rise flex gap-2 text-[11px] leading-relaxed">
+                    <span className="text-[var(--ink-4)]">{i + 1}</span>
+                    <span className="text-[var(--ink-2)]">{h}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+
+          <div className="flex items-center justify-between border-t border-[rgba(217,180,91,.15)] px-4 py-2">
+            <button
+              onClick={() => { if (hintLevel >= 3) return; questSfx.hint(); setHintLevel((l) => l + 1); }}
+              disabled={hintLevel >= 3}
+              className="text-[10px] font-semibold tracking-[.12em] text-[#d9b45b] transition-colors hover:text-[#f2dfa6] disabled:text-[var(--ink-4)]"
+            >
+              {hintLevel >= 3 ? "NO MORE HINTS" : `HINT ${hintLevel + 1} / 3  ·  H`}
+            </button>
+
+            {flames > 0 && (
+              <div className="flex items-center gap-1.5" title="Sacred Flames gathered">
+                {[0, 1, 2].map((i) => (
+                  <span key={i} style={{ opacity: i < flames ? 1 : 0.2 }}>
+                    <PixelIcon name="flame" size={11} />
+                  </span>
+                ))}
+                <span className="text-[10px] font-semibold text-[#d9b45b]">{flames}/3</span>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
