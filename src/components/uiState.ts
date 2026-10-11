@@ -8,6 +8,7 @@
 // ---------------------------------------------------------------------------
 
 import { create } from "zustand";
+import { useEffect, useState } from "react";
 import { useGameStore } from "../store/useGameStore";
 
 export type Near = { kind: string; name: string; x: number; y: number } | null;
@@ -71,6 +72,20 @@ export function formatPlaytime(ms: number): string {
   if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
   if (m > 0) return `${m}m ${String(total % 60).padStart(2, "0")}s`;
   return `${total}s`;
+}
+
+/** True while a media query matches (phones: "(max-width: 760px)"). */
+export function useMedia(query: string): boolean {
+  const [on, setOn] = useState(() => typeof matchMedia === "function" && matchMedia(query).matches);
+  useEffect(() => {
+    if (typeof matchMedia !== "function") return;
+    const mq = matchMedia(query);
+    const fn = () => setOn(mq.matches);
+    fn();
+    mq.addEventListener?.("change", fn);
+    return () => mq.removeEventListener?.("change", fn);
+  }, [query]);
+  return on;
 }
 
 /** Reduced motion: the setting, or the OS preference when the setting is unset. */

@@ -57,7 +57,9 @@ canvas[data-pixel], .vignette canvas { image-rendering: pixelated; }
   .hud { padding: 10px !important; }
   .hud .title-lg { font-size: 11px !important; }
   .hud-keys { display: none !important; }
-  .mission-tracker { width: min(48vw, 260px) !important; }
+  .mission-tracker { width: min(52vw, 260px) !important; max-width: 100%; }
+  .hud-place { padding: 4px 10px !important; }
+  .hud-place .title-lg { font-size: 10px !important; }
   .mission-tracker .title-lg { font-size: 11px !important; }
   .panel-sheet { max-width: 100% !important; max-height: 100% !important; border-radius: 12px; }
   .panel-shell { padding: 8px !important; }
@@ -315,4 +317,24 @@ html.reduced-motion .title-layer { transform: none !important; }
 html.reduced-motion .ui-lantern { animation: none; }
 @media (max-width: 760px) {
   .title-grid { grid-template-columns: 1fr !important; }
+}
+/* Short viewports (landscape phones): the title scrolls and loses the portrait. */
+@media (max-height: 520px) {
+  .title-screen { justify-content: flex-start !important; overflow-y: auto !important; }
+  .title-content { padding-top: 18px; padding-bottom: 24px; }
+  .title-portrait { display: none; }
+  .title-screen h1 { font-size: 30px !important; }
+  .title-grid { margin-top: 18px !important; }
+  .battle-result .result-party { display: none; }
+  .battle-result .result-card { font-size: .92em; }
+  .battle-ui .battle-bench { padding-bottom: 4px !important; }
+  .battle-ui .battle-banner { font-size: 14px !important; }
+  .photo-mode .absolute.bottom-7 { bottom: 10px !important; }
+}
+/* Phones in portrait: the pause and settings sheets scroll inside the panel. */
+@media (max-width: 640px) {
+  .pause-grid { grid-template-columns: 1fr !important; }
+  .battle-ui .battle-detail { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .battle-ui .battle-detail p { white-space: normal; }
+  .photo-mode .photo-help { font-size: 10px; }
 }

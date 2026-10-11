@@ -145,7 +145,7 @@ export default function TouchControls() {
         </div>
       )}
       {!stick && (
-        <div className="pointer-events-none absolute bottom-[18%] left-[9%] text-[10px] tracking-[.2em] text-[rgba(242,223,166,.35)]">
+        <div className="pointer-events-none absolute bottom-[27%] left-[8%] text-[10px] tracking-[.2em] text-[rgba(242,223,166,.35)]">
           DRAG TO MOVE · RIGHT SIDE TO LOOK
         </div>
       )}

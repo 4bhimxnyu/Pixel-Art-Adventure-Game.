@@ -7,7 +7,7 @@ import { CharacterPortrait } from "./pixel/Portrait";
 import { useDevice, glyph } from "../input/useDevice";
 import { useEffect, useRef, useState } from "react";
 import { bus } from "../game/bus";
-import { useUi } from "./uiState";
+import { useUi, useMedia } from "./uiState";
 
 export default function HUD() {
   const map = useGameStore((s) => s.map);
@@ -15,6 +15,7 @@ export default function HUD() {
   const overlay = useGameStore((s) => s.overlay);
   const showFps = useGameStore((s) => !!s.settings.showFps);
   const device = useDevice();
+  const phone = useMedia("(max-width: 760px)");
   const k = device.kind;
   const hasMimo = party.some((p) => p.id === "mimo");
   const [stuck, setStuck] = useState(false);
@@ -23,9 +24,9 @@ export default function HUD() {
   return (
     <div className="hud pointer-events-none absolute inset-0 z-20 flex flex-col justify-between p-4">
       <div className="flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-3">
+        <div className="hud-left flex shrink-0 flex-col gap-3">
           {/* place */}
-          <div className="surface inline-flex w-fit items-center gap-2.5 px-4 py-2">
+          <div className="hud-place surface inline-flex w-fit items-center gap-2.5 px-4 py-2">
             <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
               <circle cx="6" cy="5" r="3" fill="none" stroke="#d9b45b" strokeWidth="1.3" />
               <path d="M6 8v3" stroke="#d9b45b" strokeWidth="1.3" strokeLinecap="round" />
@@ -41,18 +42,18 @@ export default function HUD() {
                   className="overflow-hidden rounded-lg"
                   style={{ border: "1px solid rgba(217,180,91,.4)", boxShadow: "0 4px 12px -4px rgba(0,0,0,.8)" }}
                 >
-                  <CharacterPortrait id={p.portrait} size={30} />
+                  <CharacterPortrait id={p.portrait} size={phone ? 24 : 30} />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <span className="text-[11px] font-semibold tracking-wide text-[var(--ink-1)]">{p.name}</span>
-                  <HpBar hp={p.hp} max={p.maxHp} width={104} />
+                  <HpBar hp={p.hp} max={p.maxHp} width={phone ? 58 : 104} showText={!phone} />
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="hud-right flex flex-col items-end gap-3">
+        <div className="hud-right flex min-w-0 flex-col items-end gap-3">
           <MissionTracker />
           <Minimap />
         </div>

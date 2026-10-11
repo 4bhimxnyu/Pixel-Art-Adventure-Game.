@@ -683,7 +683,7 @@ function ResultPanel({
   const accent = won ? "#7ddca4" : "#e0616b";
   return (
     <div className="battle-result absolute inset-0 z-20 flex items-center justify-center p-4 ui-fade-in" style={{ background: "rgba(5,2,4,.55)" }}>
-      <div className="surface sb-pop relative w-full max-w-[440px] overflow-hidden">
+      <div className="result-card surface sb-pop relative max-h-full w-full max-w-[440px] overflow-y-auto">
         <div className="absolute inset-x-0 top-0 h-px ui-rule-grow" style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
         <div className="px-6 pb-5 pt-6 text-center">
           <div className="eyebrow mb-2" style={{ color: accent }}>{won ? (boss ? "Boss defeated" : "Victory") : "Defeated"}</div>
@@ -707,7 +707,7 @@ function ResultPanel({
             </p>
           )}
 
-          <div className="mt-4 flex flex-col gap-2">
+          <div className="result-party mt-4 flex flex-col gap-2">
             {party.map((p) => (
               <div key={p.id} className="flex items-center gap-3 rounded-lg border border-[rgba(217,180,91,.14)] bg-black/30 px-3 py-2">
                 <div className="overflow-hidden rounded-md" style={{ border: "1px solid rgba(217,180,91,.3)", filter: p.hp > 0 ? undefined : "grayscale(1)" }}>
