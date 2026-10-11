@@ -396,7 +396,7 @@ export function buildMap(def: MapDef, flags: Flags, quality: { shadows: boolean 
       if (ceilRows < H) {
         for (let i = 0; i < 9; i++) {
           const bulb = new THREE.Mesh(G.sphere(0.035, 6), glow(i % 2 ? "#ffd27a" : "#ff9a6a", 1.0));
-          bulb.position.set(1.2 + i * 0.85, 1.6 + (i % 2) * 0.12, -(H - 1) - 0.42);
+          bulb.position.set(1.2 + i * 0.85, 1.6 + (i % 2) * 0.12, -(H - 1) + 0.07);
           group.add(bulb);
         }
       }

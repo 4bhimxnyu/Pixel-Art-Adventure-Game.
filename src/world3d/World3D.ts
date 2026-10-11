@@ -1747,7 +1747,7 @@ export class World3D {
   private smokeScene() {
     const H = mapHeight(this.mapDef);
     const railZ = -(H - 1) - 0.1; // just inside the balcony's outer wall
-    const stand: Record<string, number> = { npc_dev: 1.4, npc_garv: 2.3, npc_hakim: 3.2, npc_riddhi_flat: 5.0, npc_faizal: 6.6, npc_abhimanyu_home: 7.6 };
+    const stand: Record<string, number> = { npc_dev: 1.9, npc_garv: 2.8, npc_hakim: 3.7, npc_riddhi_flat: 5.5, npc_faizal: 6.5, npc_abhimanyu_home: 7.5 };
     const smokers: THREE.Object3D[] = [];
     for (const e of this.entities) {
       const x = stand[e.kind];
@@ -1757,11 +1757,11 @@ export class World3D {
       this.walkEntity(e, new THREE.Vector3(x, 0, railZ + 0.55), Math.PI);
       if (e.kind !== "npc_hakim") smokers.push(e.object);
     }
-    this.playerPos.set(4.2, 0, railZ + 0.6);
+    this.playerPos.set(4.6, 0, railZ + 0.6);
     this.heading = Math.PI;
     this.player.setHeading(Math.PI, true);
     if (this.companion) {
-      this.companion.group.position.set(4.9, 0, railZ + 1.3);
+      this.companion.group.position.set(5.0, 0, railZ + 1.25);
       this.companion.setHeading(Math.PI, true);
     }
     this.inputLocked = true;
@@ -1802,14 +1802,15 @@ export class World3D {
       else puffMat.dispose();
     };
     tick();
-    // camera: from behind the row, drifting slowly along the rail, then settling on the group
-    const look = new THREE.Vector3(4.5, 1.1, railZ + 0.4);
+    // camera: on the balcony itself (the room wall is right behind the row), sliding
+    // along the rail past everyone's faces, then settling a little above the group
+    const mid = new THREE.Vector3(4.6, 1.15, railZ + 0.5);
     this.cam.playCinematic({
       frames: [
-        { pos: new THREE.Vector3(1.5, 1.6, railZ + 3.4), look, dur: 1.2 },
-        { pos: new THREE.Vector3(7.5, 1.5, railZ + 3.2), look, dur: 16 },
-        { pos: new THREE.Vector3(4.5, 1.3, railZ + 2.6), look, dur: 14 },
-        { pos: new THREE.Vector3(2.5, 1.7, railZ + 3.6), look, dur: 14 },
+        { pos: new THREE.Vector3(0.8, 1.5, railZ + 1.7), look: new THREE.Vector3(3.6, 1.2, railZ + 0.5), dur: 1.2 },
+        { pos: new THREE.Vector3(8.9, 1.45, railZ + 1.7), look: new THREE.Vector3(6.0, 1.2, railZ + 0.5), dur: 18 },
+        { pos: new THREE.Vector3(4.6, 2.2, railZ + 1.75), look: mid, dur: 12 },
+        { pos: new THREE.Vector3(1.0, 1.6, railZ + 1.5), look: mid, dur: 14 },
       ],
       onDone: () => { this.inputLocked = false; },
     });
