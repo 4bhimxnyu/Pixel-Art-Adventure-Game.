@@ -9,11 +9,13 @@ import { useEffect, useRef, useState } from "react";
 import { input, type Action } from "../input/InputManager";
 import { useGameStore } from "../store/useGameStore";
 import { bus } from "../game/bus";
+import { useUi } from "./uiState";
 
 const STICK_R = 54;
 
 export default function TouchControls() {
   const overlay = useGameStore((s) => s.overlay);
+  const sheetUp = useUi((s) => s.photoMode || s.howTo);
   const party = useGameStore((s) => s.party);
   const hasMimo = party.some((p) => p.id === "mimo");
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null);
@@ -28,7 +30,7 @@ export default function TouchControls() {
   // that is still down never sends its pointerup. Drop the stick and the look
   // drag the moment that happens, or Palakshi would keep walking afterwards.
   useEffect(() => {
-    if (!overlay) return;
+    if (!overlay && !sheetUp) return;
     stickId.current = null;
     lookId.current = null;
     setStick(null);
@@ -37,7 +39,7 @@ export default function TouchControls() {
     input.touch.look.x = 0;
     input.touch.look.y = 0;
     input.touch.lookActive = false;
-  }, [overlay]);
+  }, [overlay, sheetUp]);
 
   useEffect(() => {
     input.touch.active = true;
@@ -114,7 +116,7 @@ export default function TouchControls() {
 
   // Panels, dialogue and the battle bar are tappable on their own; the
   // on-screen controls belong to the world only.
-  if (overlay) return null;
+  if (overlay || sheetUp) return null;
 
   return (
     <div className="absolute inset-0 z-30 select-none" style={{ touchAction: "none" }}>

@@ -22,6 +22,8 @@ import LocationCard from "./LocationCard";
 import InteractPrompt from "./InteractPrompt";
 import FadeOverlay from "./FadeOverlay";
 import TouchControls from "./TouchControls";
+import PhotoMode from "./PhotoMode";
+import HowToPlay from "./HowToPlay";
 import { ThemeKeyframes } from "./pixel/decor";
 import { useUi, useReducedMotion } from "./uiState";
 
@@ -39,6 +41,8 @@ export default function GameApp() {
   const settings = useGameStore((s) => s.settings);
   const renderer = settings.renderer ?? "3d";
   const device = useDevice();
+  const photo = useUi((s) => s.photoMode);
+  const howTo = useUi((s) => s.howTo);
   const mountRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<Engine | null>(null);
 
@@ -105,8 +109,10 @@ export default function GameApp() {
 
   // --- tell the engine to stop reading movement while an overlay is up
   useEffect(() => {
-    bus.emit("input:lock", !!overlay);
-  }, [overlay]);
+    bus.emit("input:lock", !!overlay || photo);
+    // a dialogue or battle opening while posing ends the pose
+    if (overlay && photo) useUi.getState().setPhotoMode(false);
+  }, [overlay, photo]);
 
   // --- global hotkeys that belong to the React layer
   useEffect(() => {
@@ -115,6 +121,9 @@ export default function GameApp() {
       const s = useGameStore.getState();
       const ov = s.overlay;
       if (ov?.kind === "battle") return;
+      // photo mode and the how-to sheet own their keys
+      const ui = useUi.getState();
+      if (ui.photoMode || ui.howTo) return;
 
       if (e.key === "Escape") {
         e.preventDefault();
@@ -226,21 +235,28 @@ export default function GameApp() {
       {/* the world: a Three.js canvas (or the classic Phaser canvas) */}
       <div ref={mountRef} className="absolute inset-0" />
 
-      {/* Always-on world UI (the battle layer brings its own cards) */}
-      {overlay?.kind !== "battle" && <HUD />}
-      <InteractPrompt />
-      <LocationCard />
-      <MissionCinematic />
-      <Toasts />
-      {device.touch && <TouchControls />}
+      {/* Always-on world UI (the battle layer brings its own cards; photo mode hides it all) */}
+      {!photo && (
+        <>
+          {overlay?.kind !== "battle" && <HUD />}
+          <InteractPrompt />
+          <LocationCard />
+          <MissionCinematic />
+          <Toasts />
+          {device.touch && <TouchControls />}
+        </>
+      )}
 
       {/* Overlay router */}
-      {overlay?.kind === "dialogue" && <DialogueBox />}
+      {!photo && overlay?.kind === "dialogue" && <DialogueBox />}
       {overlay?.kind === "battle" && <BattleUI />}
       {overlay?.kind === "inventory" && <InventoryPanel />}
       {overlay?.kind === "quests" && <JourneyPanel />}
       {overlay?.kind === "menu" && <MenuPanel />}
       {overlay?.kind === "settings" && <SettingsPanel />}
+
+      {photo && <PhotoMode />}
+      {howTo && <HowToPlay />}
 
       <FadeOverlay />
     </div>
