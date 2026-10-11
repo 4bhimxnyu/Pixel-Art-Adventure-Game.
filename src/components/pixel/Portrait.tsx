@@ -111,35 +111,60 @@ const SPECS: Record<string, Spec> = {
     extra: [[2, 1, 12, 1, "#2a1a12"], [2, 2, 1, 2, "#2a1a12"], [13, 2, 1, 2, "#2a1a12"], [4, 0, 2, 1, "#2a1a12"], [10, 0, 2, 1, "#2a1a12"], [7, 0, 2, 1, "#2a1a12"]],
   },
   garv: {
-    // oldest flatmate: grey at the temples, short beard, calm earth tones
-    bg: "#241f1a", hair: "#3a3236", hairHi: "#8a8290", skin: "#cfa079", shade: "#a87a52",
-    robe: "#5a4a3c", robeHi: "#6e5c4c", trim: "#c9b48a",
-    extra: [[3, 2, 2, 1, "#8a8290"], [11, 2, 2, 1, "#8a8290"], [5, 10, 6, 2, "#4a3e40"], [6, 11, 4, 1, "#3a3236"]],
+    // from his photo: tall dark quiff swept back off the forehead and down to the ears, strong brows,
+    // stubble on the jaw, green knitted polo with beige stripes and a buttoned placket
+    bg: "#16261e", hair: "#1a1412", hairHi: "#2e2622", skin: "#c9a076", shade: "#9a7452",
+    robe: "#1f3a2a", robeHi: "#1f3a2a", trim: "#c9b58f",
+    extra: [
+      [3, 0, 10, 1, "#1a1412"], [5, 0, 3, 1, "#2e2622"], [4, 1, 2, 1, "#2e2622"], // the quiff
+      [2, 4, 1, 6, "#1a1412"], [13, 4, 1, 6, "#1a1412"], // hair down to the ears
+      [5, 5, 2, 1, "#1a1412"], [9, 5, 2, 1, "#1a1412"], // strong brows
+      [5, 11, 6, 1, "#8f6e52"], // stubble along the jaw
+      [5, 11, 1, 2, "#1f3a2a"], [10, 11, 1, 2, "#1f3a2a"], // collar flaps
+      [2, 12, 12, 1, "#c9b58f"], [7, 13, 2, 1, "#2a2420"], // second stripe, placket buttons
+    ],
   },
   riddhi: {
-    // chaotic best friend: high messy bun with a pink scrunchie, gold hoops, mustard hoodie, big grin
-    bg: "#2a2410", hair: "#2b1a16", hairHi: "#4a2e26", skin: "#e0a77e", shade: "#b8805a",
-    robe: "#d9a63a", robeHi: "#c4932f", trim: "#f2e2a8",
+    // from her photo: hair pulled back tight into a low bun, slim black rectangular glasses, small gold hoops, white V-neck tank, smirk
+    bg: "#1d2230", hair: "#1c120f", hairHi: "#2e1f1a", skin: "#c48860", shade: "#9e6b48",
+    robe: "#f4f1e8", robeHi: "#e9e4d6", trim: "#8fb0cf",
     extra: [
-      [5, 0, 6, 1, "#2b1a16"], [4, 1, 1, 1, "#4a2e26"],
-      [6, 1, 4, 1, "#ff5c8a"],
-      [2, 7, 1, 3, "#e8c35a"], [13, 7, 1, 3, "#e8c35a"], [2, 9, 2, 1, "#e8c35a"], [12, 9, 2, 1, "#e8c35a"],
-      [5, 10, 6, 1, "#6a2a38"], [6, 10, 4, 1, "#f6f2ea"],
-      [4, 8, 1, 1, "#e39cb2"], [11, 8, 1, 1, "#e39cb2"],
-      [6, 12, 4, 1, "#c4932f"],
+      [3, 2, 1, 3, "#1c120f"], [12, 2, 1, 3, "#1c120f"],
+      [4, 6, 3, 1, "#111114"], [9, 6, 3, 1, "#111114"], [4, 9, 3, 1, "#111114"], [9, 9, 3, 1, "#111114"],
+      [4, 7, 1, 2, "#111114"], [6, 7, 1, 2, "#111114"], [9, 7, 1, 2, "#111114"], [11, 7, 1, 2, "#111114"], [7, 7, 2, 1, "#111114"],
+      [2, 8, 1, 2, "#d4af37"], [13, 8, 1, 2, "#d4af37"],
+      [6, 11, 3, 1, "#b85e6a"], [9, 10, 1, 1, "#b85e6a"],
+      [7, 12, 2, 2, "#c98f66"],
     ],
   },
   hakim: {
-    // always on his iPad — the tablet is in frame, below the chin, never over the eyes
-    bg: "#1a1f2e", hair: "#1c1416", skin: "#d4a07a", shade: "#a87a52",
-    robe: "#3a3f5a", robeHi: "#4d546f", trim: "#c9c4bb",
-    extra: [[3, 12, 10, 4, "#c9c4bb"], [4, 13, 8, 3, "#2a3a55"], [5, 14, 6, 1, "#5b7fb5"]],
+    // from his photo: side-parted hair swept across the forehead, a big toothy grin, no glasses,
+    // navy zip-up hoodie open over a navy V-neck tee, a "3" patch on the left sleeve; the iPad
+    // stays in frame at the bottom corner, never over the face
+    bg: "#1a1f2e", hair: "#1c1416", hairHi: "#2a2024", skin: "#d4a07a", shade: "#a87a52",
+    robe: "#232b4a", robeHi: "#1f2742", trim: "#232b4a",
+    extra: [
+      [4, 4, 6, 1, "#1c1416"], [10, 3, 1, 1, "#d4a07a"], // sweep across the forehead, the parting
+      [5, 10, 6, 1, "#5a2430"], [6, 10, 4, 1, "#f6f2ea"], // grin with teeth
+      [6, 12, 4, 4, "#1f2742"], [7, 12, 2, 1, "#d4a07a"], // the V-neck tee inside the open hoodie
+      [5, 12, 1, 4, "#9a9aa2"], [10, 12, 1, 4, "#9a9aa2"], // zip tapes
+      [12, 13, 2, 2, "#d8c08a"], // sleeve patch
+      [1, 13, 4, 3, "#c9c4bb"], [2, 14, 2, 2, "#5b7fb5"], // iPad corner
+    ],
   },
   dev: {
-    // bodybuilder: wide shoulders, strong jaw, fitted vest
-    bg: "#2a1a1a", hair: "#121010", hairHi: "#2a2424", skin: "#d0946a", shade: "#a8724e",
-    robe: "#1f1f24", robeHi: "#2e2e36", trim: "#e0616b", wide: true,
-    extra: [[0, 11, 3, 5, "#d0946a"], [13, 11, 3, 5, "#d0946a"], [4, 9, 8, 1, "#a8724e"]],
+    // from his photo: lean, not bulky; wavy hair pushed back with volume, half-lidded sleepy eyes,
+    // a slight smile, stubble, black tank with bare shoulders
+    bg: "#2a1a1a", hair: "#161210", hairHi: "#2a2220", skin: "#c98a5e", shade: "#a06a46",
+    robe: "#1a1a1e", robeHi: "#1a1a1e", trim: "#1a1a1e",
+    extra: [
+      [4, 0, 3, 1, "#161210"], [8, 0, 4, 1, "#161210"], [6, 0, 2, 1, "#2a2220"], [3, 1, 1, 1, "#2a2220"], // waves on top
+      [5, 6, 2, 1, "#a06a46"], [9, 6, 2, 1, "#a06a46"], // half-lidded eyes
+      [5, 10, 1, 1, "#b37256"], [10, 10, 1, 1, "#b37256"], // smile corners
+      [5, 11, 6, 1, "#8a5e42"], // stubble
+      [2, 11, 3, 5, "#c98a5e"], [11, 11, 3, 5, "#c98a5e"], // bare shoulders either side of the tank
+      [5, 11, 1, 5, "#1a1a1e"], [10, 11, 1, 5, "#1a1a1e"], // tank straps
+    ],
   },
   bunny:   { bg: "#1c2a22", hair: "#cfe0d2", skin: "#cfe0d2", shade: "#9fb8a6", robe: "#cfe0d2", robeHi: "#e2eee5", trim: "#7ddca4", extra: [[4, 0, 2, 6, "#cfe0d2"], [10, 0, 2, 6, "#cfe0d2"], [5, 8, 2, 2, "#0a0507"], [9, 8, 2, 2, "#0a0507"]] },
   sparrow: { bg: "#241f16", hair: "#8a6f4f", skin: "#8a6f4f", shade: "#6b563d", robe: "#8a6f4f", robeHi: "#a3865f", trim: "#f7e6c8", extra: [[11, 8, 4, 2, "#d9b45b"], [5, 7, 2, 2, "#0a0507"]] },
