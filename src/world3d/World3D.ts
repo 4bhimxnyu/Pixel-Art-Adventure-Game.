@@ -37,6 +37,8 @@ import { CameraRig, type Keyframe } from "./CameraRig";
 import { AmbientParticles, Burst } from "./Particles";
 import { PawTrail } from "./PawTrail";
 import { FxPool, FocusRing, NameLabels, DashStreak, CrackDecal, type LabelTarget } from "./Fx";
+import { GuideTrail } from "./GuideTrail";
+import { gridPath } from "../lib/gridPath";
 import { floorFor, gateYaw, type GateInfo } from "./MapBuilder";
 import { FogPlanes, LightShafts, Birds } from "./Atmosphere";
 
@@ -161,6 +163,9 @@ export class World3D {
   /** Objective beacon: over the thing to reach, or over the exit that leads to it. */
   private beacon: THREE.Group | null = null;
   private beaconDirty = true;
+  /** The trail of lights on the ground from the player to the beacon. */
+  private guide: GuideTrail | null = null;
+  private trailDirty = true;
   private vel = new THREE.Vector3();
   private stuckT = 0;
   private stuckShown = false;
@@ -290,6 +295,7 @@ export class World3D {
         this.applyQualitySetting();
       }
       if (s.quests !== prev.quests || s.flags !== prev.flags || s.party !== prev.party) this.beaconDirty = true;
+      if (s.settings !== prev.settings) this.trailDirty = true;
     });
     input.overlayOpen = !!useGameStore.getState().overlay;
 
@@ -387,6 +393,8 @@ export class World3D {
     this.hitStop = 0;
     this.focus?.dispose();
     this.focus = null;
+    this.guide?.dispose();
+    this.guide = null;
     this.labels?.dispose();
     this.labels = null;
     this.labelSlots = [];
@@ -462,6 +470,8 @@ export class World3D {
     this.scene.add(this.crack.mesh);
     this.focus = new FocusRing();
     this.scene.add(this.focus.group);
+    this.guide = new GuideTrail();
+    this.scene.add(this.guide.mesh);
     this.labels = new NameLabels();
     this.scene.add(this.labels.group);
     this.sparkleScanT = 0;
@@ -635,6 +645,26 @@ export class World3D {
     g.position.copy(pos);
     this.scene.add(g);
     this.beacon = g;
+    this.trailDirty = true;
+  }
+
+  /** Lay the ground trail along the walking route from the player's cell to the beacon's. */
+  private updateTrail() {
+    this.trailDirty = false;
+    if (!this.guide) return;
+    const settings = useGameStore.getState().settings;
+    if (!this.beacon || settings.showTrail === false) {
+      this.guide.set(null);
+      return;
+    }
+    const from = { x: Math.floor(this.playerPos.x), y: ROW(this.playerPos.z) };
+    const to = { x: Math.floor(this.beacon.position.x), y: ROW(this.beacon.position.z) };
+    const path = gridPath(mapWidth(this.mapDef), mapHeight(this.mapDef), (x, y) => this.blockedCell(x, y), from, to);
+    if (!path || path.length < 3) {
+      this.guide.set(null);
+      return;
+    }
+    this.guide.set(path.map((c) => ({ x: c.x + 0.5, z: Z(c.y) })));
   }
 
   /** Nearest cell of a tile char that is still "to do" (unlit statue, unheld plate, uncollected item). */
@@ -1373,9 +1403,9 @@ export class World3D {
     }
     if (!locked && store.flags.introDone) {
       this.tip("move", {
-        keyboard: "Move with WASD. Arrow keys turn the camera (or hold a mouse button and drag). The gold beacon marks your objective.",
-        gamepad: "Left stick moves, right stick looks around. The gold beacon marks your objective.",
-        touch: "Drag on the left half to walk, on the right half to look around. The gold beacon marks your objective.",
+        keyboard: "Move with WASD. Arrow keys turn the camera (or hold a mouse button and drag). The gold beacon marks your objective, and the trail of lights on the ground leads you to it.",
+        gamepad: "Left stick moves, right stick looks around. The gold beacon marks your objective, and the trail of lights on the ground leads you to it.",
+        touch: "Drag on the left half to walk, on the right half to look around. The gold beacon marks your objective, and the trail of lights on the ground leads you to it.",
       });
     }
     if (this.warnCooldown > 0) this.warnCooldown -= dt;
@@ -1400,6 +1430,7 @@ export class World3D {
   }
 
   private afterStep(cx: number, cy: number, prev: { x: number; y: number }) {
+    this.trailDirty = true;
     const store = useGameStore.getState();
     const def = this.mapDef;
     store.setPlayer(cx, cy, headingToDir(this.heading));
@@ -1696,6 +1727,12 @@ export class World3D {
         this.focus.set(p ? p.x : hit.x + 0.5, p ? p.z : Z(hit.y));
       } else this.focus.set(null);
       this.focus.update(dt);
+    }
+    // --- guide trail: recomputed when the player changes cell or the objective moves
+    if (this.guide) {
+      if (this.trailDirty && this.mode === "explore") this.updateTrail();
+      this.guide.update(dt);
+      this.guide.mesh.visible = this.guide.mesh.count > 0 && this.mode === "explore" && !this.photoMode;
     }
     // --- name labels: the six closest named people within 3.5 units
     if (this.labels) {

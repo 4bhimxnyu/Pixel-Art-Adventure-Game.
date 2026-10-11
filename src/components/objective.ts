@@ -8,6 +8,8 @@ import { MAPS, type MapId } from "../game/maps";
 import { currentStepId, type GameState } from "../store/useGameStore";
 import { targetFor, routeBetween } from "../lib/targets";
 import { MAP_PLACE } from "../lib/guidance";
+import { gridPath, type Cell } from "../lib/gridPath";
+import { cellBlocked } from "../game/story";
 
 export type ObjectivePoint = {
   x: number;
@@ -65,6 +67,16 @@ export function objectivePoint(s: GameState): ObjectivePoint | null {
   if (!next) return null;
   const portal = MAPS[s.map].portals.find((p) => p.to === next);
   return portal ? { x: portal.x, y: portal.y, direct: false, map: target.map } : null;
+}
+
+/** The walking route from the player to the objective point, as cells; null when there is none. */
+export function objectivePath(s: GameState): Cell[] | null {
+  const p = objectivePoint(s);
+  if (!p) return null;
+  const def = MAPS[s.map];
+  const W = def.rows[0].length;
+  const H = def.rows.length;
+  return gridPath(W, H, (x, y) => cellBlocked(def, x, y, s.flags), { x: s.playerX, y: s.playerY }, { x: p.x, y: p.y });
 }
 
 /** "14 tiles north-east" / "Here" / "Through the east exit to Lantern Village". */

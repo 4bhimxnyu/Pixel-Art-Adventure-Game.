@@ -8,7 +8,7 @@
 import { useEffect, useRef } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { MAPS, SOLID } from "../game/maps";
-import { objectivePoint } from "./objective";
+import { objectivePoint, objectivePath } from "./objective";
 import { questSfx } from "../lib/questSfx";
 
 const SIZE = 150; // css px of the canvas (phones scale it down via CSS)
@@ -58,6 +58,7 @@ export default function Minimap() {
     const def = MAPS[map];
     const state = useGameStore.getState();
     const obj = objectivePoint(state);
+    const path = objectivePath(state);
     const partyIds = new Set(party.map((p) => p.id));
     const R = SIZE / 2;
     let raf = 0;
@@ -100,6 +101,18 @@ export default function Minimap() {
               ctx.fill();
             }
           }
+        }
+      }
+
+      // the route to the objective: a dotted gold line, brighter toward the goal
+      if (path && path.length > 2) {
+        for (let i = 1; i < path.length; i++) {
+          const c = path[i];
+          const wave = 0.5 + 0.5 * Math.sin(now / 160 - i * 0.6);
+          ctx.beginPath();
+          ctx.arc(ox + (c.x + 0.5) * TILE, oy + (c.y + 0.5) * TILE, 1.1 + wave * 0.6, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(242,223,166,${0.45 + wave * 0.45})`;
+          ctx.fill();
         }
       }
 

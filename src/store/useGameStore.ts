@@ -117,6 +117,8 @@ export type Settings = {
   largeText?: boolean;
   /** Shows the frame-rate readout from the world (window.__world.fpsEma). */
   showFps?: boolean;
+  /** The gold trail of lights on the ground to the objective (default on). */
+  showTrail?: boolean;
   /** Dialogue advances by itself once a line has been typed out. */
   autoDialogue?: boolean;
   /** Riddhi-style caption in photo mode. */

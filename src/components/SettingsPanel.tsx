@@ -73,6 +73,7 @@ export default function SettingsPanel({ onClose }: { onClose?: () => void }) {
           options: QUALITY, get: (s) => s.quality ?? "auto", set: (v) => setSettings({ quality: v as Settings["quality"] }),
         },
         { kind: "toggle", id: "motion", label: "Reduced motion", hint: "No petals, shakes or long transitions", get: (s) => s.reducedMotion ?? (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches), set: (v) => setSettings({ reducedMotion: v }) },
+        { kind: "toggle", id: "trail", label: "Guide trail", hint: "A line of gold lights on the ground from you to your objective", get: (s) => s.showTrail !== false, set: (v) => setSettings({ showTrail: v }) },
         { kind: "toggle", id: "fps", label: "Show frame rate", hint: "A small readout at the bottom of the screen", get: (s) => !!s.showFps, set: (v) => setSettings({ showFps: v }) },
         {
           kind: "cycle", id: "renderer", label: "World renderer", hint: "3D is the game. Classic keeps the original pixel-art view. Applies when you next resume play.",
