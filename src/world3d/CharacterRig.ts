@@ -290,12 +290,17 @@ export class CharacterRig extends BaseRig {
         break;
       }
       case "tank": {
-        // bare shoulders: skin caps either side, narrow straps, collarbones
-        torso.add(this.sphere(torsoW * 0.22, skin, -torsoW * 0.4, torsoH - 0.03, 0, 8));
-        torso.add(this.sphere(torsoW * 0.22, skin, torsoW * 0.4, torsoH - 0.03, 0, 8));
-        torso.add(this.box(torsoW * 0.7, 0.07, torsoD * 0.9, skin, 0, torsoH - 0.01, 0.01)); // upper chest
-        torso.add(this.box(0.05, 0.12, torsoD * 0.8, top, -torsoW * 0.28, torsoH - 0.05, 0));
-        torso.add(this.box(0.05, 0.12, torsoD * 0.8, top, torsoW * 0.28, torsoH - 0.05, 0));
+        // bare shoulders: small rounded deltoids either side, a thin domed skin cap over
+        // the top of the chest (not a slab), narrow straps
+        for (const side of [-1, 1]) {
+          const delt = this.sphere(torsoW * 0.17, skin, side * torsoW * 0.42, torsoH - 0.035, 0, 10);
+          delt.scale.set(1, 0.85, 0.9);
+          torso.add(delt);
+          torso.add(this.box(0.045, 0.11, torsoD * 0.78, top, side * torsoW * 0.27, torsoH - 0.045, 0));
+        }
+        const upper = this.sphere(torsoW * 0.56, skin, 0, torsoH - 0.012, 0, 12);
+        upper.scale.set(1, 0.12, chestZ);
+        torso.add(upper);
         if (s.vneck) {
           // a skin wedge at the neckline reads as the V
           const v = this.box(0.09, 0.09, 0.03, skin, 0, torsoH - 0.06, torsoD / 2 - 0.005);
