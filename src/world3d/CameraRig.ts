@@ -76,7 +76,8 @@ export class CameraRig {
       return;
     }
     if (this.firstPerson) {
-      this.fppPitch = THREE.MathUtils.clamp(this.fppPitch + dPitch, -0.9, 0.75);
+      // first person follows the usual convention: push up, look up
+      this.fppPitch = THREE.MathUtils.clamp(this.fppPitch - dPitch, -0.9, 0.75);
       return;
     }
     this.pitch = THREE.MathUtils.clamp(this.pitch + dPitch, this.indoor ? 0.42 : 0.12, 1.15);
