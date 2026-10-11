@@ -9,6 +9,11 @@ Explore 14 regions, talk and interact, advance nine chapters, fight turn-based
 battles, gather the three Sacred Flames, beat the final boss, get the birthday ending,
 then walk the West Road to F-1205 for the final chapter and one goodbye, for now.
 
+It is built so that someone who has never played a game can finish it: a gold trail of
+lights on the ground always shows the walking route to the next objective, the tracker
+always shows the next thing to do as a plain instruction, and every new objective is
+announced with its clue and route.
+
 ## Chapters
 
 | # | Chapter | Where | Beats |
@@ -21,14 +26,16 @@ then walk the West Road to F-1205 for the final chapter and one goodbye, for now
 | 6 | The Three Flames | Ancient Cave, Temple | the echo-stone puzzle, the cave flame, the Sacred Lantern |
 | 7 | Arshiya | Academy | the gatekeeper, **Arshiya** (three phases) |
 | 8 | The West Road | Sparkle Town, West Road | the finale, Faizal at the door |
-| 9 | F-1205 | the flat, first person | Abhimanyu, Garv, Hakim, Faizal, Dev, the evening, the balcony sutta with Riddhi, the goodbye, "I love you Pala", the note |
+| 9 | F-1205 | the flat, first person | Faizal and Hakim's room, Garv and Dev's room, Abhimanyu's locked door, the evening, the balcony sutta with Riddhi, the goodbye, "I love you Pala", the handwritten note (to `game 4.mp3`) |
 
 Mission states (LOCKED / AVAILABLE / ACTIVE / COMPLETED) are derived from the quest
 step in `lib/missionMeta.ts` and shown in the Journey panel. Every region beyond the
 first is behind a gate that opens with a short camera shot when its chapter unlocks.
 Defeated villains walk off and never respawn. Riddhi, Palakshi's chaotic best friend,
-is optional: she hangs around town, the village plaza and the garden with new banter
-each time.
+hangs around town, the village plaza and the garden with new banter each time
+("BHOSDE AZAAAAAD!", "kya re baadshah"), and Palakshi answers her with "chal behen ki
+lodi"; she is mandatory on the F-1205 balcony. Bidisha, Palakshi's mother, speaks
+romanised Bengali. Palakshi calls Mimo "Mimochi".
 
 ```bash
 npm install
@@ -42,6 +49,7 @@ npm run build      # typecheck + production build
 | --- | --- | --- | --- |
 | Move | WASD | Left stick / D-pad | Left-side joystick |
 | Look | Arrow keys, or drag with a mouse button; wheel to zoom | Right stick, triggers to zoom | Drag on the right half |
+| Dialogue auto / skip | A / hold X | — | On-screen buttons |
 | Interact / advance | E, Z, Enter, Space | A | Big red button |
 | Dash | Shift | B | Dash button |
 | Mimo sniffs | F | RB | Paw button |
@@ -65,8 +73,8 @@ keyboard always keeps working. Menus and battles accept all three.
 | Story | `src/game/story.ts`: one StoryController shared by both renderers |
 | State | Zustand, single store `src/store/useGameStore.ts` |
 | UI | React overlays over the canvas; Tailwind v4; Cinzel + Inter; responsive down to phones |
-| Art | 100% procedural: low-poly props and character rigs built from Three primitives; pixel art for Classic. No image files. |
-| Audio | 100% procedural WebAudio synthesis. No audio files. |
+| Art | Procedural: low-poly props and character rigs built from Three primitives; pixel art for Classic. The only image is the optional handwritten note (`public/note.jpg`). |
+| Audio | The shipped soundtrack (`public/audio/game N.mp3`, `ending.mp4`) through one WebAudio music bus; every cue and sound effect also has a procedural fallback. |
 | Persistence | LocalStorage, key `palakshi_save_v1` |
 
 Hard rules held throughout: no external asset downloads, no backend, no router other
@@ -135,8 +143,8 @@ after a local build.
 ```
 src/
   routes/            route + html shell; mounts GameApp client-side
-  components/        HUD, MissionTracker, JourneyPanel, DialogueBox, BattleUI, panels,
-                     TouchControls, FadeOverlay, TheEnd
+  components/        HUD, MissionTracker, Minimap, JourneyPanel, DialogueBox, BattleUI, panels,
+                     TouchControls, FadeOverlay, PhotoMode, HowToPlay, TheEnd, EndNote, CreditsRoll
     pixel/           SVG pixel portraits, mission icons, shared decor
   world3d/
     World3D.ts       the 3D engine: regions, player, companion, NPCs, camera, battle stage, cinematics
@@ -145,7 +153,10 @@ src/
     CharacterRig.ts  procedural human rig (walk / idle variants / attack / hug ...)
     DogRig.ts        Mimo
     EnemyRig.ts      every battle species
-    CameraRig.ts     third-person camera, wall awareness, cinematics
+    CameraRig.ts     third-person camera, first person for F-1205, wall awareness, cinematics
+    GuideTrail.ts    the gold trail of lights on the ground to the objective
+    Fx.ts            focus ring, name labels, dash streaks, crack decals
+    Atmosphere.ts    fog planes, light shafts, birds
     characters.ts    per-character identity specs (colours, build, hair, props)
   input/
     InputManager.ts  keyboard + mouse, gamepad, touch -> one input state; synthetic keys for menus
@@ -162,12 +173,15 @@ src/
   data/content.ts    MOVES, ENEMIES, fighters, items, quests, DIALOGUES
   lib/
     missionMeta.ts   REGIONS, MAIN_MISSIONS, buildMissions(), activeMission()
-    guidance.ts      STEP_GUIDE: objective, place, 3-step hint ladder, route chain
+    guidance.ts      STEP_GUIDE: objective, place, 3-step hint ladder (1 = plain instruction, always shown), route chain
     targets.ts       STEP_TARGET: where the beacon points for each step, route between regions
+    gridPath.ts      the one breadth-first walking route used by the ground trail and the minimap
+  components/objective.ts  the objective as a tile on the current map, the compass line, the route
   store/             all game state + actions + save/load
 public/audio/        the soundtrack (game 1-3 + ending) and optional per-cue overrides
 public/models/       optional GLB overrides: <characterId>.glb replaces a procedural rig
 scripts/e2e.js       scripted start-to-THE-END playthrough against the real engine (dev server)
+scripts/lineup.js    stands every character rig in a row for face / full / side review shots
 ```
 
 ## The 3D world
@@ -232,11 +246,12 @@ have been met), Garv and Dev's room last, with the living room and kitchen acros
 hall; the balcony runs the full width with a railing and a twelfth-floor night view. Only after that does Abhimanyu wait by the door for the goodbye,
 which leads to the hug. The hug plays as a camera pull-back, fades to black, shows the
 ending card ("I love you Pala <3"), then a handwritten note (a photo dropped in as
-`public/note.jpg` or `.png`, otherwise the text in `src/data/endNote.ts`), then the credits with the ending track, and returns to the
+`public/note.jpg` or `.png`, otherwise the text in `src/data/endNote.ts`) with
+`game 4.mp3` underneath it, then the credits with the ending track, and returns to the
 title. Nothing loops back into the world.
 
 Every time the story moves to a new step, a card shows the new objective with its first
-clue. Music ducks under dialogue, battle menus, gongs and sound effects.
+clue and the route to it. Music ducks under dialogue, battle menus, gongs and sound effects.
 
 ## Testing the whole game
 
@@ -302,7 +317,13 @@ and Phaser reacting — keep it.
 
 **Adding a quest step** means adding a `STEP_GUIDE` entry in `lib/guidance.ts` and a
 `STEP_TARGET` entry in `lib/targets.ts`, or the tracker has no hints and the beacon
-has nowhere to point. Steps are only ever appended: saves store the step index.
+has nowhere to point. Write hint 1 as a plain instruction (it is always on screen),
+hint 2 as the route, hint 3 at button level. Steps are only ever appended: saves store
+the step index.
+
+**Keyboard input** tracks held keys by `KeyboardEvent.code`, never by `e.key`: with
+Shift held "w" arrives as "W" and the release as "w", which left Palakshi running.
+WASD moves, the arrow keys turn the camera, and in first person pushing up looks up.
 
 **Duplicate-sprite protections** in `loadMap()`: the previous player, follower and
 entities are destroyed and their tweens killed *first*; bus listeners are removed on
