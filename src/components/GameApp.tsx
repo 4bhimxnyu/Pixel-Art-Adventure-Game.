@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { bus } from "../game/bus";
-import { initAudio, playBgm, setVolumes, stopBgm, loadAudioManifest, currentBgm } from "../game/sound";
+import { initAudio, playBgm, setVolumes, stopBgm, loadAudioManifest, currentBgm, duckMusic } from "../game/sound";
 import { questSfx } from "../lib/questSfx";
 import { useDevice } from "../input/useDevice";
 
@@ -16,6 +16,7 @@ import SettingsPanel from "./SettingsPanel";
 import Toasts from "./Toasts";
 import CreditsRoll from "./CreditsRoll";
 import TheEnd from "./TheEnd";
+import EndNote from "./EndNote";
 import MissionCinematic from "./MissionCinematic";
 import LocationCard from "./LocationCard";
 import InteractPrompt from "./InteractPrompt";
@@ -95,6 +96,12 @@ export default function GameApp() {
     };
   }, [screen]);
 
+  // --- music sits back a little while people are talking or a battle menu is up
+  useEffect(() => {
+    const k = overlay?.kind;
+    duckMusic(k === "dialogue" ? 0.6 : k === "battle" ? 0.8 : 1);
+  }, [overlay?.kind]);
+
   // --- tell the engine to stop reading movement while an overlay is up
   useEffect(() => {
     bus.emit("input:lock", !!overlay);
@@ -163,6 +170,15 @@ export default function GameApp() {
       <>
         <ThemeKeyframes />
         <TheEnd />
+      </>
+    );
+  }
+
+  if (screen === "note") {
+    return (
+      <>
+        <ThemeKeyframes />
+        <EndNote />
       </>
     );
   }

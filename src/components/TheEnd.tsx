@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
-// THE END. Shown once, after the final hug has faded to black. It holds, then
-// hands over to the credits. Nothing returns to the world from here.
+// The ending card ("I love you Pala"), shown once after the final hug has
+// faded to black. It holds, then hands over to the note, then the credits.
+// Nothing returns to the world from here.
 // ---------------------------------------------------------------------------
 
 import { useEffect, useState } from "react";
@@ -13,9 +14,9 @@ export default function TheEnd() {
   useEffect(() => {
     const t1 = window.setTimeout(() => setStage(1), 1400);
     const t2 = window.setTimeout(() => setStage(2), 7200);
-    const t3 = window.setTimeout(() => setScreen("credits"), 8400);
+    const t3 = window.setTimeout(() => setScreen("note"), 8400);
     const skip = (e: KeyboardEvent) => {
-      if (["Enter", " ", "Escape", "e", "E"].includes(e.key)) setScreen("credits");
+      if (["Enter", " ", "Escape", "e", "E"].includes(e.key)) setScreen("note");
     };
     window.addEventListener("keydown", skip);
     return () => {
@@ -29,15 +30,15 @@ export default function TheEnd() {
   return (
     <div
       className="relative flex h-full w-full items-center justify-center bg-[#000]"
-      onClick={() => setScreen("credits")}
+      onClick={() => setScreen("note")}
     >
       <div
         className="flex flex-col items-center transition-opacity duration-[1600ms]"
         style={{ opacity: stage === 1 ? 1 : 0 }}
       >
         <div className="h-px w-40" style={{ background: "linear-gradient(90deg,transparent,rgba(217,180,91,.7),transparent)" }} />
-        <h1 className="title-lg my-8 text-[44px] tracking-[.42em] text-[#f2dfa6] glow-gold sm:text-[64px]">
-          THE END
+        <h1 className="title-lg my-8 text-center text-[34px] tracking-[.18em] text-[#f2dfa6] glow-gold sm:text-[54px]">
+          I love you Pala <span className="text-[#ff5c8a]" style={{ textShadow: "0 0 24px rgba(255,92,138,.6)" }}>&lt;3</span>
         </h1>
         <div className="h-px w-40" style={{ background: "linear-gradient(90deg,transparent,rgba(217,180,91,.7),transparent)" }} />
       </div>

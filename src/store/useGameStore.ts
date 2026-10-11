@@ -118,7 +118,7 @@ type SavePayload = {
 };
 
 export type GameState = {
-  screen: "title" | "playing" | "end" | "credits";
+  screen: "title" | "playing" | "end" | "note" | "credits";
   overlay: Overlay;
   map: MapId;
   playerX: number;
