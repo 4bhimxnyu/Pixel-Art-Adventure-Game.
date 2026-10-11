@@ -81,15 +81,20 @@ const fileNodes = new WeakMap<HTMLAudioElement, MediaElementAudioSourceNode>();
  * THE END and the credits. If the files are missing the procedural score
  * plays instead, exactly as before.
  */
-/** Candidate tracks; only the ones that exist in public/audio are played. "game 4" leads when present. */
-const PLAYLIST_CANDIDATES = ["game 4.mp3", "game 1.mp3", "game 2.mp3", "game 3.mp3", "game 5.mp3", "game 6.mp3"];
+/** Candidate tracks for the rotation; only the ones that exist in public/audio are played. */
+const PLAYLIST_CANDIDATES = ["game 1.mp3", "game 2.mp3", "game 3.mp3", "game 5.mp3", "game 6.mp3"];
 let PLAYLIST_FILES: string[] = ["game 1.mp3", "game 2.mp3", "game 3.mp3"];
 const ENDING_FILE = "ending.mp4";
 const ENDING_KEYS = new Set(["bgm_end", "bgm_credits"]);
+/** "game 4" is kept out of the rotation: it plays only under the handwritten note. */
+const NOTE_FILE = "game 4.mp3";
+const NOTE_KEY = "bgm_note";
+let noteAvailable = false;
 let playlistAvailable = false;
 let playlistIdx = -1;
 let playlistActive = false;
-let endingActive = false;
+/** Which reserved file track is up, if any: the ending or the note. */
+let reservedActive: "ending" | "note" | null = null;
 let advancing = false;
 let gestureHooked = false;
 
@@ -124,15 +129,16 @@ function startPlaylist(fadeSec: number) {
   });
 }
 
+function probeFile(f: string) {
+  return fetch(`audio/${encodeURIComponent(f)}`, { method: "HEAD" })
+    .then((r) => (r.ok && !(r.headers.get("content-type") ?? "").includes("text/html") ? f : null))
+    .catch(() => null);
+}
+
 /** Called once the manifest/files have been probed. */
 function probePlaylist() {
-  return Promise.all(
-    PLAYLIST_CANDIDATES.map((f) =>
-      fetch(`audio/${encodeURIComponent(f)}`, { method: "HEAD" })
-        .then((r) => (r.ok && !(r.headers.get("content-type") ?? "").includes("text/html") ? f : null))
-        .catch(() => null)
-    )
-  ).then((found) => {
+  return Promise.all([...PLAYLIST_CANDIDATES.map(probeFile), probeFile(NOTE_FILE)]).then((found) => {
+    noteAvailable = found.pop() != null;
     const files = found.filter((f): f is string => !!f);
     playlistAvailable = files.length > 0;
     if (files.length) PLAYLIST_FILES = files;
@@ -320,7 +326,7 @@ function playFileTrack(key: string, file: string, fadeSec: number, opts: { loop?
         /* noop */
       }
       if (key.startsWith("playlist:")) { playlistAvailable = false; playlistActive = false; startProceduralTrack("bgm_title", 0.4); }
-      else if (key === "ending") { endingActive = false; startProceduralTrack("bgm_end", 0.4); }
+      else if (key === "ending" || key === "note") { reservedActive = null; startProceduralTrack("bgm_end", 0.4); }
       else startProceduralTrack(key, 0.4);
     });
 
@@ -1209,18 +1215,28 @@ export function playBgm(key: string, fadeSec = 1.2) {
   initAudio();
   if (!ctx) return;
 
+  // The note's own track, if the file exists; otherwise whatever is playing carries on under it.
+  if (key === NOTE_KEY) {
+    if (!noteAvailable || reservedActive === "note") return;
+    playlistActive = false;
+    reservedActive = "note";
+    fadeOut(Math.max(fadeSec, 1.5));
+    window.setTimeout(() => playFileTrack("note", NOTE_FILE, 2.0, { loop: true }), Math.max(fadeSec, 1.5) * 1000 * 0.6);
+    return;
+  }
+
   // The game's own soundtrack, when present, carries the whole adventure.
   if (playlistAvailable) {
     if (ENDING_KEYS.has(key)) {
-      if (endingActive) return;
+      if (reservedActive === "ending") return;
       playlistActive = false;
-      endingActive = true;
+      reservedActive = "ending";
       fadeOut(Math.max(fadeSec, 1.5));
       window.setTimeout(() => playFileTrack("ending", ENDING_FILE, 2.0, { loop: true }), Math.max(fadeSec, 1.5) * 1000 * 0.6);
       return;
     }
-    if (endingActive) {
-      endingActive = false;
+    if (reservedActive) {
+      reservedActive = null;
       fadeOut(0.8);
     }
     // The procedural score may already be playing (title music starts before
@@ -1231,6 +1247,7 @@ export function playBgm(key: string, fadeSec = 1.2) {
   }
 
   if (current?.key === key || currentFile?.key === key) return;
+  if (reservedActive) { reservedActive = null; fadeOut(0.8); }
 
   // A user-supplied file for this cue wins over the procedural track.
   const file = fileManifest[key];
@@ -1298,7 +1315,7 @@ function fadeOutProcedural(sec: number) {
 
 export function stopBgm() {
   playlistActive = false;
-  endingActive = false;
+  reservedActive = null;
   fadeOut(0.25);
 }
 

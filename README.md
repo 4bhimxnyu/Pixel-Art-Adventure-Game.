@@ -101,8 +101,8 @@ Do not remove `at()`.
 ## The game's soundtrack
 
 `public/audio/` ships the tracks `game 1.mp3`, `game 2.mp3`, `game 3.mp3` and
-`ending.mp4`; any `game N.mp3` up to 6 dropped in is picked up too, and `game 4.mp3`
-leads the rotation when present. The music manager in `sound.ts` plays the game
+`ending.mp4`; any `game N.mp3` up to 6 dropped in is picked up too, except `game 4.mp3`,
+which stays out of the rotation and plays only under the handwritten note. The music manager in `sound.ts` plays the game
 tracks in rotation through the whole adventure (one player, persistent across
 regions and battles, crossfading from one track to the next, never two at once) and
 reserves `ending` for THE END and the credits (`bgm_end` / `bgm_credits`). Autoplay

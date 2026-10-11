@@ -91,10 +91,11 @@ export default function GameApp() {
     });
   }, []);
 
-  // --- title / end / credits music
+  // --- title / end / note / credits music
   useEffect(() => {
     if (screen === "title") playBgm("bgm_title", 1.2);
     if (screen === "end") playBgm("bgm_end", 3.0);
+    if (screen === "note") playBgm("bgm_note", 1.6);
     if (screen === "credits") playBgm("bgm_credits", 1.6);
     return () => {
       if (screen === "credits") stopBgm();
