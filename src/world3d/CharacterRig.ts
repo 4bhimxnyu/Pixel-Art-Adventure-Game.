@@ -872,9 +872,18 @@ export class CharacterRig extends BaseRig {
         sides(0.5, 0.3, -0.05, 0.1);
         back(0.55, 0.46, 0.14);
         if (s.ornament) {
-          head.add(this.box(0.12, 0.03, 0.06, orn, 0, 0.4, -0.2));
-          head.add(this.box(0.03, 0.18, 0.02, orn, -0.04, 0.3, -0.27));
-          head.add(this.box(0.03, 0.18, 0.02, orn, 0.04, 0.3, -0.27));
+          // a small ribbon bow pinned at the top of the right side lock, where it shows from the front
+          const bx = 0.262;
+          head.add(this.sphere(0.017, orn, bx, 0.4, 0.04, 6)); // knot
+          for (const side of [-1, 1]) {
+            const loop = this.sphere(0.034, orn, bx - 0.004, 0.414, 0.04 + side * 0.04, 8);
+            loop.scale.set(0.45, 0.7, 1.0);
+            loop.rotation.x = side * 0.5;
+            head.add(loop);
+            const tail = this.box(0.012, 0.11, 0.024, orn, bx + 0.004, 0.335, 0.04 + side * 0.02);
+            tail.rotation.x = side * 0.22;
+            head.add(tail);
+          }
         }
         break;
       }
@@ -1334,16 +1343,18 @@ export class CharacterRig extends BaseRig {
         break;
       }
       case "crossed": {
-        // arms folded: elbows near the body, each forearm angled up across the chest
-        // toward the opposite shoulder, the left forearm in front of the right
-        p.armR.rotation.x += -0.42 * idleW;
-        p.armR.rotation.z += 0.1 * idleW;
-        p.foreR.rotation.x += 0.77 * idleW;
-        p.foreR.rotation.z = -2.3 * idleW;
-        p.armL.rotation.x += -0.78 * idleW;
-        p.armL.rotation.z += -0.1 * idleW;
-        p.foreL.rotation.x += 1.12 * idleW;
-        p.foreL.rotation.z = 2.3 * idleW;
+        // arms folded: both upper arms hang close to the body with the elbows tucked at
+        // the sides, both forearms lie level across the chest. The left forearm runs
+        // across the lower chest (hand near the right elbow); the right forearm crosses
+        // in front of and above it (hand near the left elbow).
+        p.armR.rotation.x += -0.55 * idleW;
+        p.armR.rotation.z += 0.14 * idleW;
+        p.foreR.rotation.x += 0.56 * idleW;
+        p.foreR.rotation.z = -1.93 * idleW;
+        p.armL.rotation.x += -0.35 * idleW;
+        p.armL.rotation.z += -0.14 * idleW;
+        p.foreL.rotation.x += 0.31 * idleW;
+        p.foreL.rotation.z = 1.75 * idleW;
         p.head.rotation.x = Math.sin(t * 0.9) * 0.04 * idleW;
         break;
       }
