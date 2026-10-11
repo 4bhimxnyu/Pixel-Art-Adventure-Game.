@@ -746,19 +746,36 @@ export class CharacterRig extends BaseRig {
     band.scale.set(1.1, 0.4, 0.9);
     head.add(band);
 
-    /** A fringe piece over the forehead: its bottom edge stays above the brows. */
+    /** A fringe piece over the forehead: a flattened ellipsoid whose lower edge stays above the brows. */
     const fringe = (w: number, x: number, tilt = 0, m: THREE.Material = hair) => {
-      const f = this.box(w, 0.05, 0.06, m, x, 0.372, 0.165);
+      const f = this.sphere(0.1, m, x, 0.375, 0.16, 10);
+      f.scale.set(w / 0.2, 0.28, 0.32);
       f.rotation.z = tilt;
       head.add(f);
       return f;
     };
-    /** Side masses from the temples down, outside the cheeks. */
-    const sides = (h: number, depth = 0.26, zc = -0.03, w = 0.09) => {
-      for (const side of [-1, 1]) head.add(this.box(w, h, depth, hair, side * (0.19 + w / 2 - 0.015), 0.4 - h / 2, zc));
+    /**
+     * A hanging mass of hair: an elliptical column (w across, depth deep) with a
+     * rounded top shoulder and a rounded end, the end tucked slightly toward `curl`.
+     * taper < 1 narrows it toward the end; 1 keeps a straight-cut bob.
+     */
+    const lock = (x: number, top: number, h: number, w: number, depth: number, zc: number, taper: number, curlX = 0, curlZ = 0) => {
+      const col = this.mesh(G.cyl(1, taper, 1, 12), hair, x, top - h / 2, zc);
+      col.scale.set(w / 2, h, depth / 2);
+      head.add(col);
+      const shoulder = this.sphere(1, hair, x, top, zc, 10);
+      shoulder.scale.set(w / 2, 0.05, depth / 2);
+      head.add(shoulder);
+      const end = this.sphere(1, hair, x + curlX, top - h, zc + curlZ, 10);
+      end.scale.set((w / 2) * taper, 0.035, (depth / 2) * taper);
+      head.add(end);
     };
-    /** The back of the hair, hanging from the crown. */
-    const back = (h: number, w = 0.42, thick = 0.1) => head.add(this.box(w, h, thick, hair, 0, 0.38 - h / 2, -0.2));
+    /** Side masses from the temples down, outside the cheeks, ends curled in toward the jaw. */
+    const sides = (h: number, depth = 0.26, zc = -0.03, w = 0.09, taper = 0.85) => {
+      for (const side of [-1, 1]) lock(side * (0.19 + w / 2 - 0.015), 0.4, h, w, depth, zc, taper, -side * 0.012);
+    };
+    /** The back of the hair, hanging from the crown, its end curled in toward the neck. */
+    const back = (h: number, w = 0.42, thick = 0.1) => lock(0, 0.38, h, w, thick, -0.2, 0.9, 0, 0.012);
     /** Height of the hair surface (scalp cap or hairline band) over a point of the scalp. */
     const scalpY = (x: number, z: number) => {
       const c = (x / (HR * cap.scale.x)) ** 2 + ((z + 0.03) / (HR * cap.scale.z)) ** 2;
@@ -805,18 +822,19 @@ export class CharacterRig extends BaseRig {
         break;
       }
       case "shoulder": {
-        // straight, parted fringe, hair to the shoulders all the way round, ends curled in
+        // a straight-cut bob with a parted fringe: hair to the shoulders all the way round,
+        // no taper, rounded corners and ends tucked in
         fringe(0.1, -0.1, 0.15);
         fringe(0.17, 0.065, -0.1);
-        sides(0.42, 0.26, -0.03, 0.1);
-        back(0.44);
-        for (const side of [-1, 1]) head.add(this.box(0.11, 0.05, 0.26, hair, side * 0.21, -0.02, -0.03));
+        sides(0.42, 0.3, -0.05, 0.1, 1.0);
+        back(0.44, 0.46, 0.14);
         break;
       }
       case "long": {
+        // long straight hair: tapering side masses that curl in at the ends, a rounded back
         fringe(0.26, 0);
-        sides(0.5);
-        back(0.55);
+        sides(0.5, 0.3, -0.05, 0.1);
+        back(0.55, 0.46, 0.14);
         if (s.ornament) {
           head.add(this.box(0.12, 0.03, 0.06, orn, 0, 0.4, -0.2));
           head.add(this.box(0.03, 0.18, 0.02, orn, -0.04, 0.3, -0.27));
@@ -929,6 +947,7 @@ export class CharacterRig extends BaseRig {
         const tail = this.mesh(G.cyl(0.055, 0.025, 0.55, 8), hair, 0, 0.1, -0.27);
         tail.rotation.x = 0.18;
         head.add(tail);
+        head.add(this.sphere(0.028, hair, 0, -0.17, -0.32, 7)); // rounded tip
         if (s.female) {
           sides(0.3, 0.09, 0.02, 0.08);
           if (s.ornament) {
