@@ -159,8 +159,8 @@ export default function TitleScreen() {
         <PetalRain count={22} opacity={0.4} drift />
       </div>
 
-      <div className="relative z-10 flex w-full max-w-[920px] flex-col items-center px-6 text-center">
-        <div className="mb-6">
+      <div className="title-content relative z-10 flex w-full max-w-[920px] flex-col items-center px-6 text-center">
+        <div className="title-portrait mb-6">
           <div
             className="overflow-hidden rounded-2xl p-1"
             style={{
@@ -187,7 +187,7 @@ export default function TitleScreen() {
 
         <div className={`title-grid mt-9 grid w-full gap-5 ${slot ? "sm:grid-cols-[320px_300px] sm:justify-center" : "justify-center"}`}>
           {slot && (
-            <div className="surface sb-rise relative overflow-hidden p-4 text-left">
+            <div className="surface sb-rise relative self-start overflow-hidden p-4 text-left">
               <div className="absolute inset-x-0 top-0 h-px ui-rule-grow" style={{ background: "linear-gradient(90deg, transparent, rgba(242,223,166,.8), transparent)" }} />
               <div className="flex items-center justify-between">
                 <span className="eyebrow">Your journey</span>
