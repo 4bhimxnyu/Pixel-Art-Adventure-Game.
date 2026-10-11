@@ -826,6 +826,7 @@ export class CharacterRig extends BaseRig {
         const z1 = z0 - step;
         const y0 = scalpY(x, z0);
         const y1 = scalpY(x, z1);
+        if (!y0 || !y1) continue; // off the scalp: no segment (a drop to 0 drew a stub sticking out of the crown)
         const len = Math.hypot(step, y1 - y0) + 0.006;
         const p = this.box(0.014, 0.012, Math.round(len * 1000) / 1000, skin, x, (y0 + y1) / 2 + 0.004, (z0 + z1) / 2);
         p.rotation.x = Math.atan2(y1 - y0, step);
