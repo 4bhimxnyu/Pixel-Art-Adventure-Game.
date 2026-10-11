@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 
 import { useMemo, type ReactNode } from "react";
+import { useReducedMotion } from "../uiState";
 
 export function ThemeKeyframes() {
   return (
@@ -63,21 +64,27 @@ export function Blossom({ size = 12 }: { size?: number }) {
   );
 }
 
-export function PetalRain({ count = 18, opacity = 0.5 }: { count?: number; opacity?: number }) {
+/**
+ * Falling petals. `drift` is the slow, wandering title-screen variant.
+ * Renders nothing under reduced motion.
+ */
+export function PetalRain({ count = 18, opacity = 0.5, drift = false }: { count?: number; opacity?: number; drift?: boolean }) {
+  const reduced = useReducedMotion();
   const petals = useMemo(
     () =>
       Array.from({ length: count }, (_, i) => ({
         left: `${(i * 97) % 100}%`,
         delay: `${(i * 0.53) % 7}s`,
-        dur: `${8 + ((i * 1.7) % 7)}s`,
+        dur: drift ? `${18 + ((i * 2.3) % 12)}s` : `${8 + ((i * 1.7) % 7)}s`,
         size: 9 + ((i * 3) % 7),
       })),
-    [count]
+    [count, drift]
   );
+  if (reduced) return null;
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" style={{ opacity }} aria-hidden>
+    <div className="pointer-events-none absolute inset-0 overflow-hidden ui-decor" style={{ opacity }} aria-hidden>
       {petals.map((p, i) => (
-        <div key={i} className="absolute top-0" style={{ left: p.left, animation: `sb-fall ${p.dur} linear ${p.delay} infinite` }}>
+        <div key={i} className="absolute top-0" style={{ left: p.left, animation: `${drift ? "ui-drift" : "sb-fall"} ${p.dur} ${drift ? "ease-in-out" : "linear"} ${p.delay} infinite` }}>
           <Blossom size={p.size} />
         </div>
       ))}

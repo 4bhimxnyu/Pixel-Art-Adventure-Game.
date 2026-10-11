@@ -109,6 +109,22 @@ export type Settings = {
   /** Camera look sensitivity multiplier. */
   lookSens?: number;
   invertY?: boolean;
+  /** Render quality override; "auto" lets the world step itself down. The world reads this. */
+  quality?: "auto" | "high" | "medium" | "low";
+  /** Disables petals, shakes and long transitions in the UI. */
+  reducedMotion?: boolean;
+  /** Bumps dialogue, log and tracker type sizes. */
+  largeText?: boolean;
+  /** Shows the frame-rate readout from the world (window.__world.fpsEma). */
+  showFps?: boolean;
+  /** Dialogue advances by itself once a line has been typed out. */
+  autoDialogue?: boolean;
+  /** Riddhi-style caption in photo mode. */
+  photoCaption?: boolean;
+  /** The first-launch "How to play" sheet has been dismissed. */
+  howToSeen?: boolean;
+  /** Playtime in ms; kept in settings so the save carries it. Flushed by GameApp with each autosave. */
+  playtimeMs?: number;
 };
 
 export type InvEntry = { id: ItemId; count: number };

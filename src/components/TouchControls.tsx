@@ -9,11 +9,13 @@ import { useEffect, useRef, useState } from "react";
 import { input, type Action } from "../input/InputManager";
 import { useGameStore } from "../store/useGameStore";
 import { bus } from "../game/bus";
+import { useUi } from "./uiState";
 
 const STICK_R = 54;
 
 export default function TouchControls() {
   const overlay = useGameStore((s) => s.overlay);
+  const sheetUp = useUi((s) => s.photoMode || s.howTo);
   const party = useGameStore((s) => s.party);
   const hasMimo = party.some((p) => p.id === "mimo");
   const [stick, setStick] = useState<{ ox: number; oy: number; x: number; y: number } | null>(null);
@@ -28,7 +30,7 @@ export default function TouchControls() {
   // that is still down never sends its pointerup. Drop the stick and the look
   // drag the moment that happens, or Palakshi would keep walking afterwards.
   useEffect(() => {
-    if (!overlay) return;
+    if (!overlay && !sheetUp) return;
     stickId.current = null;
     lookId.current = null;
     setStick(null);
@@ -37,7 +39,7 @@ export default function TouchControls() {
     input.touch.look.x = 0;
     input.touch.look.y = 0;
     input.touch.lookActive = false;
-  }, [overlay]);
+  }, [overlay, sheetUp]);
 
   useEffect(() => {
     input.touch.active = true;
@@ -114,7 +116,7 @@ export default function TouchControls() {
 
   // Panels, dialogue and the battle bar are tappable on their own; the
   // on-screen controls belong to the world only.
-  if (overlay) return null;
+  if (overlay || sheetUp) return null;
 
   return (
     <div className="absolute inset-0 z-30 select-none" style={{ touchAction: "none" }}>
@@ -143,7 +145,7 @@ export default function TouchControls() {
         </div>
       )}
       {!stick && (
-        <div className="pointer-events-none absolute bottom-[18%] left-[9%] text-[10px] tracking-[.2em] text-[rgba(242,223,166,.35)]">
+        <div className="pointer-events-none absolute bottom-[27%] left-[8%] text-[10px] tracking-[.2em] text-[rgba(242,223,166,.35)]">
           DRAG TO MOVE · RIGHT SIDE TO LOOK
         </div>
       )}
@@ -155,6 +157,7 @@ export default function TouchControls() {
           <TouchBtn label="◆" small title="Missions" onPress={(e) => { e.preventDefault(); useGameStore.getState().setOverlay({ kind: "quests" }); }} />
           <TouchBtn label="▣" small title="Items" onPress={(e) => { e.preventDefault(); useGameStore.getState().setOverlay({ kind: "inventory" }); }} />
           <TouchBtn label="?" small title="Hint" onPress={(e) => { e.preventDefault(); bus.emit("hint:next"); }} />
+          <TouchBtn label="◉" small title="Photo mode" onPress={(e) => { e.preventDefault(); useUi.getState().setPhotoMode(true); }} />
         </div>
         <div className="flex items-end gap-3">
           {hasMimo && <TouchBtn label="🐾" title="Mimo sniffs" onPress={act("sniff")} />}

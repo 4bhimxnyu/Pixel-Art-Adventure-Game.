@@ -52,11 +52,11 @@ export default function MissionCinematic() {
       <div className="absolute inset-0 backdrop-blur-[2px]" style={{ background: "rgba(6,3,5,.66)" }} />
       <PetalRain count={14} opacity={0.45} />
 
-      <div className="sb-pop relative flex min-w-[420px] flex-col items-center px-14 py-10">
-        {/* framing rules rather than a heavy box */}
-        <div className="absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg,transparent,${accent},transparent)` }} />
-        <div className="absolute inset-x-0 bottom-0 h-px" style={{ background: `linear-gradient(90deg,transparent,${accent},transparent)` }} />
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="mission-card sb-pop relative flex w-[min(520px,calc(100vw-32px))] flex-col items-center px-8 py-9 sm:px-14 sm:py-10">
+        {/* framing rules rather than a heavy box: they grow out from the centre */}
+        <div className="ui-rule-grow absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg,transparent,${accent},transparent)` }} />
+        <div className="ui-rule-grow absolute inset-x-0 bottom-0 h-px" style={{ background: `linear-gradient(90deg,transparent,${accent},transparent)`, animationDelay: ".1s" }} />
+        <div className="pointer-events-none absolute inset-0 overflow-hidden ui-decor">
           <div
             className="h-full w-24 opacity-[.14]"
             style={{ background: `linear-gradient(90deg,transparent,${accent},transparent)`, animation: "sb-sweep 1.9s ease-in-out" }}
