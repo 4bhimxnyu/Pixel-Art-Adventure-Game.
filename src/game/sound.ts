@@ -81,7 +81,9 @@ const fileNodes = new WeakMap<HTMLAudioElement, MediaElementAudioSourceNode>();
  * THE END and the credits. If the files are missing the procedural score
  * plays instead, exactly as before.
  */
-const PLAYLIST_FILES = ["game 1.mp3", "game 2.mp3", "game 3.mp3"];
+/** Candidate tracks; only the ones that exist in public/audio are played. "game 4" leads when present. */
+const PLAYLIST_CANDIDATES = ["game 4.mp3", "game 1.mp3", "game 2.mp3", "game 3.mp3", "game 5.mp3", "game 6.mp3"];
+let PLAYLIST_FILES: string[] = ["game 1.mp3", "game 2.mp3", "game 3.mp3"];
 const ENDING_FILE = "ending.mp4";
 const ENDING_KEYS = new Set(["bgm_end", "bgm_credits"]);
 let playlistAvailable = false;
@@ -124,9 +126,17 @@ function startPlaylist(fadeSec: number) {
 
 /** Called once the manifest/files have been probed. */
 function probePlaylist() {
-  return fetch(`audio/${encodeURIComponent(PLAYLIST_FILES[0])}`, { method: "HEAD" })
-    .then((r) => { playlistAvailable = r.ok; })
-    .catch(() => { playlistAvailable = false; });
+  return Promise.all(
+    PLAYLIST_CANDIDATES.map((f) =>
+      fetch(`audio/${encodeURIComponent(f)}`, { method: "HEAD" })
+        .then((r) => (r.ok && !(r.headers.get("content-type") ?? "").includes("text/html") ? f : null))
+        .catch(() => null)
+    )
+  ).then((found) => {
+    const files = found.filter((f): f is string => !!f);
+    playlistAvailable = files.length > 0;
+    if (files.length) PLAYLIST_FILES = files;
+  });
 }
 
 /** Clamp: never schedule in the past. See invariant note above. */

@@ -14,6 +14,22 @@ export default function EndNote() {
   const total = END_NOTE.lines.length + 2; // + greeting + sign-off
   const [shown, setShown] = useState(0);
   const [paper, setPaper] = useState(false);
+  // A handwritten note dropped in as public/note.jpg (or .png) replaces the typed text.
+  const [image, setImage] = useState<string | null>(null);
+  const [probed, setProbed] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      for (const f of ["note.jpg", "note.jpeg", "note.png", "note.webp"]) {
+        try {
+          const r = await fetch(f, { method: "HEAD" });
+          if (r.ok && (r.headers.get("content-type") ?? "").startsWith("image/")) { if (alive) setImage(f); break; }
+        } catch { /* keep looking */ }
+      }
+      if (alive) setProbed(true);
+    })();
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     const t0 = window.setTimeout(() => setPaper(true), 300);
@@ -26,6 +42,7 @@ export default function EndNote() {
   }, [total]);
 
   const advance = () => {
+    if (image) { setScreen("credits"); return; }
     if (shown < total) setShown(total);
     else setScreen("credits");
   };
@@ -48,6 +65,20 @@ export default function EndNote() {
     </p>
   );
 
+  if (!probed) return <div className="h-full w-full bg-[#000]" />;
+  if (image) {
+    return (
+      <div className="relative flex h-full w-full items-center justify-center bg-[#000]" onClick={() => setScreen("credits")}>
+        <img
+          src={image}
+          alt="A handwritten note"
+          className="max-h-[92vh] max-w-[94vw] rounded-[4px] object-contain transition-all duration-[1800ms]"
+          style={{ opacity: paper ? 1 : 0, transform: paper ? "translateY(0) rotate(-0.4deg)" : "translateY(18px) rotate(-0.4deg)", boxShadow: "0 30px 80px rgba(0,0,0,.65)" }}
+        />
+        <div className="absolute bottom-6 text-[11px] uppercase tracking-[.3em] text-[#f2dfa6]" style={{ opacity: paper ? 0.55 : 0 }}>press any key</div>
+      </div>
+    );
+  }
   return (
     <div className="relative flex h-full w-full items-center justify-center bg-[#000]" onClick={advance}>
       <div
