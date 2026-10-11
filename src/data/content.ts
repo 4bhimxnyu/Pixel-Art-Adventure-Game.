@@ -232,12 +232,12 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
   sign_bedroom: [{ who: "Note", text: "Mimo's bowl. Full. Untouched since last night." }],
 
   mom: [
-    { who: "Bidisha", portrait: "bidisha", text: "Happy birthday, my heart." },
-    { who: "Bidisha", portrait: "bidisha", text: "I wanted the morning to be perfect. It isn't." },
-    { who: "Bidisha", portrait: "bidisha", text: "Mimo slipped the gate before sunrise. I've looked everywhere in the house." },
-    { who: "Bidisha", portrait: "bidisha", text: "Take this. And take a friend — don't go past Route 1 alone.", onEnd: "give_super_potion" },
+    { who: "Bidisha", portrait: "bidisha", text: "Shubho jonmodin, amar shona." },
+    { who: "Bidisha", portrait: "bidisha", text: "Chheyechhilam aaj shokal ta perfect hobe. Holo na." },
+    { who: "Bidisha", portrait: "bidisha", text: "Mimo shurjo othar aagei gate diye beriye gechhe. Shara bari khuje dekhechhi, kothao nei." },
+    { who: "Bidisha", portrait: "bidisha", text: "Eta ne. Aar karo ke shathe ne — Route 1 er opare eka jabi na.", onEnd: "give_super_potion" },
   ],
-  mom_after: [{ who: "Bidisha", portrait: "bidisha", text: "Bring her home before the lanterns light. That's my only wish." }],
+  mom_after: [{ who: "Bidisha", portrait: "bidisha", text: "Lanthon jolar aage oke bari niye aay. Eitai amar ekmatro ichchhe." }],
 
   abhimanyu_meet: [
     { who: "Abhimanyu", portrait: "abhimanyu", text: "Palakshi! Happy birthday — I was going to sing it, but you look busy." },
@@ -447,7 +447,7 @@ export const DIALOGUES: Record<string, DialogueLine[]> = {
   ],
 
   finale: [
-    { who: "Bidisha", portrait: "bidisha", text: "You're late, you're filthy, and the whole village came." },
+    { who: "Bidisha", portrait: "bidisha", text: "Deri korechhish, puro nongra hoye gechhish, aar shara gram eshe gechhe." },
     { who: "Riddhi", portrait: "riddhi", text: "BHOSDE AZAAAAAD! Bhai tu sach mein ek teacher se lad ke aayi? Bata na kaise." },
     { who: "Abhimanyu", portrait: "abhimanyu", text: "I wrote the song after all." },
     { who: "Prakriti", portrait: "prakriti", text: "It's a passable song." },
