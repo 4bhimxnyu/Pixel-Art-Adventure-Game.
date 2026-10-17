@@ -2,6 +2,7 @@ import { useGameStore } from "../store/useGameStore";
 import { MAPS } from "../game/maps";
 import MissionTracker from "./MissionTracker";
 import Minimap from "./Minimap";
+import Radio from "./Radio";
 import { HpBar } from "./pixel/decor";
 import { CharacterPortrait } from "./pixel/Portrait";
 import { useDevice, glyph } from "../input/useDevice";
@@ -56,6 +57,7 @@ export default function HUD() {
         <div className="hud-right flex min-w-0 flex-col items-end gap-3">
           <MissionTracker />
           <Minimap />
+          <Radio />
         </div>
       </div>
 

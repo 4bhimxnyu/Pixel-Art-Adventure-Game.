@@ -294,6 +294,8 @@ html.touch .dialogue-box { padding-bottom: 16px !important; }
 @media (max-width: 760px), (max-height: 520px) {
   .minimap { width: 96px !important; height: 96px !important; }
   .minimap span { font-size: 7px; }
+  .radio { width: 96px !important; }
+  .radio .radio-grille { display: none; }
   .hud-right { gap: 8px !important; }
   .mission-tracker .tracker-compass { font-size: 10px; }
   .mission-tracker.is-collapsed { width: min(48vw, 200px) !important; }

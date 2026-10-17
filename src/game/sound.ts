@@ -116,6 +116,7 @@ function startPlaylist(fadeSec: number) {
   playlistIdx = (playlistIdx + 1) % PLAYLIST_FILES.length;
   const file = PLAYLIST_FILES[playlistIdx];
   playlistActive = true;
+  window.setTimeout(emitRadio, 0);
   playFileTrack(`playlist:${file}`, file, fadeSec, {
     loop: false,
     // crossfade into the next track a moment before this one ends
@@ -1321,6 +1322,78 @@ export function stopBgm() {
 
 export function currentBgm() {
   return current?.key ?? currentFile?.key ?? null;
+}
+
+// --------------------------------------------------------------------------- radio
+// The little radio under the minimap: play / pause, next and previous over the
+// rotation tracks. It only ever touches the playlist; the note's track and
+// the ending stay reserved for their screens.
+
+export type RadioState = {
+  /** Track names without extension, in rotation order. */
+  tracks: string[];
+  /** Index of the track that is up (-1 before the first starts). */
+  index: number;
+  playing: boolean;
+  /** False while the files are missing (procedural fallback) or a reserved track is up. */
+  available: boolean;
+};
+
+const radioListeners = new Set<(s: RadioState) => void>();
+
+export function radioState(): RadioState {
+  const onPlaylist = !!currentFile && currentFile.key.startsWith("playlist:");
+  return {
+    tracks: PLAYLIST_FILES.map((f) => f.replace(/\.[^.]+$/, "")),
+    index: onPlaylist ? playlistIdx : -1,
+    playing: onPlaylist && !currentFile!.el.paused,
+    available: playlistAvailable && !reservedActive,
+  };
+}
+
+function emitRadio() {
+  const s = radioState();
+  radioListeners.forEach((fn) => fn(s));
+}
+
+/** Subscribe to radio changes; returns the unsubscribe. */
+export function onRadio(fn: (s: RadioState) => void) {
+  radioListeners.add(fn);
+  return () => { radioListeners.delete(fn); };
+}
+
+function radioJump(step: 1 | -1) {
+  if (!playlistAvailable || reservedActive || !ctx) return;
+  if (current) fadeOutProcedural(0.5);
+  // startPlaylist moves one forward; for "previous" step back two first
+  if (step === -1) playlistIdx = (playlistIdx - 2 + PLAYLIST_FILES.length * 2) % PLAYLIST_FILES.length;
+  stopFileTrack(0.5);
+  startPlaylist(0.6);
+}
+
+export function radioNext() {
+  initAudio();
+  radioJump(1);
+}
+
+export function radioPrev() {
+  initAudio();
+  radioJump(-1);
+}
+
+/** Pause the track that is up, or resume it; starts the rotation if nothing from it is playing. */
+export function radioToggle() {
+  initAudio();
+  if (!playlistAvailable || reservedActive || !ctx) return;
+  const f = currentFile;
+  if (f && f.key.startsWith("playlist:")) {
+    if (f.el.paused) void f.el.play().catch(() => { /* blocked until a gesture */ });
+    else f.el.pause();
+    window.setTimeout(emitRadio, 0);
+    return;
+  }
+  if (current) fadeOutProcedural(0.5);
+  startPlaylist(0.6);
 }
 
 // --------------------------------------------------------------------------- sfx
