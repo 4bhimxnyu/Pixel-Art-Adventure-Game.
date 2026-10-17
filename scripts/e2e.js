@@ -450,8 +450,8 @@ async function run() {
   expect(!W().entities.some((e) => e.kind === "npc_riddhi_flat"), "Riddhi has left the balcony");
   { const a = W().entities.find((e) => e.kind === "npc_abhimanyu_home"); expect(a && a.y === 7, "Abhimanyu is back by the door"); await standBy({ x: a.x, y: a.y }); await interact(); }
   await until(() => S().flags.hugDone, 4000, "hug");
-  await until(() => S().screen === "end", 25000, "THE END");
-  expect(S().screen === "end", "the game ends with THE END");
+  await until(() => S().screen === "note", 25000, "the note after the hug");
+  expect(S().screen === "note", "the game ends on the handwritten note, then the credits");
   say(`DONE: ${fails.length} failures`);
   return { log, fails };
 }

@@ -192,7 +192,7 @@ export function handleFinalChapterDialogue(
         const s = useGameStore.getState();
         s.setFlag("credits", true);
         s.save();
-        s.setScreen("end");
+        s.setScreen("note");
       };
       if (fx.cinematic) fx.cinematic("final-hug", { onDone: finish });
       else fx.delay(2200, finish);

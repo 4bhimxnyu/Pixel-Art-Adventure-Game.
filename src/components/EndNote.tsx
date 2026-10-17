@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// A handwritten note, shown after the ending card and before the credits.
+// A handwritten note, shown right after the final hug fades out, before the credits.
 // The text lives in data/endNote.ts. Lines appear one by one; any key, click,
 // tap or gamepad button (which arrives as a synthetic key) moves on once the
 // whole note is visible, or reveals it all at once if it is still appearing.

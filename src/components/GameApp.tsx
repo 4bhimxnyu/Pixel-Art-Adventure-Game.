@@ -15,7 +15,6 @@ import MenuPanel from "./MenuPanel";
 import SettingsPanel from "./SettingsPanel";
 import Toasts from "./Toasts";
 import CreditsRoll from "./CreditsRoll";
-import TheEnd from "./TheEnd";
 import EndNote from "./EndNote";
 import MissionCinematic from "./MissionCinematic";
 import LocationCard from "./LocationCard";
@@ -91,10 +90,9 @@ export default function GameApp() {
     });
   }, []);
 
-  // --- title / end / note / credits music
+  // --- title / note / credits music
   useEffect(() => {
     if (screen === "title") playBgm("bgm_title", 1.2);
-    if (screen === "end") playBgm("bgm_end", 3.0);
     if (screen === "note") playBgm("bgm_note", 1.6);
     if (screen === "credits") playBgm("bgm_credits", 1.6);
     return () => {
@@ -189,15 +187,6 @@ export default function GameApp() {
       <>
         <ThemeKeyframes />
         <TitleScreen />
-      </>
-    );
-  }
-
-  if (screen === "end") {
-    return (
-      <>
-        <ThemeKeyframes />
-        <TheEnd />
       </>
     );
   }
