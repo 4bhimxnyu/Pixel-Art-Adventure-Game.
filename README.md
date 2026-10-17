@@ -26,7 +26,7 @@ announced with its clue and route.
 | 6 | The Three Flames | Ancient Cave, Temple | the echo-stone puzzle, the cave flame, the Sacred Lantern |
 | 7 | Arshiya | Academy | the gatekeeper, **Arshiya** (three phases) |
 | 8 | The West Road | Sparkle Town, West Road | the finale, Faizal at the door |
-| 9 | F-1205 | the flat, first person | Faizal and Hakim's room, Garv and Dev's room, Abhimanyu's locked door, the evening, the balcony sutta with Riddhi, the goodbye, the hug, the handwritten note (to `game 4.mp3`), the credits: the photographs |
+| 9 | F-1205 | the flat, first person | Faizal and Hakim's room, Garv and Dev's room, Abhimanyu's locked door, the evening, the balcony sutta with Riddhi, the goodbye, the hug, the handwritten note, the credits: the photographs, all to Photograph |
 
 Mission states (LOCKED / AVAILABLE / ACTIVE / COMPLETED) are derived from the quest
 step in `lib/missionMeta.ts` and shown in the Journey panel. Every region beyond the
@@ -75,7 +75,7 @@ keyboard always keeps working. Menus and battles accept all three.
 | State | Zustand, single store `src/store/useGameStore.ts` |
 | UI | React overlays over the canvas; Tailwind v4; Cinzel + Inter; responsive down to phones |
 | Art | Procedural: low-poly props and character rigs built from Three primitives; pixel art for Classic. The only image is the optional handwritten note (`public/note.jpg`). |
-| Audio | The shipped soundtrack (`public/audio/game N.mp3`, `ending.mp4`) through one WebAudio music bus; every cue and sound effect also has a procedural fallback. |
+| Audio | The shipped soundtrack (`public/audio/game N.mp3` in rotation, `photograph.mp3` for the note and the credits) through one WebAudio music bus; every cue and sound effect also has a procedural fallback. |
 | Persistence | LocalStorage, key `palakshi_save_v1` |
 
 Hard rules held throughout: no external asset downloads, no backend, no router other
@@ -110,8 +110,9 @@ Do not remove `at()`.
 ## The game's soundtrack
 
 `public/audio/` ships the tracks `game 1.mp3`, `game 2.mp3`, `game 3.mp3` and
-`ending.mp4`; any `game N.mp3` up to 6 dropped in is picked up too, except `game 4.mp3`,
-which stays out of the rotation and plays only under the handwritten note. The music manager in `sound.ts` plays the game
+`photograph.mp3`; any `game N.mp3` up to 6 dropped in is picked up too. Photograph is
+the finale song: it starts under the handwritten note and runs on, unbroken, through
+the credits. The music manager in `sound.ts` plays the game
 tracks in rotation through the whole adventure (one player, persistent across
 regions and battles, crossfading from one track to the next, never two at once) and
 reserves `ending` for THE END and the credits (`bgm_end` / `bgm_credits`). Autoplay
@@ -249,8 +250,8 @@ have been met), Garv and Dev's room last, with the living room and kitchen acros
 hall; the balcony runs the full width with a railing and a twelfth-floor night view. Only after that does Abhimanyu wait by the door for the goodbye,
 which leads to the hug. The hug plays as a camera pull-back, fades to black, then shows
 a handwritten note (a photo dropped in as `public/note.jpg` or `.png`, otherwise the
-text in `src/data/endNote.ts`) with `game 4.mp3` underneath it, then the credits with
-the ending track, and returns to the title. The credits are a slow roll of real photographs with words beside each one,
+text in `src/data/endNote.ts`) as Photograph starts underneath it, then the credits with
+the same song carrying on unbroken, and returns to the title. The credits are a slow roll of real photographs with words beside each one,
 alternating sides down the roll (picture left and words right, then picture right and
 words left), stacked on a phone. Order, title and words live in `src/data/credits.ts`
 (`CREDIT_ENTRIES`); the pictures in `src/assets/credits/`. Every picture is alive: it

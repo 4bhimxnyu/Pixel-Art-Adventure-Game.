@@ -84,12 +84,11 @@ const fileNodes = new WeakMap<HTMLAudioElement, MediaElementAudioSourceNode>();
 /** Candidate tracks for the rotation; only the ones that exist in public/audio are played. */
 const PLAYLIST_CANDIDATES = ["game 1.mp3", "game 2.mp3", "game 3.mp3", "game 5.mp3", "game 6.mp3"];
 let PLAYLIST_FILES: string[] = ["game 1.mp3", "game 2.mp3", "game 3.mp3"];
-const ENDING_FILE = "ending.mp4";
+/** The finale song: it starts under the handwritten note and runs on, unbroken, through the credits. */
+const FINALE_FILE = "photograph.mp3";
 const ENDING_KEYS = new Set(["bgm_end", "bgm_credits"]);
-/** "game 4" is kept out of the rotation: it plays only under the handwritten note. */
-const NOTE_FILE = "game 4.mp3";
 const NOTE_KEY = "bgm_note";
-let noteAvailable = false;
+let finaleAvailable = false;
 let playlistAvailable = false;
 let playlistIdx = -1;
 let playlistActive = false;
@@ -138,8 +137,8 @@ function probeFile(f: string) {
 
 /** Called once the manifest/files have been probed. */
 function probePlaylist() {
-  return Promise.all([...PLAYLIST_CANDIDATES.map(probeFile), probeFile(NOTE_FILE)]).then((found) => {
-    noteAvailable = found.pop() != null;
+  return Promise.all([...PLAYLIST_CANDIDATES.map(probeFile), probeFile(FINALE_FILE)]).then((found) => {
+    finaleAvailable = found.pop() != null;
     const files = found.filter((f): f is string => !!f);
     playlistAvailable = files.length > 0;
     if (files.length) PLAYLIST_FILES = files;
@@ -1216,26 +1215,24 @@ export function playBgm(key: string, fadeSec = 1.2) {
   initAudio();
   if (!ctx) return;
 
-  // The note's own track, if the file exists; otherwise whatever is playing carries on under it.
-  if (key === NOTE_KEY) {
-    if (!noteAvailable || reservedActive === "note") return;
-    playlistActive = false;
-    reservedActive = "note";
-    fadeOut(Math.max(fadeSec, 1.5));
-    window.setTimeout(() => playFileTrack("note", NOTE_FILE, 2.0, { loop: true }), Math.max(fadeSec, 1.5) * 1000 * 0.6);
-    return;
+  // The finale song: the note and the credits share it. Once it is up it is
+  // never restarted between the two screens, only carried on.
+  if (key === NOTE_KEY || ENDING_KEYS.has(key)) {
+    const which = key === NOTE_KEY ? "note" : "ending";
+    if (reservedActive) { reservedActive = which; return; }
+    if (finaleAvailable) {
+      playlistActive = false;
+      reservedActive = which;
+      fadeOut(Math.max(fadeSec, 1.5));
+      window.setTimeout(() => playFileTrack(which, FINALE_FILE, 2.0, { loop: true }), Math.max(fadeSec, 1.5) * 1000 * 0.6);
+      return;
+    }
+    // no song file: the note keeps whatever is playing, the credits fall to the procedural ending
+    if (which === "note") return;
   }
 
   // The game's own soundtrack, when present, carries the whole adventure.
   if (playlistAvailable) {
-    if (ENDING_KEYS.has(key)) {
-      if (reservedActive === "ending") return;
-      playlistActive = false;
-      reservedActive = "ending";
-      fadeOut(Math.max(fadeSec, 1.5));
-      window.setTimeout(() => playFileTrack("ending", ENDING_FILE, 2.0, { loop: true }), Math.max(fadeSec, 1.5) * 1000 * 0.6);
-      return;
-    }
     if (reservedActive) {
       reservedActive = null;
       fadeOut(0.8);
