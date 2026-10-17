@@ -50,6 +50,7 @@ npm run build      # typecheck + production build
 | Move | WASD | Left stick / D-pad | Left-side joystick |
 | Look | Arrow keys, or drag with a mouse button; wheel to zoom | Right stick, triggers to zoom | Drag on the right half |
 | Dialogue auto / skip | A / hold X | — | On-screen buttons |
+| Radio (the game's tracks) | Click the little set under the map: previous, play / pause, next | — | Tap it |
 | Interact / advance | E, Z, Enter, Space | A | Big red button |
 | Dash | Shift | B | Dash button |
 | Mimo sniffs | F | RB | Paw button |
@@ -145,8 +146,8 @@ src/
   routes/            route + html shell; mounts GameApp client-side
   components/        HUD, MissionTracker, Minimap, JourneyPanel, DialogueBox, BattleUI, panels,
                      TouchControls, FadeOverlay, PhotoMode, HowToPlay, EndNote, CreditsRoll
-  data/credits.ts    the credits pictures, read from assets/credits/ (the file name is the caption)
-  assets/credits/    the photographs that roll through the credits, "03 missed my home.jpeg"
+  data/credits.ts    the credits: order, title and words for every photograph (CREDIT_ENTRIES)
+  assets/credits/    the photographs that roll through the credits, named as in data/credits.ts
     pixel/           SVG pixel portraits, mission icons, shared decor
   world3d/
     World3D.ts       the 3D engine: regions, player, companion, NPCs, camera, battle stage, cinematics
@@ -249,10 +250,11 @@ hall; the balcony runs the full width with a railing and a twelfth-floor night v
 which leads to the hug. The hug plays as a camera pull-back, fades to black, then shows
 a handwritten note (a photo dropped in as `public/note.jpg` or `.png`, otherwise the
 text in `src/data/endNote.ts`) with `game 4.mp3` underneath it, then the credits with
-the ending track, and returns to the title. The credits are a slow roll of real photographs with one line under each: every
-picture in `src/assets/credits/` is in the roll and its file name is the caption (a
-leading number sets the order), and every picture is alive: it breathes inside its
-frame, floats, and its glow pulses. Nothing loops back into the world.
+the ending track, and returns to the title. The credits are a slow roll of real photographs with words beside each one,
+alternating sides down the roll (picture left and words right, then picture right and
+words left), stacked on a phone. Order, title and words live in `src/data/credits.ts`
+(`CREDIT_ENTRIES`); the pictures in `src/assets/credits/`. Every picture is alive: it
+breathes inside its frame, floats, and its glow pulses. Nothing loops back into the world.
 
 Every time the story moves to a new step, a card shows the new objective with its first
 clue and the route to it. Music ducks under dialogue, battle menus, gongs and sound effects.
