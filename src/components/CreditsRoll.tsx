@@ -1,59 +1,25 @@
 // ---------------------------------------------------------------------------
-// The credits: a slow roll of everyone in the story, one picture each with a
-// line underneath, then the birthday card. Pictures are "alive": each one
-// breathes inside its frame (a slow zoom and drift), floats a little, and its
-// gold glow pulses, with every frame on its own rhythm. A photo dropped in as
-// public/credits/<id>.jpg|jpeg|png|webp replaces the drawn portrait
-// (see data/credits.ts).
+// The credits: a slow roll of real photographs, one line under each, then the
+// birthday card. The pictures are "alive": each one breathes inside its frame
+// (a slow zoom and drift), floats a little, its gold glow pulses and a soft
+// light sweeps across it, every frame on its own rhythm. The pictures and
+// their captions come from src/assets/credits/ (see data/credits.ts: the file
+// name is the caption).
 // ---------------------------------------------------------------------------
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { questSfx } from "../lib/questSfx";
 import { PetalRain, Lantern } from "./pixel/decor";
 import { CharacterPortrait } from "./pixel/Portrait";
-import { CREDIT_CAST, CREDIT_TAIL } from "../data/credits";
+import { CREDIT_PHOTOS, CREDIT_TAIL } from "../data/credits";
 
-const PHOTO_EXTS = ["jpg", "jpeg", "png", "webp"];
-/** Seconds the roll takes: a title, then every card at a reading pace, then the tail. */
-const ROLL_SECONDS = 12 + CREDIT_CAST.length * 4.6;
-
-/** Which cast members have a real photo under public/credits/. */
-function useCreditPhotos() {
-  const [photos, setPhotos] = useState<Record<string, string>>({});
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      const found: Record<string, string> = {};
-      await Promise.all(
-        CREDIT_CAST.map(async (c) => {
-          for (const ext of PHOTO_EXTS) {
-            const f = `credits/${c.id}.${ext}`;
-            try {
-              const r = await fetch(f, { method: "HEAD" });
-              // the SPA rewrite answers missing files with index.html, hence the type check
-              if (r.ok && (r.headers.get("content-type") ?? "").startsWith("image/")) {
-                found[c.id] = f;
-                return;
-              }
-            } catch {
-              /* keep looking */
-            }
-          }
-        }),
-      );
-      if (alive) setPhotos(found);
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-  return photos;
-}
+/** Seconds the roll takes: a title, then every picture at a looking pace, then the tail. */
+const ROLL_SECONDS = 10 + Math.max(1, CREDIT_PHOTOS.length) * 5.2;
 
 const ALIVE_CSS = `
 @keyframes sb-credits-roll { from { transform: translateY(0) } to { transform: translateY(calc(-100% - 100vh)) } }
-@keyframes sb-alive-breathe { from { transform: scale(1.04) translate(0, 0) } to { transform: scale(1.2) translate(var(--dx), var(--dy)) } }
+@keyframes sb-alive-breathe { from { transform: scale(1.04) translate(0, 0) } to { transform: scale(1.18) translate(var(--dx), var(--dy)) } }
 @keyframes sb-alive-float { 0%, 100% { transform: translateY(0) rotate(var(--tilt)) } 50% { transform: translateY(-8px) rotate(calc(var(--tilt) * -1)) } }
 @keyframes sb-alive-glow {
   0%, 100% { box-shadow: 0 0 0 1px rgba(217,180,91,.55), 0 22px 50px -14px rgba(0,0,0,.95), 0 0 26px -8px rgba(217,180,91,.35) }
@@ -67,11 +33,9 @@ const ALIVE_CSS = `
 .sb-alive::before { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; box-shadow: inset 0 0 40px rgba(10,5,7,.55); pointer-events: none; }
 `;
 
-/** One picture that breathes, floats and glows on its own rhythm (i staggers the rhythms). */
-function AlivePicture({ src, portrait, name, i, size }: { src?: string; portrait: string; name: string; i: number; size: number }) {
-  const style = {
-    width: size,
-    height: Math.round(size * 1.22),
+/** The rhythm of one frame; i staggers it so no two pictures move together. */
+function rhythm(i: number) {
+  return {
     "--delay": `${-(i * 1.7)}s`,
     "--float": `${5.5 + (i % 3) * 0.8}s`,
     "--glow": `${4 + (i % 4) * 0.7}s`,
@@ -81,15 +45,37 @@ function AlivePicture({ src, portrait, name, i, size }: { src?: string; portrait
     "--dy": `${(i % 3 ? -1 : 1) * 2.5}%`,
     "--tilt": `${(i % 2 ? 1 : -1) * 0.8}deg`,
   } as React.CSSProperties;
+}
+
+/** A photograph that breathes, floats and glows. The frame takes the picture's own shape. */
+function AlivePhoto({ src, caption, i }: { src: string; caption: string; i: number }) {
+  const [ratio, setRatio] = useState(0.8);
+  const landscape = ratio > 1.05;
   return (
-    <div className="sb-alive" style={style}>
-      {src ? (
-        <img src={src} alt={name} draggable={false} />
-      ) : (
-        <div className="sb-alive-portrait">
-          <CharacterPortrait id={portrait} size={Math.round(size * 0.78)} />
-        </div>
-      )}
+    <div
+      className="sb-alive"
+      style={{ ...rhythm(i), width: landscape ? "min(480px, 88vw)" : "min(320px, 78vw)", aspectRatio: ratio }}
+    >
+      <img
+        src={src}
+        alt={caption}
+        draggable={false}
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          if (img.naturalWidth && img.naturalHeight) setRatio(img.naturalWidth / img.naturalHeight);
+        }}
+      />
+    </div>
+  );
+}
+
+/** A drawn portrait in the same living frame (the birthday card). */
+function AlivePortrait({ id, i, size }: { id: string; i: number; size: number }) {
+  return (
+    <div className="sb-alive" style={{ ...rhythm(i), width: size, height: Math.round(size * 1.22) }}>
+      <div className="sb-alive-portrait">
+        <CharacterPortrait id={id} size={Math.round(size * 0.78)} />
+      </div>
     </div>
   );
 }
@@ -97,8 +83,6 @@ function AlivePicture({ src, portrait, name, i, size }: { src?: string; portrait
 export default function CreditsRoll() {
   const setScreen = useGameStore((s) => s.setScreen);
   const [showEnd, setShowEnd] = useState(false);
-  const photos = useCreditPhotos();
-  const cast = useMemo(() => CREDIT_CAST, []);
 
   useEffect(() => {
     const t = window.setTimeout(() => setShowEnd(true), ROLL_SECONDS * 1000 + 400);
@@ -124,7 +108,7 @@ export default function CreditsRoll() {
       {!showEnd ? (
         <>
           <div
-            className="absolute inset-x-0 flex flex-col items-center gap-12 px-6 text-center"
+            className="absolute inset-x-0 flex flex-col items-center gap-14 px-6 text-center"
             style={{ top: "100%", animation: `sb-credits-roll ${ROLL_SECONDS}s linear forwards` }}
           >
             <div>
@@ -132,11 +116,14 @@ export default function CreditsRoll() {
               <div className="text-[14px] leading-[2] text-[var(--ink-2)]">Palakshi's Birthday Adventure</div>
             </div>
 
-            {cast.map((c, i) => (
-              <div key={c.id} className="flex flex-col items-center">
-                <AlivePicture src={photos[c.id]} portrait={c.portrait ?? c.id} name={c.name} i={i} size={176} />
-                <div className="title-lg mt-5 text-[19px] tracking-[0.12em] text-[#f2dfa6] glow-gold">{c.name}</div>
-                <div className="mt-1 max-w-[300px] text-[13px] leading-[1.7] text-[var(--ink-2)]">{c.caption}</div>
+            {CREDIT_PHOTOS.map((p, i) => (
+              <div key={p.key} className="flex flex-col items-center">
+                <AlivePhoto src={p.src} caption={p.caption} i={i} />
+                {p.caption && (
+                  <div className="mt-5 max-w-[420px] text-[15px] leading-[1.7] text-[#f2dfa6]" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic" }}>
+                    {p.caption}
+                  </div>
+                )}
               </div>
             ))}
 
@@ -164,8 +151,8 @@ export default function CreditsRoll() {
         <div className="sb-pop relative flex h-full flex-col items-center justify-center px-6 text-center">
           <div className="mb-8 flex items-end gap-6">
             <Lantern size={30} />
-            <AlivePicture src={photos.palakshi} portrait="palakshi" name="Palakshi" i={0} size={120} />
-            <AlivePicture src={photos.mimo} portrait="mimo" name="Mimochi" i={1} size={84} />
+            <AlivePortrait id="palakshi" i={0} size={120} />
+            <AlivePortrait id="mimo" i={1} size={84} />
             <Lantern size={30} delay={0.6} />
           </div>
 

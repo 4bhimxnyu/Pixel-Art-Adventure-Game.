@@ -75,7 +75,7 @@ export default function EndNote() {
           className="max-h-[92vh] max-w-[94vw] rounded-[4px] object-contain transition-all duration-[1800ms]"
           style={{ opacity: paper ? 1 : 0, transform: paper ? "translateY(0) rotate(-0.4deg)" : "translateY(18px) rotate(-0.4deg)", boxShadow: "0 30px 80px rgba(0,0,0,.65)" }}
         />
-        <div className="absolute bottom-6 text-[11px] uppercase tracking-[.3em] text-[#f2dfa6]" style={{ opacity: paper ? 0.55 : 0 }}>press any key</div>
+        <div className="absolute bottom-1.5 text-[10px] uppercase tracking-[.3em] text-[#f2dfa6]" style={{ opacity: paper ? 0.5 : 0 }}>press any key</div>
       </div>
     );
   }
