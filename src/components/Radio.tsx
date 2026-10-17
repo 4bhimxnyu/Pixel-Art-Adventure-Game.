@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { onRadio, radioNext, radioPrev, radioState, radioToggle, type RadioState } from "../game/sound";
 import { questSfx } from "../lib/questSfx";
+import { TRACK_INFO } from "../data/tracks";
 
 const WIDTH = 150; // the minimap's width, so the two line up
 
@@ -51,7 +52,7 @@ export default function Radio() {
 
   if (!s.available || s.tracks.length === 0) return null;
   const name = s.index >= 0 ? s.tracks[s.index] : s.tracks[0];
-  const pretty = name.replace(/^game\s*/i, "Track ");
+  const info = TRACK_INFO[name] ?? { title: name.replace(/^game\s*/i, "Track ") };
 
   return (
     <div className="radio pointer-events-auto relative shrink-0" style={{ width: WIDTH }} onPointerDown={(e) => e.stopPropagation()}>
@@ -87,12 +88,13 @@ export default function Radio() {
               boxShadow: s.playing ? "inset 0 0 10px rgba(242,223,166,.25), 0 0 10px -2px rgba(242,223,166,.35)" : "inset 0 0 8px rgba(0,0,0,.7)",
             }}
           >
-            <div className="truncate text-[11px] font-semibold tracking-[.08em] text-[#f2dfa6]">
+            <div className="truncate text-[11px] font-semibold tracking-[.06em] text-[#f2dfa6]" title={info.title}>
               {s.playing ? "♪ " : ""}
-              {pretty}
+              {info.title}
             </div>
-            <div className="text-[8px] tracking-[.22em] text-[rgba(242,223,166,.55)]">
-              {s.playing ? "ON AIR" : "PAUSED"} · {Math.max(0, s.index) + 1}/{s.tracks.length}
+            <div className="truncate text-[8px] tracking-[.14em] text-[rgba(242,223,166,.6)]">
+              {info.artist ? `${info.artist} · ` : ""}
+              {s.playing ? "ON AIR" : "PAUSED"} {Math.max(0, s.index) + 1}/{s.tracks.length}
             </div>
           </div>
         </div>
