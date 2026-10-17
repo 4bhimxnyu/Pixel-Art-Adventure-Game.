@@ -26,7 +26,7 @@ announced with its clue and route.
 | 6 | The Three Flames | Ancient Cave, Temple | the echo-stone puzzle, the cave flame, the Sacred Lantern |
 | 7 | Arshiya | Academy | the gatekeeper, **Arshiya** (three phases) |
 | 8 | The West Road | Sparkle Town, West Road | the finale, Faizal at the door |
-| 9 | F-1205 | the flat, first person | Faizal and Hakim's room, Garv and Dev's room, Abhimanyu's locked door, the evening, the balcony sutta with Riddhi, the goodbye, "I love you Pala", the handwritten note (to `game 4.mp3`) |
+| 9 | F-1205 | the flat, first person | Faizal and Hakim's room, Garv and Dev's room, Abhimanyu's locked door, the evening, the balcony sutta with Riddhi, the goodbye, the hug, the handwritten note (to `game 4.mp3`), the credits with everyone's picture |
 
 Mission states (LOCKED / AVAILABLE / ACTIVE / COMPLETED) are derived from the quest
 step in `lib/missionMeta.ts` and shown in the Journey panel. Every region beyond the
@@ -144,7 +144,8 @@ after a local build.
 src/
   routes/            route + html shell; mounts GameApp client-side
   components/        HUD, MissionTracker, Minimap, JourneyPanel, DialogueBox, BattleUI, panels,
-                     TouchControls, FadeOverlay, PhotoMode, HowToPlay, TheEnd, EndNote, CreditsRoll
+                     TouchControls, FadeOverlay, PhotoMode, HowToPlay, EndNote, CreditsRoll
+  data/credits.ts    the credits cast: one picture and one line each (photos go in public/credits/)
     pixel/           SVG pixel portraits, mission icons, shared decor
   world3d/
     World3D.ts       the 3D engine: regions, player, companion, NPCs, camera, battle stage, cinematics
@@ -244,11 +245,14 @@ slides along the rail. The flat is a long hallway from the front door: Faizal an
 Hakim's room first, Abhimanyu's room second (its door stays locked until the other four
 have been met), Garv and Dev's room last, with the living room and kitchen across the
 hall; the balcony runs the full width with a railing and a twelfth-floor night view. Only after that does Abhimanyu wait by the door for the goodbye,
-which leads to the hug. The hug plays as a camera pull-back, fades to black, shows the
-ending card ("I love you Pala <3"), then a handwritten note (a photo dropped in as
-`public/note.jpg` or `.png`, otherwise the text in `src/data/endNote.ts`) with
-`game 4.mp3` underneath it, then the credits with the ending track, and returns to the
-title. Nothing loops back into the world.
+which leads to the hug. The hug plays as a camera pull-back, fades to black, then shows
+a handwritten note (a photo dropped in as `public/note.jpg` or `.png`, otherwise the
+text in `src/data/endNote.ts`) with `game 4.mp3` underneath it, then the credits with
+the ending track, and returns to the title. The credits are a slow roll of everyone in
+the story with a picture and one line each (`src/data/credits.ts`); a photo dropped in
+as `public/credits/<id>.jpg` replaces that person's drawn portrait, and every picture
+is alive: it breathes inside its frame, floats, and its glow pulses. Nothing loops back
+into the world.
 
 Every time the story moves to a new step, a card shows the new objective with its first
 clue and the route to it. Music ducks under dialogue, battle menus, gongs and sound effects.
